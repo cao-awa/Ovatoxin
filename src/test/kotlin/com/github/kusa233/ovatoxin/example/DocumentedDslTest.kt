@@ -2,11 +2,13 @@ package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.runtime.Browser
+import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.Button
 import com.github.kusa233.ovatoxin.widget.Div
 import com.github.kusa233.ovatoxin.widget.Link
 import com.github.kusa233.ovatoxin.widget.TextArea
+import com.github.kusa233.ovatoxin.widget.TextField
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.scene.paint.Color
 import kotlin.test.Test
@@ -16,12 +18,12 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
- * Compiles `doc/DSL.md` verbatim, so the documentation cannot drift away from the API.
+ * Runs the documented DSL snippets, so the documentation cannot drift away from the API.
  */
 class DocumentedDslTest {
 
     @Test
-    fun `the snippet from doc DSL md compiles and wires up`() {
+    fun `the basic snippet compiles and wires up`() {
         val frame = Frame()
         frame.layout {
             val text1 = draw(TextArea()) { text ->
@@ -57,7 +59,7 @@ class DocumentedDslTest {
     }
 
     @Test
-    fun `the div snippet from doc DSL md compiles and nests`() {
+    fun `the div snippet compiles and nests`() {
         val frame = Frame()
         frame.layout {
             draw(Div()) { panel ->
@@ -90,7 +92,7 @@ class DocumentedDslTest {
     }
 
     @Test
-    fun `the style snippet from doc DSL md compiles and applies`() {
+    fun `the style snippet compiles and applies`() {
         val frame = Frame()
         frame.layout {
             draw(Button()) { button ->
@@ -121,7 +123,7 @@ class DocumentedDslTest {
     }
 
     @Test
-    fun `the rounded div snippet from doc DSL md compiles and applies`() {
+    fun `the rounded div snippet compiles and applies`() {
         val frame = Frame()
         frame.layout {
             draw(Div()) { panel ->
@@ -151,7 +153,7 @@ class DocumentedDslTest {
     }
 
     @Test
-    fun `the image background snippet from doc DSL md compiles and wins over the colour`() {
+    fun `the image background snippet compiles and wins over the colour`() {
         val frame = Frame()
         frame.layout {
             draw(Div()) { panel ->
@@ -183,7 +185,7 @@ class DocumentedDslTest {
     }
 
     @Test
-    fun `the click snippet from doc DSL md compiles and runs`() {
+    fun `the click snippet compiles and runs`() {
         val printed = StringBuilder()
         val frame = Frame()
         frame.layout {
@@ -204,7 +206,7 @@ class DocumentedDslTest {
     }
 
     @Test
-    fun `the link snippet from doc DSL md compiles and opens the url`() {
+    fun `the link snippet compiles and opens the url`() {
         val opened = mutableListOf<String>()
         val previous = Browser.opener
         Browser.opener = { url -> opened += url }
@@ -229,7 +231,7 @@ class DocumentedDslTest {
     }
 
     @Test
-    fun `the replaced link snippet from doc DSL md compiles without opening a browser`() {
+    fun `the replaced link snippet compiles without opening a browser`() {
         val opened = mutableListOf<String>()
         val printed = StringBuilder()
         val previous = Browser.opener
@@ -256,7 +258,7 @@ class DocumentedDslTest {
     }
 
     @Test
-    fun `the opacity snippet from doc DSL md compiles and scales the fill`() {
+    fun `the opacity snippet compiles and scales the fill`() {
         val frame = Frame()
         frame.layout {
             draw(Div()) { panel ->
@@ -282,13 +284,95 @@ class DocumentedDslTest {
     }
 
     @Test
-    fun `the out of range opacity snippet from doc DSL md really throws`() {
-        // The documentation claims both of these fail; keep it honest.
+    fun `the out of range opacity really throws`() {
+        // Both ends of the range are rejected; keep it that way.
         assertFailsWith<IllegalArgumentException> {
             Style().configure { background { opacity = 101 } }
         }
         assertFailsWith<IllegalArgumentException> {
             Style().configure { background { opacity = -1 } }
         }
+    }
+
+    @Test
+    fun `the state snippet compiles and rebinds on a new value`() {
+        val state = State("zh-cn")
+
+        val frame = Frame()
+        frame.layout {
+            val textShow = draw(TextArea()) { text ->
+                layout {
+                    x = 10.percent
+                    y = 10.percent
+                    width = 80.percent
+                    height = 10.percent
+                }
+                val translation = I18N.languages[state.value]?.get("test.translation") ?: "No translation"
+                text.text(translation)
+            }.withState(state)
+        }
+
+        val text = frame.children[0] as TextArea
+        assertEquals("翻译测试", text.text())
+        assertEquals("zh-cn", state.value)
+
+        // The state is the only trigger: nothing below touches the component directly.
+        state.update("en-us")
+
+        assertEquals("en-us", state.value)
+        assertEquals("Test translation", text.text())
+    }
+
+    @Test
+    fun `the state feeding snippet compiles and updates the bound label`() {
+        val state = State("zh-cn")
+        val frame = Frame()
+        frame.layout {
+            val textShow = draw(TextArea()) { text ->
+                val translation = I18N.languages[state.value]?.get("test.translation") ?: "No translation"
+                text.text(translation)
+            }.withState(state)
+
+            draw(TextField()) { input ->
+                layout {
+                    x = 10.percent
+                    y = 30.percent
+                    width = 80.percent
+                    height = 10.percent
+                }
+                input.hint = "Type here..."
+                input.onChange {
+                    state.update(it)
+                }
+            }
+        }
+
+        val text = frame.children[0] as TextArea
+        val input = frame.children[1] as TextField
+
+        // Typing is exactly what the change handler sees.
+        input.text("en-us")
+
+        assertEquals("en-us", state.value)
+        assertEquals("Test translation", text.text())
+        assertEquals("en-us", input.text())
+    }
+
+    @Test
+    fun `the equal value rule really keeps the tree untouched`() {
+        val state = State("zh-cn")
+        val frame = Frame()
+        frame.layout {
+            draw(TextArea()) { text ->
+                text.text(I18N.languages[state.value]?.get("test.translation") ?: "No translation")
+            }.withState(state)
+        }
+        val text = frame.children[0] as TextArea
+        val before = text.text()
+
+        state.update("zh-cn")
+
+        assertEquals(before, text.text())
+        assertEquals("zh-cn", state.value)
     }
 }

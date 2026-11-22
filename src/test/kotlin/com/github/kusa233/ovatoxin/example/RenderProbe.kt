@@ -3,6 +3,7 @@ package com.github.kusa233.ovatoxin.example
 import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.component.Container
 import com.github.kusa233.ovatoxin.layout.percent
+import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.Button
 import com.github.kusa233.ovatoxin.widget.Div
@@ -11,6 +12,7 @@ import com.github.kusa233.ovatoxin.widget.TextArea
 import com.github.kusa233.ovatoxin.widget.TextField
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.application.Platform
+import javafx.scene.control.Label
 import javafx.scene.paint.Color
 import java.awt.image.BufferedImage
 import java.nio.file.Files
@@ -22,7 +24,7 @@ import kotlin.math.roundToInt
 import kotlin.system.exitProcess
 
 /**
- * Manual rendering probe — not a unit test, and never part of `build`.
+ * Manual rendering probe —not a unit test, and never part of `build`.
  *
  * It shows a window for real, waits for a layout pulse, then prints the geometry the JavaFX
  * renderer actually produced and compares it with what the DSL declared. Run it with:
@@ -32,12 +34,16 @@ import kotlin.system.exitProcess
  * ```
  */
 fun main() {
-    val frame = Frame("Ovatoxin – render probe")
+    val frame = Frame("Ovatoxin –render probe")
     val probes = mutableListOf<Probe>()
     val nested = mutableListOf<Probe>()
     val imageUrl = probeImage()
     lateinit var panel: Div
     lateinit var imageBox: Div
+    lateinit var boundText: TextArea
+    lateinit var untouchedText: Button
+    val translations = mapOf("test" to "Test", "changed" to "Changed")
+    val state = State("test")
 
     frame.layout {
         val text = draw(TextArea()) { component ->
@@ -47,9 +53,11 @@ fun main() {
                 width = 80.percent
                 height = 10.percent
             }
-            component.text("Test")
-        }
+            // The text is derived from the state, so a new value must redraw this one component.
+            component.text(translations.getValue(state.value))
+        }.withState(state)
         probes += Probe("TextArea", text, "Test")
+        boundText = text
 
         val field = draw(TextField()) { component ->
             layout {
@@ -80,6 +88,7 @@ fun main() {
             component.text = "Button"
         }
         probes += Probe("Button", button, "Button")
+        untouchedText = button
 
         val link = draw(Link("Ovatoxin", "https://github.com/kusa233/Ovatoxin")) { component ->
             layout {
@@ -165,8 +174,10 @@ fun main() {
             Platform.runLater {
                 Platform.runLater {
                     val resized = report("resized 1000x500", frame, probes, nested, panel, imageBox)
+                    val stateOk = stateRedraw(boundText, untouchedText, state, "changed")
+                    val ok = initial && resized && stateOk
                     Platform.exit()
-                    if (!initial || !resized) exitProcess(1)
+                    if (!ok) exitProcess(1)
                 }
             }
         }
@@ -207,7 +218,7 @@ private fun report(
     ok = contents(probes + nested) && ok
 
     println()
-    println(if (ok) "RESULT: ok" else "RESULT: MISMATCH — see rows above")
+    println(if (ok) "RESULT: ok" else "RESULT: MISMATCH —see rows above")
     return ok
 }
 
@@ -290,6 +301,110 @@ private fun clipping(panel: Div, outside: Probe): Boolean {
     )
     return hasClip && clipMatchesBox && outsideOk
 }
+
+/**
+ * Proves a state update redraws the component bound to it, and only that one.
+ *
+ * The rendered pixels are compared, so the check looks at what the renderer shows rather than
+ * at the library's own bookkeeping. The component next to it is not bound and must come out of
+ * the change byte-for-byte identical.
+ */
+private fun stateRedraw(
+    bound: TextArea,
+    untouched: Button,
+    state: State<String>,
+    newValue: String,
+): Boolean {
+    println()
+    val boundNode = bound.labelNode()
+    val untouchedNode = untouched.node as javafx.scene.control.Button
+
+    val beforeBound = boundNode.text
+    val beforeBoundLayout = geometryOf(boundNode)
+    val beforeBoundPixels = pixels(boundNode)
+
+    val beforeUntouched = untouchedNode.text
+    val beforeUntouchedLayout = geometryOf(untouchedNode)
+    val beforeUntouchedPixels = pixels(untouchedNode)
+
+    // The state is the only trigger: nothing below touches either component directly.
+    state.update(newValue)
+
+    val afterBound = boundNode.text
+    val afterBoundLayout = geometryOf(boundNode)
+    val afterBoundPixels = pixels(boundNode)
+
+    val afterUntouched = untouchedNode.text
+    val afterUntouchedLayout = geometryOf(untouchedNode)
+    val afterUntouchedPixels = pixels(untouchedNode)
+
+    val saved = state.value == newValue
+    val textChanged = afterBound == translationsOf(newValue)
+    val boundGeometry = afterBoundLayout == beforeBoundLayout
+    val repainted = beforeBoundPixels != null && afterBoundPixels != null &&
+        beforeBoundPixels != afterBoundPixels
+
+    val untouchedText = afterUntouched == beforeUntouched
+    val untouchedGeometry = afterUntouchedLayout == beforeUntouchedLayout
+    val untouchedPixels = beforeUntouchedPixels != null && beforeUntouchedPixels == afterUntouchedPixels
+
+    val matched = saved && textChanged && boundGeometry && repainted &&
+        untouchedText && untouchedGeometry && untouchedPixels
+
+    println(
+        "${pad("State", 12)} ${if (matched) "ok  " else "FAIL"} " +
+            "saved=\"${state.value}\"  " +
+            "bound \"$beforeBound\" -> \"$afterBound\"  " +
+            "geometry=${if (boundGeometry) "kept" else "MOVED"}  " +
+            "pixels=${if (repainted) "repainted" else "UNCHANGED"}",
+    )
+    println(
+        "${pad("unbound", 12)} ${if (untouchedText && untouchedGeometry && untouchedPixels) "ok  " else "FAIL"} " +
+            "text \"$beforeUntouched\" -> \"$afterUntouched\"  " +
+            "geometry=${if (untouchedGeometry) "kept" else "MOVED"}  " +
+            "pixels=${if (untouchedPixels) "identical" else "CHANGED"}",
+    )
+    return matched
+}
+
+/** The text the probe state maps [value] to. */
+private fun translationsOf(value: String): String = when (value) {
+    "changed" -> "Changed"
+    else -> "Test"
+}
+
+/** A node's position and size, as one comparable value. */
+private fun geometryOf(node: javafx.scene.Node): List<String> = listOf(
+    num(node.layoutX),
+    num(node.layoutY),
+    num(node.layoutBounds.width),
+    num(node.layoutBounds.height),
+)
+
+/** A cheap fingerprint of the rendered pixels, or `null` when the snapshot failed. */
+private fun pixels(node: javafx.scene.Node): String? = try {
+    val image = node.snapshot(null, null)
+    val reader = image.pixelReader ?: return null
+    val width = image.width.toInt()
+    val height = image.height.toInt()
+    val pixels = IntArray(width * height)
+    reader.getPixels(
+        0,
+        0,
+        width,
+        height,
+        javafx.scene.image.PixelFormat.getIntArgbInstance(),
+        pixels,
+        0,
+        width,
+    )
+    pixels.contentHashCode().toString()
+} catch (failure: RuntimeException) {
+    null
+}
+
+/** The label a text area renders, so the probe reads what is on screen. */
+private fun TextArea.labelNode(): Label = node as Label
 
 /** Verifies the text every probed component actually shows. */
 private fun contents(probes: List<Probe>): Boolean {
@@ -439,11 +554,11 @@ private fun imageLayer(box: Div): Boolean {
 }
 
 /**
- * Proves a `background { opacity = … }` really reaches the renderer.
+ * Proves a `background { opacity = …}` really reaches the renderer.
  *
  * The CSS is checked to carry the scaled alpha, and the box is then snapshotted: `snapshot` fills
  * empty space with white, so a translucent fill has to show up as the fill blended with white at
- * exactly the declared share. Both ends of the range are checked this way — `0` blends to pure
+ * exactly the declared share. Both ends of the range are checked this way —`0` blends to pure
  * white, `100` to the plain colour.
  */
 private fun opacityLayer(probe: Probe): Boolean {
@@ -481,7 +596,7 @@ private fun opacityLayer(probe: Probe): Boolean {
         }
     }
 
-    // The text sits on top of the fill, so most — not all — of the box is still fill.
+    // The text sits on top of the fill, so most —not all —of the box is still fill.
     val share = if (covered > 0) blended.toDouble() / covered else 0.0
     val matched = declaredCss && covered > 0 && share > 0.5
     val expected = "#%02x%02x%02x".format(blendRed, blendGreen, blendBlue)

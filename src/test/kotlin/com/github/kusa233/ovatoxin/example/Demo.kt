@@ -1,6 +1,8 @@
 package com.github.kusa233.ovatoxin.example
 
+import com.github.kusa233.ovatoxin.example.I18N.languages
 import com.github.kusa233.ovatoxin.layout.percent
+import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.Button
 import com.github.kusa233.ovatoxin.widget.Div
@@ -10,38 +12,15 @@ import com.github.kusa233.ovatoxin.widget.TextField
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.scene.paint.Color
 
-/**
- * The example from `doc/DSL.md`, plus a [Div] panel.
- *
- * It lives in the test source set on purpose: it is a manual smoke test, not part of the
- * published library. Run it with `gradlew demo`.
- */
 fun main() {
     val frame = Frame()
     frame.title = "Ovatoxin – DSL demo"
+    testState(frame)
+    frame.show()
+}
+
+fun testButton(frame: Frame) {
     frame.layout {
-        val textShow = draw(TextArea()) { text ->
-            layout {
-                x = 10.percent // Or 10.p
-                y = 10.percent
-                width = 80.percent
-                height = 10.percent
-            }
-            text.text("Test")
-            text.onClick {
-                println("Text area clicked!")
-            }
-        }
-        val textInput = draw(TextField()) { input ->
-            layout {
-                x = 10.percent
-                y = 30.percent
-                width = 80.percent
-                height = 10.percent
-            }
-            input.hint = "Type here..."
-            input.onChange { println("typed: $it") }
-        }
         draw(Button()) { button ->
             layout {
                 x = 10.percent
@@ -58,10 +37,14 @@ fun main() {
             }
             button.text = "Button"
             button.onClick {
-                textShow.text(textInput.text())
+                println("Button clicked!")
             }
         }
+    }
+}
 
+fun testDiv(frame: Frame) {
+    frame.layout {
         draw(Div()) { band ->
             layout {
                 x = 10.percent
@@ -112,7 +95,11 @@ fun main() {
                 }
             }
         }
+    }
+}
 
+fun testLink(frame: Frame) {
+    frame.layout {
         draw(Link("Ovatoxin on GitHub", "https://github.com/cao-awa/Ovatoxin")) { link ->
             layout {
                 x = 10.percent
@@ -123,5 +110,46 @@ fun main() {
             link.text = "opens the browser — click me"
         }
     }
-    frame.show()
+}
+
+fun testState(frame: Frame) {
+    val state = State("")
+    frame.layout {
+        draw(TextArea()) { text ->
+            layout {
+                x = 10.percent // Or 10.p
+                y = 10.percent
+                width = 80.percent
+                height = 10.percent
+            }
+            val translation = languages[state.value]?.get("test.translation") ?: "No translation"
+            text.text(translation)
+            text.onClick {
+                println("Text area clicked!")
+            }
+        }.withState(state)
+        draw(TextField()) { input ->
+            layout {
+                x = 10.percent
+                y = 30.percent
+                width = 80.percent
+                height = 10.percent
+            }
+            input.hint = "Type here..."
+            input.onChange {
+                state.update(it)
+            }
+        }
+    }
+}
+
+object I18N {
+    val languages: MutableMap<String, MutableMap<String, String>> = mutableMapOf<String, MutableMap<String, String>>().also {
+        it["zh-cn"] = mutableMapOf<String, String>().also { lang ->
+            lang["test.translation"] = "翻译测试"
+        }
+        it["en-us"] = mutableMapOf<String, String>().also { lang ->
+            lang["test.translation"] = "Test translation"
+        }
+    }
 }

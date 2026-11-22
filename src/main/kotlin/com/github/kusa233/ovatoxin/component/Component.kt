@@ -1,6 +1,8 @@
 package com.github.kusa233.ovatoxin.component
 
 import com.github.kusa233.ovatoxin.layout.Layout
+import com.github.kusa233.ovatoxin.runtime.Fx
+import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
 import javafx.scene.Node
 import javafx.scene.input.MouseButton
@@ -128,6 +130,75 @@ abstract class Component<T : Component<T>> {
      */
     open fun performClick() {
         this.clickHandler?.invoke(this.self)
+    }
+
+    /**
+     * Binds this component to [state], so the state keeps it up to date.
+     *
+     * ```kotlin
+     * val state = State("zh-cn")
+     *
+     * val text = draw(TextArea()) { it.text(languages[state.value]) }.withState(state)
+     * ```
+     *
+     * Binding does two things. The component is redrawn once right away, and from then on every
+     * value the state receives saves itself there and redraws **this component only** — the rest
+     * of the tree is left untouched, which is what makes a state cheap: one component redraws,
+     * not the whole window.
+     *
+     * A redraw re-runs the block this component was drawn with, so a block that derives its
+     * content from [State.value] — a translation, a formatted number — recomputes it.
+     *
+     * A component can be bound to more than one state; each of them redraws it.
+     *
+     * @return this component, so the call chains onto the result of
+     *   [com.github.kusa233.ovatoxin.component.Container.draw].
+     */
+    fun withState(state: State<*>): T {
+        state.bind(this)
+        redraw()
+        return this.self
+    }
+
+    /** The block this component was drawn with, re-run on every redraw. */
+    internal var drawBlock: (() -> Unit)? = null
+        private set
+
+    /** Remembers the block this component was drawn with, so a redraw can re-run it. */
+    internal fun recordDrawBlock(block: () -> Unit) {
+        this.drawBlock = block
+    }
+
+    /**
+     * Re-runs this component's draw block and re-renders the component on its own.
+     *
+     * Called by a bound [State] when its value changes. A component that is not rendered yet
+     * has no node to paint, so the stored value reaches the screen when it is first shown.
+     */
+    internal fun redraw() {
+        replayDrawBlock()
+        renderSelf()
+    }
+
+    /** Re-runs [drawBlock], if this component was drawn with one. */
+    internal open fun replayDrawBlock() {
+        this.drawBlock?.invoke()
+    }
+
+    /**
+     * Re-renders this component's node without touching any sibling.
+     *
+     * With a parent, the container re-places and re-styles this one child. Without a parent
+     * there is no box to place it against, so it is styled against the box it already occupies.
+     */
+    private fun renderSelf() {
+        val node = this.builtNode ?: return
+        val host = this.parent
+        if (host != null) {
+            host.repaint(this)
+        } else {
+            Fx.runOnFxThread { applyStyle(node.layoutBounds.width, node.layoutBounds.height) }
+        }
     }
 
     /** Replaces the geometry of this component and renders the change immediately. */
