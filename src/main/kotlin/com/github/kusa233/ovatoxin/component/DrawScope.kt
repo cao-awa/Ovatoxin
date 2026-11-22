@@ -1,6 +1,7 @@
 package com.github.kusa233.ovatoxin.component
 
 import com.github.kusa233.ovatoxin.layout.Layout
+import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.style.Style
 
 /**
@@ -26,6 +27,16 @@ class DrawScope<T : Component<*>>(internal val component: T) {
     /** Configures the position and the size of the drawn component. */
     fun layout(block: Layout.() -> Unit): DrawScope<T> {
         this.component.layoutSpec.configure(block)
+        return this
+    }
+
+    fun layout(layoutX: Length = Length.ZERO, layoutY: Length = Length.ZERO, layoutWidth: Length? = null, layoutHeight: Length? = null): DrawScope<T> {
+        layout {
+            x = layoutX
+            y = layoutY
+            width = layoutWidth
+            height = layoutHeight
+        }
         return this
     }
 

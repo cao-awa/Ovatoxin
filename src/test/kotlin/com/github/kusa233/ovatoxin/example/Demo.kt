@@ -1,12 +1,14 @@
 package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.example.I18N.languages
+import com.github.kusa233.ovatoxin.layout.p
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.Button
 import com.github.kusa233.ovatoxin.widget.Div
 import com.github.kusa233.ovatoxin.widget.Link
+import com.github.kusa233.ovatoxin.widget.ListView
 import com.github.kusa233.ovatoxin.widget.TextArea
 import com.github.kusa233.ovatoxin.widget.TextField
 import com.github.kusa233.ovatoxin.window.Frame
@@ -15,7 +17,7 @@ import javafx.scene.paint.Color
 fun main() {
     val frame = Frame()
     frame.title = "Ovatoxin – DSL demo"
-    testStateWithI18N(frame)
+    testList(frame)
     frame.show()
 }
 
@@ -112,40 +114,45 @@ fun testLink(frame: Frame) {
     }
 }
 
-fun testStateWithI18N(frame: Frame) {
-    val state = State("")
+fun testList(frame: Frame) {
+    open class ListOp; class ListDoNothingOp : ListOp()
+    class ListAdd(val item: String) : ListOp(); class ListRemove(val item: String) : ListOp()
+
+    val opState = State<ListOp>(ListDoNothingOp())
     frame.layout {
-        draw(TextArea()) { text ->
-            layout {
-                x = 10.percent // Or 10.p
-                y = 10.percent
-                width = 80.percent
-                height = 10.percent
+        val list = draw(ListView(mutableListOf("A", "B", "C"))) { list ->
+            layout(
+                10.percent, 10.percent, 80.percent, 50.percent
+            )
+            when (val op = opState.value) {
+                is ListDoNothingOp -> {}
+                is ListAdd -> list.add(op.item)
+                is ListRemove -> list.remove(op.item)
             }
-            val translation = languages[state.value]?.get("test.translation") ?: "No translation"
-            text.text(translation)
-            if (state.value == "zh-cn") {
-                style {
-                    background {
-                        color = Color.web("#4c8bf5")
-                    }
-                }
+        }.withState(opState)
+        val adding = draw(TextField()) { adding ->
+            layout(
+                10.percent, 70.percent, 80.percent, 10.percent
+            )
+            adding.hint = "Adding item..."
+        }
+        draw(Button()) { remove ->
+            layout(
+                10.percent, 90.percent, 30.percent, 5.percent
+            )
+            remove.onClick {
+                if (list.selectedItem != null) opState.update(ListRemove(list.selectedItem!!))
             }
-            text.onClick {
-                println("Text area clicked!")
+            remove.text("Remove item...")
+        }
+        draw(Button()) { add ->
+            layout(
+                50.percent, 90.percent, 30.percent, 5.percent
+            )
+            add.onClick {
+                if (adding.text().isNotEmpty()) opState.update(ListAdd(adding.text()))
             }
-        }.withState(state)
-        draw(TextField()) { input ->
-            layout {
-                x = 10.percent
-                y = 30.percent
-                width = 80.percent
-                height = 10.percent
-            }
-            input.hint = "Type here..."
-            input.onChange {
-                state.update(it)
-            }
+            add.text("Add item...")
         }
     }
 }
@@ -180,13 +187,33 @@ fun testStateWithColor(frame: Frame) {
     }
 }
 
-object I18N {
-    val languages: MutableMap<String, MutableMap<String, String>> = mutableMapOf<String, MutableMap<String, String>>().also {
-        it["zh-cn"] = mutableMapOf<String, String>().also { lang ->
-            lang["test.translation"] = "翻译测试"
-        }
-        it["en-us"] = mutableMapOf<String, String>().also { lang ->
-            lang["test.translation"] = "Test translation"
+fun testStateWithI18N(frame: Frame) {
+    val state = State("")
+    frame.layout {
+        draw(TextArea()) { text ->
+            layout(
+                10.percent, 10.percent,
+                80.percent, 10.percent
+            )
+            val translation = languages[state.value]?.get("test.translation") ?: "No translation"
+            text.text(translation)
+        }.withState(state)
+        draw(TextField()) { input ->
+            layout(
+                0.percent, 0.percent,
+                80.percent, 10.percent
+            )
+            input.hint = "Type here..."
+            input.onChange {
+                state.update(it)
+            }
         }
     }
+}
+
+object I18N {
+    val languages: Map<String, MutableMap<String, String>> = mapOf(
+        "zh-cn" to mutableMapOf("test.translation" to "翻译测试"),
+        "en-us" to mutableMapOf("test.translation" to "Test translation"),
+    )
 }
