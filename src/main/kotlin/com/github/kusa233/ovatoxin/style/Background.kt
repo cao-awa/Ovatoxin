@@ -74,6 +74,13 @@ class Background {
         return this
     }
 
+    /** Restores every property to the documented default: a plain, fully opaque colour. */
+    internal fun reset() {
+        this.color = Style.DEFAULT_COLOR
+        this.image = null
+        this.opacity = DEFAULT_OPACITY
+    }
+
     /** Copies every property of [other] into this background. */
     fun copyFrom(other: Background) {
         this.color = other.color

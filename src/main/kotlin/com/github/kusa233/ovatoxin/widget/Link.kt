@@ -36,6 +36,8 @@ import javafx.scene.paint.Color
  */
 class Link(text: String = "", url: String = "") : Component<Link>() {
 
+    private val defaultText: String = text
+    private val defaultUrl: String = url
     private var content: String = text
 
     /** The URL opened by a click, or an empty string for a link that does nothing by default. */
@@ -75,6 +77,20 @@ class Link(text: String = "", url: String = "") : Component<Link>() {
         } else {
             open()
         }
+    }
+
+    /**
+     * Restores the caption and URL this link was created with, and reseeds its default colour.
+     *
+     * The colour set in `init` is a style seed, not a style change, so a reset brings it back:
+     * after a redraw the link still reads as a link.
+     */
+    override fun reset() {
+        super.reset()
+        this.content = this.defaultText
+        this.url = this.defaultUrl
+        this.styleSpec.foreground = DEFAULT_FOREGROUND
+        (this.builtNode as? Label)?.text = this.defaultText
     }
 
     override fun buildNode(): Node {

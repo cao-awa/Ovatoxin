@@ -84,6 +84,19 @@ class Div : Container<Div>() {
         applyClip()
     }
 
+    /**
+     * Restores the default of a bare area: clipping on, and a fully transparent fill.
+     *
+     * The transparent fill is the seed set in `init`, so it survives a reset — a `Div` still
+     * frames its region instead of suddenly painting the default white.
+     */
+    override fun reset() {
+        super.reset()
+        this.clipValue = true
+        this.styleSpec.background { color = null }
+        applyClip()
+    }
+
     /** Keeps the clip rectangle exactly as large as the box itself. */
     private fun applyClip() {
         val pane = this.builtNode as? Pane ?: return

@@ -36,6 +36,14 @@ class Layout {
         return this
     }
 
+    /** Restores every value to the documented default, i.e. to the top left corner, unsized. */
+    internal fun reset() {
+        this.x = Length.ZERO
+        this.y = Length.ZERO
+        this.width = null
+        this.height = null
+    }
+
     /** Copies every value of [other] into this layout. */
     fun copyFrom(other: Layout) {
         this.x = other.x

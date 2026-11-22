@@ -32,6 +32,10 @@ class Frame(
     height: Double = DEFAULT_HEIGHT,
 ) : Container<Frame>() {
 
+    private val defaultTitle: String = title
+    private val defaultWidth: Double = width
+    private val defaultHeight: Double = height
+
     /** The title bar text of the window. */
     var title: String = title
         set(value) {
@@ -61,6 +65,21 @@ class Frame(
 
     init {
         // The window surface is its own colour; it is not a widget box.
+        this.styleSpec.background { color = WINDOW_BACKGROUND }
+        this.styleSpec.corner = 0.px
+    }
+
+    /**
+     * Restores the title and the size this frame was created with, plus the window surface colour.
+     *
+     * The size is part of the defaults, so a live window is resized back to it; the listeners
+     * installed by [show] then keep the logical size in sync with the real one as usual.
+     */
+    override fun reset() {
+        super.reset()
+        this.title = this.defaultTitle
+        this.width = this.defaultWidth
+        this.height = this.defaultHeight
         this.styleSpec.background { color = WINDOW_BACKGROUND }
         this.styleSpec.corner = 0.px
     }

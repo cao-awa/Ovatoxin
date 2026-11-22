@@ -25,10 +25,12 @@ import javafx.scene.text.TextAlignment
  */
 class TextArea(text: String = "") : Component<TextArea>() {
 
+    private val defaultText: String = text
+    private val defaultFamily: String = Font.getDefault().family
     private var content: String = text
-    private var fontSizeValue: Double = 14.0
+    private var fontSizeValue: Double = DEFAULT_FONT_SIZE
     private var boldValue: Boolean = false
-    private var familyValue: String = Font.getDefault().family
+    private var familyValue: String = this.defaultFamily
     private var alignValue: TextAlignment = TextAlignment.LEFT
     private var wrapValue: Boolean = false
 
@@ -98,11 +100,36 @@ class TextArea(text: String = "") : Component<TextArea>() {
         this.fontSizeValue,
     )
 
+    /**
+     * Restores the text this area was created with, and the default font, alignment and wrapping.
+     *
+     * `TextArea("Test")` therefore resets to `"Test"`, not to an empty caption.
+     */
+    override fun reset() {
+        super.reset()
+        this.content = this.defaultText
+        this.fontSizeValue = DEFAULT_FONT_SIZE
+        this.boldValue = false
+        this.familyValue = this.defaultFamily
+        this.alignValue = TextAlignment.LEFT
+        this.wrapValue = false
+        val label = this.builtNode as? Label ?: return
+        label.text = this.content
+        label.font = newFont()
+        label.textAlignment = this.alignValue
+        label.isWrapText = this.wrapValue
+    }
+
     override fun buildNode(): Node {
         val label = Label(this.content)
         label.font = newFont()
         label.textAlignment = this.alignValue
         label.isWrapText = this.wrapValue
         return label
+    }
+
+    companion object {
+        /** The font size a text area is drawn with until it is changed: `14` points. */
+        const val DEFAULT_FONT_SIZE: Double = 14.0
     }
 }

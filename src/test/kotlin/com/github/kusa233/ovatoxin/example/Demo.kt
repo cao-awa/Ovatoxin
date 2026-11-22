@@ -15,7 +15,7 @@ import javafx.scene.paint.Color
 fun main() {
     val frame = Frame()
     frame.title = "Ovatoxin – DSL demo"
-    testState(frame)
+    testStateWithI18N(frame)
     frame.show()
 }
 
@@ -112,7 +112,7 @@ fun testLink(frame: Frame) {
     }
 }
 
-fun testState(frame: Frame) {
+fun testStateWithI18N(frame: Frame) {
     val state = State("")
     frame.layout {
         draw(TextArea()) { text ->
@@ -124,6 +124,13 @@ fun testState(frame: Frame) {
             }
             val translation = languages[state.value]?.get("test.translation") ?: "No translation"
             text.text(translation)
+            if (state.value == "zh-cn") {
+                style {
+                    background {
+                        color = Color.web("#4c8bf5")
+                    }
+                }
+            }
             text.onClick {
                 println("Text area clicked!")
             }
@@ -140,6 +147,36 @@ fun testState(frame: Frame) {
                 state.update(it)
             }
         }
+    }
+}
+
+fun testStateWithColor(frame: Frame) {
+    val state = State("")
+    frame.layout {
+        draw(TextField()) { input ->
+            style {
+                background {
+                    val colorCode = state.value.let {
+                        if (it.startsWith("#") && it.length == 7) {
+                            it
+                        } else {
+                            "#ffffff"
+                        }
+                    }
+                    color = Color.web(colorCode)
+                }
+            }
+            layout {
+                x = 10.percent
+                y = 30.percent
+                width = 80.percent
+                height = 10.percent
+            }
+            input.hint = "Type color here..."
+            input.onChange {
+                state.update(it)
+            }
+        }.withState(state)
     }
 }
 

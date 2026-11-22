@@ -27,6 +27,7 @@ import javafx.scene.control.Button as FxButton
  */
 class Button(text: String = "") : Component<Button>() {
 
+    private val defaultText: String = text
     private var content: String = text
     private var enabledValue: Boolean = true
 
@@ -58,6 +59,19 @@ class Button(text: String = "") : Component<Button>() {
     /** Runs the click handler as if the user had pressed the button; disabled buttons stay mute. */
     override fun performClick() {
         if (this.enabledValue) super.performClick()
+    }
+
+    /**
+     * Restores the caption this button was created with and enables it again.
+     *
+     * `Button("Ok")` therefore resets to `"Ok"`, not to an empty caption.
+     */
+    override fun reset() {
+        super.reset()
+        this.content = this.defaultText
+        (this.builtNode as? FxButton)?.text = this.defaultText
+        this.enabledValue = true
+        (this.builtNode as? FxButton)?.isDisable = false
     }
 
     override fun buildNode(): Node {

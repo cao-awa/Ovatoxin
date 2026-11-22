@@ -22,6 +22,7 @@ import javafx.scene.control.TextField as FxTextField
  */
 class TextField(text: String = "") : Component<TextField>() {
 
+    private val defaultText: String = text
     private var content: String = text
     private var hintValue: String = ""
     private var editableValue: Boolean = true
@@ -74,6 +75,27 @@ class TextField(text: String = "") : Component<TextField>() {
     /** Simulates the user submitting the content, mainly useful for tests. */
     fun performSubmit() {
         this.submitHandler?.invoke(this.content)
+    }
+
+    /**
+     * Restores the content this box was created with, and clears the hint, the [editable] flag
+     * and both handlers.
+     *
+     * The content is assigned directly instead of through [text], so a reset never reports a
+     * change to the previous `onChange` handler.
+     */
+    override fun reset() {
+        super.reset()
+        this.content = this.defaultText
+        this.hintValue = ""
+        this.editableValue = true
+        this.changeHandler = null
+        this.submitHandler = null
+        val field = this.builtNode as? FxTextField ?: return
+        // The change handler is already gone, so assigning the text reports nothing.
+        field.text = this.content
+        field.promptText = ""
+        field.isEditable = true
     }
 
     override fun buildNode(): Node {

@@ -97,6 +97,13 @@ class Style {
         return this
     }
 
+    /** Restores every property to the documented default: a plain white fill, square, no text colour. */
+    internal fun reset() {
+        this.background.reset()
+        this.corner = DEFAULT_CORNER
+        this.foreground = DEFAULT_FOREGROUND
+    }
+
     /** Copies every property of [other] into this style. */
     fun copyFrom(other: Style) {
         this.background.copyFrom(other.background)

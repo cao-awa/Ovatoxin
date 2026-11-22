@@ -107,6 +107,35 @@ abstract class Component<T : Component<T>> {
     val hasOnClick: Boolean get() = this.clickHandler != null
 
     /**
+     * Restores every value of this component to the default it was created with.
+     *
+     * This runs right before a draw block is entered, so a block always starts from a known
+     * state instead of whatever an earlier draw left behind: a layout, a style, a caption or a
+     * handler that a previous draw set does not leak into the next one. The three call sites are
+     * [Container.draw], the replay of an existing child during a redraw, and [redraw] itself.
+     *
+     * ```kotlin
+     * draw(TextArea()) { text -> text.layout { x = 50.percent } }  // second draw
+     * // starts at x = 0 again, not at the 50% of the first draw.
+     * ```
+     *
+     * What counts as a default is the *construction* of the component, not the bare class: a
+     * `Button("Ok")` resets to the caption `"Ok"`, and a widget re-applies whatever its `init`
+     * block seeded — the transparent background of a [com.github.kusa233.ovatoxin.widget.Div],
+     * the foreground of a [com.github.kusa233.ovatoxin.widget.Link].
+     *
+     * What is **not** touched is the identity of the component: its [parent], the children of a
+     * container and the JavaFX node it already built stay as they are. A redraw reconciles the
+     * existing tree, it does not rebuild it.
+     */
+    open fun reset() {
+        this.layoutSpec.reset()
+        this.styleSpec.reset()
+        this.visible = true
+        this.clickHandler = null
+    }
+
+    /**
      * Registers the click handler, replacing any handler registered before.
      *
      * Inside the handler `this` is this component, so its own properties can be read directly:
@@ -174,8 +203,12 @@ abstract class Component<T : Component<T>> {
      *
      * Called by a bound [State] when its value changes. A component that is not rendered yet
      * has no node to paint, so the stored value reaches the screen when it is first shown.
+     *
+     * The component is [reset] first, so the block starts from the defaults again even when it
+     * is run for the second, tenth or hundredth time.
      */
     internal fun redraw() {
+        reset()
         replayDrawBlock()
         renderSelf()
     }

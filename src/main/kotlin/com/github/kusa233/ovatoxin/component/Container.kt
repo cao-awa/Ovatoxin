@@ -58,6 +58,9 @@ abstract class Container<T : Container<T>> : Component<T>() {
      *
      * The block is remembered as the render function of the component, so a redraw — see
      * [Component.withState] — can run it again and pick up the new value of a state.
+     *
+     * The component is [reset][Component.reset] right before [config] runs, so the block always
+     * starts from the defaults instead of inheriting what an earlier draw set.
      */
     fun <C : Component<*>> draw(component: C, config: DrawScope<C>.(C) -> Unit = {}): C {
         val replayed = replay(component, config)
@@ -66,6 +69,9 @@ abstract class Container<T : Container<T>> : Component<T>() {
         require(component.parent == null) {
             "${component::class.simpleName} is already attached to a container"
         }
+        // Start from the documented defaults, so nothing a previous draw left behind leaks into
+        // this one. The component is reset before the block runs, never after.
+        component.reset()
         component.parent = this
         this.mutableChildren += component
         val scope = DrawScope(component)
@@ -89,6 +95,9 @@ abstract class Container<T : Container<T>> : Component<T>() {
 
         @Suppress("UNCHECKED_CAST")
         val target = existing as C
+        // A redraw re-runs the block, so the replayed child starts from its defaults as well;
+        // that is what makes a value dropped from the block disappear instead of lingering.
+        target.reset()
         DrawScope(target).config(target)
         return target
     }
