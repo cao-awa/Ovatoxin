@@ -1,5 +1,6 @@
 package com.github.kusa233.ovatoxin.style
 
+import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.layout.px
 import javafx.scene.paint.Color
@@ -30,7 +31,12 @@ import kotlin.math.roundToInt
  * A percentage [corner] resolves against the *shorter* side of the box, so `50.percent` is
  * always the roundest possible corner — a pill for a wide box, a circle for a square one — no
  * matter how the window is resized.
+ *
+ * A `style { }` block is a marked DSL scope, and so is the [background][background] block inside
+ * it: a `color`, which belongs to the background, cannot be written directly in the style block,
+ * and an `x`, which belongs to the layout, cannot be written here at all.
  */
+@OvatoxinDsl
 class Style {
 
     /**

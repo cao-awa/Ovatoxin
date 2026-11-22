@@ -1,7 +1,6 @@
 package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.example.I18N.languages
-import com.github.kusa233.ovatoxin.layout.p
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style

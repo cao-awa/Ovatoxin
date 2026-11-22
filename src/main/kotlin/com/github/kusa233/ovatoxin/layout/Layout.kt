@@ -1,5 +1,7 @@
 package com.github.kusa233.ovatoxin.layout
 
+import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
+
 /**
  * The position and the size of a component inside its parent container.
  *
@@ -15,7 +17,12 @@ package com.github.kusa233.ovatoxin.layout
  * ```
  *
  * When [width] or [height] is `null` the component keeps its natural (content based) size.
+ *
+ * A `layout { }` block is a marked DSL scope: it hides the blocks around it, so a property that
+ * does not belong to it — a `corner`, a `color`, a component's `text` — is a compile error here
+ * instead of quietly configuring the enclosing block.
  */
+@OvatoxinDsl
 class Layout {
 
     /** Horizontal position, relative to the width of the parent. Defaults to `0`. */

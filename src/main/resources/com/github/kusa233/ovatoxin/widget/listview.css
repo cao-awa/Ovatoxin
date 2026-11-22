@@ -1,0 +1,75 @@
+/*
+ * The scroll bar of a list: a flat grey thumb on nothing.
+ *
+ * A scroll pane in Modena brings a frame, a raised two-tone track, arrow buttons and a focus ring
+ * with it — all of it out of place in a list, which is a plain surface of rows. This stylesheet keeps
+ * the one part of the bar that carries meaning, paints it grey and drops the rest, so the list keeps
+ * its own background and the bar reads as a thin grey line along its edge.
+ *
+ * The fill of the list itself still comes from the style layer, as inline CSS on the pane, which
+ * outranks anything said here — this file only takes away what the theme adds around it.
+ */
+
+/* No frame and no padding: the list's own background is the whole surface. */
+.ovatoxin-list {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.ovatoxin-list > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* The track paints nothing at all, so only the thumb is visible. */
+.ovatoxin-list > .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-pref-width: 8px;
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+}
+
+.ovatoxin-list > .scroll-bar:vertical > .thumb {
+    -fx-background-color: #c0c0c0;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+/* Still grey, only darker, so hovering and dragging cannot bring a colour back in. */
+.ovatoxin-list > .scroll-bar:vertical > .thumb:hover {
+    -fx-background-color: #ababab;
+}
+
+.ovatoxin-list > .scroll-bar:vertical > .thumb:pressed {
+    -fx-background-color: #969696;
+}
+
+/* No arrow buttons: the bar is the thumb and nothing else. */
+.ovatoxin-list > .scroll-bar > .increment-button,
+.ovatoxin-list > .scroll-bar > .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    -fx-opacity: 0;
+}
+
+.ovatoxin-list > .scroll-bar > .increment-button > .increment-arrow,
+.ovatoxin-list > .scroll-bar > .decrement-button > .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-opacity: 0;
+}
+
+/* The corner between the two bars; a list never scrolls sideways, so it never shows one. */
+.ovatoxin-list > .corner {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}

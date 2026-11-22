@@ -146,6 +146,13 @@ abstract class Component<T : Component<T>> {
      *
      * A component without a handler ignores clicks, unless it defines a default behaviour of its
      * own — see [com.github.kusa233.ovatoxin.widget.Link], which opens its `url` in the browser.
+     *
+     * The receiver is the component that was clicked, not a builder scope, so it deliberately
+     * carries no [com.github.kusa233.ovatoxin.dsl.OvatoxinDsl] marker: a handler is where the
+     * component is *read*, and marking [Component] would hide `this.text` style access from the
+     * very block it exists for. The builder scopes a handler could reach into — [Layout], [Style]
+     * and the style's background — are marked themselves, which is what keeps a stray
+     * `corner = 10.px` out of an enclosing block.
      */
     fun onClick(handler: T.() -> Unit): T {
         this.clickHandler = handler

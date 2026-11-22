@@ -1,5 +1,6 @@
 package com.github.kusa233.ovatoxin.component
 
+import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 import com.github.kusa233.ovatoxin.layout.Layout
 import com.github.kusa233.ovatoxin.runtime.Fx
 import javafx.scene.Node
@@ -16,9 +17,16 @@ import javafx.scene.layout.Region
  * Percentages always resolve against the container itself, not against the window, so nesting
  * a [com.github.kusa233.ovatoxin.widget.Div] rescopes them for everything inside.
  *
+ * The class is marked with [OvatoxinDsl], so a nested container's [layout] block sees only the
+ * container it declares children for, never the one around it: inside `panel.layout { }` a member
+ * that belongs to the enclosing `Frame` — its `title`, for instance — does not resolve, and the
+ * children are declared for `panel` and not by accident for the window. Calling a nested
+ * container's own `layout { }` stays valid, because that member belongs to the innermost receiver.
+ *
  * @param T the concrete subclass, so `layout { }` returns the exact type and `this` inside the
  *   block is the concrete container rather than a bare [Container].
  */
+@OvatoxinDsl
 abstract class Container<T : Container<T>> : Component<T>() {
 
     private val mutableChildren = mutableListOf<Component<*>>()

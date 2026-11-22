@@ -284,6 +284,23 @@ class ListViewTest {
     }
 
     @Test
+    fun `the scroll bar stylesheet ships beside the class`() {
+        // A missing stylesheet is silent: the pane just keeps the themed bar, so this has to fail.
+        val sheet = requireNotNull(ListView::class.java.getResource("listview.css")) {
+            "listview.css is not on the classpath next to ListView"
+        }
+
+        val css = sheet.readText()
+        assertTrue(css.contains("#c0c0c0"), "the thumb is not grey")
+        assertTrue(css.contains("> .thumb"), "the stylesheet does not reach the thumb")
+        assertTrue(css.contains("-fx-border-width: 0"), "the bar keeps a border")
+        assertTrue(
+            css.contains(".${ListView.STYLE_CLASS}"),
+            "the stylesheet does not use the style class the list sets",
+        )
+    }
+
+    @Test
     fun `a row can be appended`() {
         val list = ListView(listOf("a"))
         list.add("b")

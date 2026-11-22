@@ -4,6 +4,7 @@ import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.style.cssColor
 import javafx.scene.Node
 import javafx.scene.control.Label
+import javafx.scene.control.ScrollPane
 import javafx.scene.input.MouseButton
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
@@ -65,6 +66,12 @@ import javafx.scene.paint.Color
  * - the background is [DEFAULT_BACKGROUND] (`#ffffff`), overridable through the `background` of a
  *   [style][com.github.kusa233.ovatoxin.component.DrawScope.style] block;
  * - the text colour is [DEFAULT_FOREGROUND] (`#000000`), overridable through its `foreground`.
+ *
+ * Once the rows are taller than the list, the list scrolls: a bar appears along its right edge with
+ * a flat grey thumb on it and nothing else — no frame, no track, no arrow buttons, no focus ring —
+ * so the only thing the bar adds to the list is the thumb. The rows keep sitting on the fill of the
+ * list itself, which stays clean behind the bar. Nothing has to be switched on for this, and there
+ * is no scroll position to keep: adding a row past the bottom simply makes the list scrollable.
  *
  * The selection is the only thing a redraw resets. The rows are the live collection the caller
  * mutates, not a value a draw block writes, so they survive a redraw — which is what makes it
@@ -313,13 +320,34 @@ class ListView<T>(
         refreshRows()
     }
 
+    /**
+     * The rows, inside a scroll pane that shows a plain grey bar once they outgrow the list.
+     *
+     * A growable list ends up with more rows than fit, so the rows live in a scroll pane and it
+     * brings the bar that makes the rest reachable. Only the bar is meant to be seen: the pane is
+     * dressed down to no frame, no focus ring, no arrows and no track, just a grey thumb, so the
+     * rows still sit on the fill the style layer paints on the list itself.
+     *
+     * The dressing is a stylesheet ([STYLESHEET] in `resources`) rather than inline CSS, because
+     * the bar is a child of the pane and the style layer only ever writes onto the list's own node.
+     * A stylesheet of ours also outranks Modena's, which is what a plain grey bar needs.
+     */
     override fun buildNode(): Node {
         val box = VBox()
         // Rows span the full width, so the selection highlight reads as a bar rather than a tag.
         box.isFillWidth = true
         this.box = box
         rebuildRows()
-        return box
+
+        val pane = ScrollPane(box)
+        // A list only ever scrolls down: its rows are as wide as the list by construction.
+        pane.hbarPolicy = ScrollPane.ScrollBarPolicy.NEVER
+        pane.vbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
+        // Rows stretch to the width of the viewport instead of asking for their own text width.
+        pane.isFitToWidth = true
+        pane.styleClass += STYLE_CLASS
+        ListView::class.java.getResource(STYLESHEET)?.let { pane.stylesheets += it.toExternalForm() }
+        return pane
     }
 
     /** Re-paints the rows after a style pass, because a row carries the text colour itself. */
@@ -437,6 +465,12 @@ class ListView<T>(
 
         /** The [selectedIndex] value of a list without a selection. */
         const val NO_SELECTION: Int = -1
+
+        /** Style class every OvatoXin list carries; the scroll bar styling hangs off it. */
+        const val STYLE_CLASS: String = "ovatoxin-list"
+
+        /** The stylesheet of the scroll bar, next to this class in `resources`. */
+        private const val STYLESHEET: String = "listview.css"
 
         /** Top, right, bottom and left padding of a row, in pixels. */
         private const val ROW_PADDING: String = "6 10 6 10"

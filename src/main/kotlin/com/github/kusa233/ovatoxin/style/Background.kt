@@ -1,5 +1,6 @@
 package com.github.kusa233.ovatoxin.style
 
+import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 import javafx.scene.paint.Color
 
 /**
@@ -20,7 +21,11 @@ import javafx.scene.paint.Color
  *
  * Neither source draws a border: the fill alone defines the shape, and the corner radius of the
  * enclosing [Style] rounds it.
+ *
+ * A `background { }` block is a marked DSL scope: inside it only the members of the background
+ * are reachable by name, so `corner` or `foreground` cannot be set by accident from here.
  */
+@OvatoxinDsl
 class Background {
 
     /**
