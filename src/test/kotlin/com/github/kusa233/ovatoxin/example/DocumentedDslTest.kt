@@ -1,5 +1,6 @@
 package com.github.kusa233.ovatoxin.example
 
+import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.runtime.Browser
 import com.github.kusa233.ovatoxin.state.State
@@ -382,10 +383,10 @@ class DocumentedDslTest {
 
     @Test
     fun `the progress bar snippet compiles and follows its state`() {
-        val done = State(0.0)
+        val done = State(Percent.ZERO)
         val frame = Frame()
         frame.layout {
-            draw(ProgressBar(0.4)) { bar ->
+            draw(ProgressBar(40.percent)) { bar ->
                 layout(
                     10.percent, 10.percent, 80.percent, 4.percent
                 )
@@ -396,12 +397,19 @@ class DocumentedDslTest {
         }
 
         val bar = frame.children[0] as ProgressBar
-        assertEquals(0.0, bar.progress)
-        assertFalse(bar.isNodeCreated, "a fraction must not need a toolkit")
+        assertEquals(Percent.ZERO, bar.progress)
+        assertFalse(bar.isNodeCreated, "a progress alone must not need a toolkit")
 
-        done.update(0.5)
+        done.update(50.percent)
 
-        assertEquals(0.5, bar.progress)
+        assertEquals(50.percent, bar.progress)
+    }
+
+    @Test
+    fun `the progress bar takes its start in percent as well as in a fraction`() {
+        assertEquals(40.percent, ProgressBar(40.percent).progress)
+        assertEquals(ProgressBar(0.4).progress, ProgressBar(40.percent).progress)
+        assertEquals(100.percent, ProgressBar(400.percent).progress)
     }
 
     @Test

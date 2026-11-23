@@ -2,14 +2,17 @@ package com.github.kusa233.ovatoxin.layout
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class LengthTest {
 
     @Test
     fun `percent and p alias produce identical lengths`() {
         assertEquals(10.percent, 10.p)
-        assertEquals(Length.Kind.PERCENT, 10.percent.kind)
+        assertIs<Percent>(10.percent)
         assertEquals(10.0, 10.percent.value)
     }
 
@@ -21,7 +24,7 @@ class LengthTest {
 
     @Test
     fun `pixels are absolute`() {
-        assertEquals(Length.Kind.PIXELS, 24.px.kind)
+        assertIs<Pixel>(24.px)
         assertEquals(24.0, 24.px.resolve(500.0))
     }
 
@@ -36,7 +39,7 @@ class LengthTest {
     @Test
     fun `toPixels freezes a relative length`() {
         val frozen = 10.percent.toPixels(800.0)
-        assertEquals(Length.Kind.PIXELS, frozen.kind)
+        assertIs<Pixel>(frozen)
         assertEquals(80.0, frozen.resolve(100.0))
     }
 
@@ -45,6 +48,91 @@ class LengthTest {
         assertEquals("10%", 10.percent.toString())
         assertEquals("12.5%", 12.5.percent.toString())
         assertEquals("10px", 10.px.toString())
+    }
+
+    @Test
+    fun `zero is empty in either unit`() {
+        assertEquals(0.px, Pixel.ZERO)
+        assertEquals(0.percent, Percent.ZERO)
+        assertEquals(Pixel.ZERO, Length.ZERO)
+        assertTrue(Length.ZERO.isZero)
+        assertTrue(Percent.ZERO.isZero)
+        assertTrue(!Length.FULL.isZero)
+    }
+
+    @Test
+    fun `the zero of one unit is not the zero of the other`() {
+        val emptyPercent: Length = Percent.ZERO
+        val emptyPixel: Length = Pixel.ZERO
+
+        // Both are nothing, but they are not the same length, so neither can feed the other's
+        // operators.
+        assertNotEquals(emptyPercent, emptyPixel)
+    }
+
+    @Test
+    fun `lengths of the same unit compare`() {
+        assertTrue(1.percent <= 1.percent)
+        assertTrue(1.percent >= 1.percent)
+        assertTrue(2.percent > 1.percent)
+        assertTrue(1.percent < 2.percent)
+        assertTrue(10.px > 4.px)
+        assertEquals(0, 4.px.compareTo(4.px))
+    }
+
+    @Test
+    fun `lengths of the same unit add and subtract`() {
+        assertEquals(3.percent, 1.percent + 2.percent)
+        assertEquals(-1.percent, 1.percent - 2.percent)
+        assertEquals(6.px, 2.px + 4.px)
+        assertEquals(2.px, 6.px - 4.px)
+    }
+
+    @Test
+    fun `a zero stays in its own unit`() {
+        assertEquals(1.percent, Percent.ZERO + 1.percent)
+        assertEquals(1.px, Pixel.ZERO + 1.px)
+    }
+
+    @Test
+    fun `arithmetic never changes the unit`() {
+        assertIs<Percent>(1.percent + 2.percent)
+        assertIs<Percent>(Percent.ZERO + 1.percent)
+        assertIs<Percent>(Percent.ZERO - 1.percent)
+        assertIs<Percent>(Percent.ZERO * 2)
+
+        assertIs<Pixel>(1.px + 2.px)
+        assertIs<Pixel>(Pixel.ZERO + 1.px)
+        assertIs<Pixel>(Pixel.ZERO - 1.px)
+        assertIs<Pixel>(Pixel.ZERO * 2)
+    }
+
+    @Test
+    fun `scaling stays in the same unit`() {
+        assertEquals(20.percent, 10.percent * 2)
+        assertEquals(20.percent, 10.percent * 2.0)
+        assertEquals(20.px, 10.px * 2)
+        assertEquals(5.percent, 10.percent / 2)
+        assertEquals(5.px, 10.px / 2.0)
+        assertEquals(20.percent, 2 * 10.percent)
+        assertEquals(20.px, 2.0 * 10.px)
+        assertEquals(-10.percent, -(10.percent))
+    }
+
+    @Test
+    fun `dividing two lengths gives a ratio`() {
+        assertEquals(4.0, 100.percent / 25.percent)
+        assertEquals(2.5, 10.px / 4.px)
+    }
+
+    @Test
+    fun `a progress loop advances in percent`() {
+        var done = Percent.ZERO
+        while (done < Length.FULL) {
+            done += 1.percent
+        }
+        assertEquals(Length.FULL, done)
+        assertEquals(0, done.compareTo(100.percent))
     }
 }
 

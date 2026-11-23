@@ -5,7 +5,8 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 /**
  * The position and the size of a component inside its parent container.
  *
- * Every value is a [Length], so absolute pixels and percentages can be mixed freely:
+ * Every value is a [Length], so each of the four slots takes either unit — a percentage for a size
+ * that follows the window, a pixel for one that must not:
  *
  * ```kotlin
  * layout {
@@ -16,6 +17,10 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
  * }
  * ```
  *
+ * Choosing a unit per slot is not the same as mixing units inside one value: a [Percent] only does
+ * arithmetic with a [Percent] and a [Pixel] only with a [Pixel], so no slot can end up holding a
+ * length whose unit is half of one and half of the other.
+ *
  * When [width] or [height] is `null` the component keeps its natural (content based) size.
  *
  * A `layout { }` block is a marked DSL scope: it hides the blocks around it, so a property that
@@ -25,10 +30,16 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 @OvatoxinDsl
 class Layout {
 
-    /** Horizontal position, relative to the width of the parent. Defaults to `0`. */
+    /**
+     * Horizontal offset from the left edge of the parent: `10.percent` of its width, or `10.px`.
+     * Defaults to [Length.ZERO], i.e. flush left.
+     */
     var x: Length = Length.ZERO
 
-    /** Vertical position, relative to the height of the parent. Defaults to `0`. */
+    /**
+     * Vertical offset from the top edge of the parent: `10.percent` of its height, or `10.px`.
+     * Defaults to [Length.ZERO], i.e. flush top.
+     */
     var y: Length = Length.ZERO
 
     /** Width of the component. `null` means "as wide as the content needs". */

@@ -1,6 +1,8 @@
 package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.example.I18N.languages
+import com.github.kusa233.ovatoxin.layout.Length
+import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
@@ -25,7 +27,7 @@ fun main() {
 
 fun testProgressBarWithState(frame: Frame) {
     frame.layout {
-        val progress = State(0.0)
+        val progress = State(Percent.ZERO)
         draw(ProgressBar()) { bar ->
             layout(
                 10.percent, 10.percent,
@@ -37,7 +39,7 @@ fun testProgressBarWithState(frame: Frame) {
         Thread.startVirtualThread {
             while (true) {
                 progress.update(
-                    if (progress.value >= 1.0) 0.0 else progress.value + 0.01
+                    if (progress.value >= 100.percent) 0.percent else progress.value + 1.percent
                 )
                 Thread.sleep(100)
             }
@@ -57,7 +59,7 @@ fun testProgressBar(frame: Frame) {
         Thread.startVirtualThread {
             while (true) {
                 progress.progress(
-                    if (progress.progress >= 1.0) 0.0 else progress.progress + 0.01
+                    if (progress.progress >= 100.percent) 0.percent else progress.progress + 1.percent
                 )
                 Thread.sleep(100)
             }

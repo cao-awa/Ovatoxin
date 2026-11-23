@@ -35,14 +35,14 @@ fun main() {
     val picked = mutableListOf<String>()
 
     frame.layout {
-        bar = draw(ProgressBar(0.25)) { component ->
+        bar = draw(ProgressBar(25.percent)) { component ->
             layout {
                 x = 10.percent
                 y = 10.percent
                 width = 80.percent
                 height = 8.percent
             }
-            component.progress = 0.25
+            component.progress = 25.percent
         }
 
         box = draw(CheckBox("Remember me")) { component ->
@@ -81,7 +81,7 @@ fun main() {
             println()
             println("=== control probe ===")
             println("window : ${frame.stage?.title}")
-            println("bar    : ${if (barOk) "ok  " else "FAIL"} the bar shows the fraction it was given")
+            println("bar    : ${if (barOk) "ok  " else "FAIL"} the bar shows the percentage it was given")
             println("box    : ${if (boxOk) "ok  " else "FAIL"} a click ticks the box and reports it once")
             println("combo  : ${if (comboOk) "ok  " else "FAIL"} the dropdown shows its items and reports the picked one")
             println()
@@ -104,25 +104,25 @@ private fun progressBar(bar: ProgressBar): Boolean {
     val node = bar.node as FxProgressBar
 
     val created = near(node.progress, 0.25)
-    bar.progress = 0.75
+    bar.progress = 75.percent
     val written = near(node.progress, 0.75)
 
     // A style corner has to reach the node as a radius, or the bar cannot be rounded.
     bar.applyStyle { corner = 4.percent }
     val rounded = (node.style ?: "").contains("-fx-background-radius")
 
-    bar.progress = 1.4
-    val clamped = near(node.progress, 1.0) && near(bar.progress, 1.0)
+    bar.progress = 140.percent
+    val clamped = near(node.progress, 1.0) && near(bar.progress(), 1.0)
 
     bar.reset()
     val restored = near(node.progress, 0.25)
 
     println()
     println("progress bar (node ${probeNum(node.layoutBounds.width)}x${probeNum(node.layoutBounds.height)})")
-    println("  created : ${mark(created)} starts at 0.25")
-    println("  write   : ${mark(written)} progress = 0.75 reaches the control")
+    println("  created : ${mark(created)} starts at 25.percent")
+    println("  write   : ${mark(written)} progress = 75.percent reaches the control")
     println("  corner  : ${mark(rounded)} a corner in the style block becomes a radius")
-    println("  clamp   : ${mark(clamped)} 1.4 shows as a full bar instead of throwing")
+    println("  clamp   : ${mark(clamped)} 140.percent shows as a full bar instead of throwing")
     println("  reset   : ${mark(restored)} the construction value is back")
     return created && written && rounded && clamped && restored
 }

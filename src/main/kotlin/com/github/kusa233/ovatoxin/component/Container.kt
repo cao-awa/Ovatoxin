@@ -3,6 +3,7 @@ package com.github.kusa233.ovatoxin.component
 import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 import com.github.kusa233.ovatoxin.layout.Layout
 import com.github.kusa233.ovatoxin.runtime.Fx
+import javafx.application.Platform
 import javafx.scene.Node
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Region
@@ -10,8 +11,8 @@ import javafx.scene.layout.Region
 /**
  * Base class of every component that can hold children.
  *
- * Children are declared with [draw]; their geometry is expressed by a [Layout] that mixes
- * percentages of the container size with absolute pixels. Layouts are re-resolved whenever
+ * Children are declared with [draw]; their geometry is expressed by a [Layout] whose slots each take
+ * a percentage of the container size or an absolute pixel count. Layouts are re-resolved whenever
  * the container is resized.
  *
  * Percentages always resolve against the container itself, not against the window, so nesting
@@ -146,7 +147,11 @@ abstract class Container<T : Container<T>> : Component<T>() {
     /** Re-applies the geometry of every child. */
     internal fun relayout() {
         val host = this.pane ?: return
-        Fx.runOnFxThread { applyGeometry(host) }
+        if (Platform.isFxApplicationThread()) {
+            applyGeometry(host)
+        } else {
+            Fx.runOnFxThread { applyGeometry(host) }
+        }
     }
 
     /**
