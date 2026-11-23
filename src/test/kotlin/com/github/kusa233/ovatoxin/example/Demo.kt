@@ -36,11 +36,9 @@ fun testProgressBarWithState(frame: Frame) {
 
         Thread.startVirtualThread {
             while (true) {
-                if (progress.value >= 1.0) {
-                    progress.update(0.0)
-                } else {
-                    progress.update(progress.value + 0.01)
-                }
+                progress.update(
+                    if (progress.value >= 1.0) 0.0 else progress.value + 0.01
+                )
                 Thread.sleep(100)
             }
         }
@@ -58,11 +56,9 @@ fun testProgressBar(frame: Frame) {
 
         Thread.startVirtualThread {
             while (true) {
-                if (progress.progress() >= 1.0) {
-                    progress.progress(0.0)
-                } else {
-                    progress.progress(progress.progress() + 0.01)
-                }
+                progress.progress(
+                    if (progress.progress >= 1.0) 0.0 else progress.progress + 0.01
+                )
                 Thread.sleep(100)
             }
         }
