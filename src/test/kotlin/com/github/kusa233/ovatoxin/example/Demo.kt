@@ -19,8 +19,32 @@ import javafx.scene.paint.Color
 fun main() {
     val frame = Frame()
     frame.title = "Ovatoxin – DSL demo"
-    testProgressBar(frame)
+    testProgressBarWithState(frame)
     frame.show()
+}
+
+fun testProgressBarWithState(frame: Frame) {
+    frame.layout {
+        val progress = State(0.0)
+        draw(ProgressBar()) { bar ->
+            layout(
+                10.percent, 10.percent,
+                80.percent, 5.percent
+            )
+            bar.progress(progress.value)
+        }.withState(progress)
+
+        Thread.startVirtualThread {
+            while (true) {
+                if (progress.value >= 1.0) {
+                    progress.update(0.0)
+                } else {
+                    progress.update(progress.value + 0.01)
+                }
+                Thread.sleep(100)
+            }
+        }
+    }
 }
 
 fun testProgressBar(frame: Frame) {
@@ -34,7 +58,7 @@ fun testProgressBar(frame: Frame) {
 
         Thread.startVirtualThread {
             while (true) {
-                if (progress.progress() == 1.0) {
+                if (progress.progress() >= 1.0) {
                     progress.progress(0.0)
                 } else {
                     progress.progress(progress.progress() + 0.01)
