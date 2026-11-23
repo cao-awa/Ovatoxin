@@ -1,0 +1,52 @@
+/*
+ * A checkbox painted in flat colours.
+ *
+ * Modena draws the little square as four stacked background layers — a shadow highlight, an outer
+ * border, an inner border and a body gradient — with insets that leave each one visible as a rim, so
+ * the box reads as a raised, shaded chip. The tick is stacked the same way, in a highlight shade over
+ * a mark shade and offset by an inset. None of that belongs in this library, where every component
+ * is a flat fill.
+ *
+ * Here the box is one white layer inside one solid hairline, and the tick one solid layer. Hovering,
+ * pressing and focusing re-shade the box in Modena, so those states are declared as well: each keeps
+ * the box exactly as it is, which is what stops a second shade appearing under the pointer.
+ *
+ * The hairline is not decoration. An unchecked box is white, and the default fill of a component is
+ * white too, so a box without an outline would disappear. One flat grey line is the cheapest way to
+ * keep it visible over any fill without bringing a gradient back.
+ */
+
+/* No frame of its own: the box below is the whole shape. */
+.ovatoxin-checkbox {
+    -fx-border-width: 0;
+}
+
+/* The square: one white layer inside one grey hairline, edge to edge. */
+.ovatoxin-checkbox > .box {
+    -fx-background-color: #ffffff;
+    -fx-background-insets: 0;
+    -fx-background-radius: 2;
+    -fx-border-color: #c0c0c0;
+    -fx-border-width: 1;
+    -fx-border-radius: 2;
+    -fx-padding: 0.166667em 0.166667em 0.25em 0.25em;
+}
+
+/* Hovering, pressing and focusing must not re-shade it: same box, same colour, same hairline. */
+.ovatoxin-checkbox:hover > .box,
+.ovatoxin-checkbox:armed > .box,
+.ovatoxin-checkbox:focused > .box {
+    -fx-background-color: #ffffff;
+    -fx-background-insets: 0;
+    -fx-background-radius: 2;
+    -fx-border-color: #c0c0c0;
+    -fx-border-width: 1;
+    -fx-border-radius: 2;
+}
+
+/* The tick: one solid colour, one layer, instead of a highlight over a mark shade. */
+.ovatoxin-checkbox:selected > .box > .mark,
+.ovatoxin-checkbox:indeterminate > .box > .mark {
+    -fx-background-color: #000000;
+    -fx-background-insets: 0;
+}

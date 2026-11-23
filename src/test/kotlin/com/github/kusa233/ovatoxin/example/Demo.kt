@@ -5,9 +5,12 @@ import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.Button
+import com.github.kusa233.ovatoxin.widget.CheckBox
+import com.github.kusa233.ovatoxin.widget.ComboBox
 import com.github.kusa233.ovatoxin.widget.Div
 import com.github.kusa233.ovatoxin.widget.Link
 import com.github.kusa233.ovatoxin.widget.ListView
+import com.github.kusa233.ovatoxin.widget.ProgressBar
 import com.github.kusa233.ovatoxin.widget.TextArea
 import com.github.kusa233.ovatoxin.widget.TextField
 import com.github.kusa233.ovatoxin.window.Frame
@@ -16,8 +19,57 @@ import javafx.scene.paint.Color
 fun main() {
     val frame = Frame()
     frame.title = "Ovatoxin – DSL demo"
-    testList(frame)
+    testProgressBar(frame)
     frame.show()
+}
+
+fun testProgressBar(frame: Frame) {
+    frame.layout {
+        val progress = draw(ProgressBar()) {
+            layout(
+                10.percent, 10.percent,
+                80.percent, 5.percent
+            )
+        }
+
+        Thread.startVirtualThread {
+            while (true) {
+                if (progress.progress() == 1.0) {
+                    progress.progress(0.0)
+                } else {
+                    progress.progress(progress.progress() + 0.01)
+                }
+                Thread.sleep(100)
+            }
+        }
+    }
+}
+
+fun testComboBox(frame: Frame) {
+    frame.layout {
+        draw(ComboBox(listOf("A", "B"))) { comboBox ->
+            layout {
+                x = 10.percent
+                y = 10.percent
+                width = 10.percent
+                height = 5.percent
+            }
+        }
+    }
+}
+
+fun testCheckBox(frame: Frame) {
+    frame.layout {
+        draw(CheckBox()) { checkBox ->
+            layout {
+                x = 10.percent
+                y = 10.percent
+                width = 30.percent
+                height = 5.percent
+            }
+            checkBox.text = "Remember"
+        }
+    }
 }
 
 fun testButton(frame: Frame) {

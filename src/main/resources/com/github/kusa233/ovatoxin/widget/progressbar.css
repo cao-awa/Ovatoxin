@@ -1,0 +1,45 @@
+/*
+ * A progress bar painted in flat colours.
+ *
+ * Modena fills both parts of the bar with gradients. The track layers three things on top of each
+ * other — a shadow highlight, a border gradient and a body gradient — and the filled part is a
+ * four-stop gradient that is lighter at the top than at the bottom. On a bar a few pixels tall that
+ * reads as a smear rather than as a fill, and it fights the flat fills the rest of this library
+ * draws.
+ *
+ * Here each part is one colour painted as a single layer with no insets. Both halves of that matter:
+ * a second layer, or an inset that lets the layer underneath show at the edge, puts a second shade
+ * on screen somewhere in the bar, which is exactly the transition being removed.
+ *
+ * The track paints nothing at all, so the empty part of the bar is the fill the style layer puts on
+ * the bar as a whole — whatever `background { color = … }` says. Progress is then one solid band on
+ * top of it, and the band needs no radius of its own: the control is clipped to the rounded outline
+ * the style resolves, so the band follows the bar's corners at any progress value.
+ */
+
+/* No frame and no padding of its own: the bar's surface is the fill the style layer paints on it. */
+.ovatoxin-progress {
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+/* The empty part of the bar: transparent, so the bar's own fill shows through unchanged. */
+.ovatoxin-progress > .track {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+}
+
+/* The filled part: one solid colour, one layer, edge to edge. */
+.ovatoxin-progress > .bar {
+    -fx-background-color: #0096c9;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}
+
+/* Indeterminate progress slides a gradient along the bar in Modena; keep it one colour too. */
+.ovatoxin-progress:indeterminate > .bar {
+    -fx-background-color: #0096c9;
+    -fx-background-insets: 0;
+}

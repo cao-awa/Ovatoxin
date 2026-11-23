@@ -5,8 +5,11 @@ import com.github.kusa233.ovatoxin.runtime.Browser
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.Button
+import com.github.kusa233.ovatoxin.widget.CheckBox
+import com.github.kusa233.ovatoxin.widget.ComboBox
 import com.github.kusa233.ovatoxin.widget.Div
 import com.github.kusa233.ovatoxin.widget.Link
+import com.github.kusa233.ovatoxin.widget.ProgressBar
 import com.github.kusa233.ovatoxin.widget.TextArea
 import com.github.kusa233.ovatoxin.widget.TextField
 import com.github.kusa233.ovatoxin.window.Frame
@@ -14,6 +17,7 @@ import javafx.scene.paint.Color
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -375,4 +379,95 @@ class DocumentedDslTest {
         assertEquals(before, text.text())
         assertEquals("zh-cn", state.value)
     }
+
+    @Test
+    fun `the progress bar snippet compiles and follows its state`() {
+        val done = State(0.0)
+        val frame = Frame()
+        frame.layout {
+            draw(ProgressBar(0.4)) { bar ->
+                layout(
+                    10.percent, 10.percent, 80.percent, 4.percent
+                )
+                style { corner = 50.percent }
+                // The drawn block reads the state, so a redraw refills the bar.
+                bar.progress = done.value
+            }.withState(done)
+        }
+
+        val bar = frame.children[0] as ProgressBar
+        assertEquals(0.0, bar.progress)
+        assertFalse(bar.isNodeCreated, "a fraction must not need a toolkit")
+
+        done.update(0.5)
+
+        assertEquals(0.5, bar.progress)
+    }
+
+    @Test
+    fun `the check box snippet compiles and reports a click`() {
+        val reported = mutableListOf<Boolean>()
+        val frame = Frame()
+        frame.layout {
+            draw(CheckBox("Remember me")) { box ->
+                layout(
+                    10.percent, 20.percent, 80.percent, 6.percent
+                )
+                box.onChange { checked -> reported += checked }
+            }
+        }
+
+        val box = frame.children[0] as CheckBox
+        assertEquals("Remember me", box.text)
+        box.performClick()
+
+        assertEquals(listOf(true), reported)
+        assertTrue(box.checked)
+    }
+
+    @Test
+    fun `the combo box snippet compiles and reports the picked item`() {
+        val picked = mutableListOf<String>()
+        val frame = Frame()
+        frame.layout {
+            draw(ComboBox(listOf("Small", "Medium", "Large"))) { combo ->
+                layout(
+                    10.percent, 30.percent, 80.percent, 7.percent
+                )
+                combo.prompt = "Pick a size"
+                combo.selectedIndex = 1
+                combo.onSelectItem { size -> picked += size }
+            }
+        }
+
+        val combo = frame.children[0] as ComboBox<*>
+        assertEquals("Medium", combo.selectedItem)
+        assertEquals("Pick a size", combo.prompt)
+        assertTrue(picked.isEmpty(), "a selection the caller made is silent")
+
+        combo.selectFromUser(2)
+
+        assertEquals(listOf("Large"), picked)
+    }
+
+    @Test
+    fun `the formatted combo box snippet compiles and reads items through the formatter`() {
+        val combo = ComboBox(listOf(Size("Small"), Size("Medium"))) { it.name }
+        combo.selectedIndex = 1
+
+        assertEquals("Medium", combo.selectedText)
+    }
+
+    @Test
+    fun `the live combo box snippet compiles and grows`() {
+        val combo = ComboBox(listOf("Small", "Medium", "Large"))
+
+        combo.items.add("Extra Large")
+
+        assertEquals(4, combo.size)
+        assertEquals("Extra Large", combo.item(3))
+    }
+
+    /** A custom item type, as the formatted snippet uses. */
+    private data class Size(val name: String)
 }
