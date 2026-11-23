@@ -126,9 +126,9 @@ class DivTest {
     @Test
     fun `a div cannot be drawn twice`() {
         val div = Div()
-        Frame().draw(div)
+        Frame().layout { draw(div) }
 
-        val failure = runCatching { Frame().draw(div) }.exceptionOrNull()
+        val failure = runCatching { Frame().layout { draw(div) } }.exceptionOrNull()
         assertTrue(failure is IllegalArgumentException)
     }
 }

@@ -8,7 +8,8 @@ import javafx.scene.Node
 import javafx.scene.input.MouseButton
 
 /**
- * Base class of everything that can be drawn into a [Container].
+ * Base class of everything that can be drawn into a
+ * [ComponentDrawable][com.github.kusa233.ovatoxin.component.ComponentDrawable].
  *
  * A component owns a [layoutSpec], a [styleSpec] and knows its [parent]. The backing JavaFX
  * [Node] is created lazily on the JavaFX thread, so component trees can be built and inspected
@@ -112,7 +113,8 @@ abstract class Component<T : Component<T>> {
      * This runs right before a draw block is entered, so a block always starts from a known
      * state instead of whatever an earlier draw left behind: a layout, a style, a caption or a
      * handler that a previous draw set does not leak into the next one. The three call sites are
-     * [Container.draw], the replay of an existing child during a redraw, and [redraw] itself.
+     * [SurfaceScope.draw], the replay of an existing child during a redraw, and [redraw]
+     * itself.
      *
      * ```kotlin
      * draw(TextArea()) { text -> text.layout { x = 50.percent } }  // second draw
@@ -188,7 +190,7 @@ abstract class Component<T : Component<T>> {
      * A component can be bound to more than one state; each of them redraws it.
      *
      * @return this component, so the call chains onto the result of
-     *   [com.github.kusa233.ovatoxin.component.Container.draw].
+     *   [com.github.kusa233.ovatoxin.component.SurfaceScope.draw].
      */
     fun withState(state: State<*>): T {
         state.bind(this)

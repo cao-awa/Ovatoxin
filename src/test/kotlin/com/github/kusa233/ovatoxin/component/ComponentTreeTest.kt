@@ -75,7 +75,7 @@ class ComponentTreeTest {
     fun `remove detaches a child`() {
         val frame = Frame()
         val text = TextArea()
-        frame.draw(text)
+        frame.layout { draw(text) }
         assertSame(frame, text.parent)
 
         frame.remove(text)
@@ -134,9 +134,9 @@ class ComponentTreeTest {
     fun `a component cannot be attached twice`() {
         val frame = Frame()
         val text = TextArea()
-        frame.draw(text)
+        frame.layout { draw(text) }
 
-        val failure = runCatching { Frame().draw(text) }.exceptionOrNull()
+        val failure = runCatching { Frame().layout { draw(text) } }.exceptionOrNull()
         assertTrue(failure is IllegalArgumentException)
     }
 

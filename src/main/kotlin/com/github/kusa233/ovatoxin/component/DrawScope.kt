@@ -6,7 +6,7 @@ import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.style.Style
 
 /**
- * The scope of one [Container.draw] call.
+ * The scope of one [SurfaceScope.draw] call.
  *
  * It offers the blocks that belong to a single component — [layout] and [style] — while the
  * drawn component itself is available as the lambda parameter:

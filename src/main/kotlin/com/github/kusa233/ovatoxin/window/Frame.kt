@@ -1,6 +1,6 @@
 package com.github.kusa233.ovatoxin.window
 
-import com.github.kusa233.ovatoxin.component.Container
+import com.github.kusa233.ovatoxin.component.ComponentDrawable
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.runtime.Fx
 import javafx.scene.Node
@@ -22,6 +22,10 @@ import javafx.stage.Stage
  *
  * The size of the frame is the reference size for percentage based layouts of its children.
  * Percentages are resolved against the current window size and re-resolved on resize.
+ *
+ * A frame is a drawing surface, so `draw(...)` is available inside its
+ * [layout][com.github.kusa233.ovatoxin.component.ComponentDrawable.layout] block — see
+ * [ComponentDrawable].
  */
 class Frame(
     /** The title bar text of the window. */
@@ -30,7 +34,7 @@ class Frame(
     width: Double = DEFAULT_WIDTH,
     /** The initial window height in pixels. */
     height: Double = DEFAULT_HEIGHT,
-) : Container<Frame>() {
+) : ComponentDrawable<Frame>() {
 
     private val defaultTitle: String = title
     private val defaultWidth: Double = width

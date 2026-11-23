@@ -1,7 +1,9 @@
 package com.github.kusa233.ovatoxin.dsl
 
+import com.github.kusa233.ovatoxin.component.ComponentDrawable
 import com.github.kusa233.ovatoxin.component.Container
 import com.github.kusa233.ovatoxin.component.DrawScope
+import com.github.kusa233.ovatoxin.component.SurfaceScope
 import com.github.kusa233.ovatoxin.layout.Layout
 import com.github.kusa233.ovatoxin.style.Background
 import com.github.kusa233.ovatoxin.style.Style
@@ -23,7 +25,9 @@ class DslMarkerTest {
         "style block" to Style::class,
         "background block" to Background::class,
         "draw block" to DrawScope::class,
+        "surface block" to SurfaceScope::class,
         "container block" to Container::class,
+        "drawable block" to ComponentDrawable::class,
     )
 
     @Test

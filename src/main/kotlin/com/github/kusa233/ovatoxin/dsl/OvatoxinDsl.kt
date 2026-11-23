@@ -3,8 +3,9 @@ package com.github.kusa233.ovatoxin.dsl
 /**
  * Marks the receiver types of the OvatoXin DSL.
  *
- * The DSL nests blocks with receivers: a [com.github.kusa233.ovatoxin.component.Container.draw]
- * block hands over a [com.github.kusa233.ovatoxin.component.DrawScope], and that scope opens a
+ * The DSL nests blocks with receivers: a
+ * [com.github.kusa233.ovatoxin.component.SurfaceScope.draw] block hands over a
+ * [com.github.kusa233.ovatoxin.component.DrawScope], and that scope opens a
  * [com.github.kusa233.ovatoxin.layout.Layout] block and a
  * [com.github.kusa233.ovatoxin.style.Style] block, which in turn opens a
  * [com.github.kusa233.ovatoxin.style.Background] block. Every one of them exposes properties of

@@ -137,10 +137,15 @@ class StateTest {
         val state = State("zh-cn")
         val translations = this.languages
         val frame = Frame()
-        val bound = frame.draw(TextArea()) { area ->
-            area.text(translations.getValue(state.value).getValue("test.translation"))
-        }.withState(state)
-        val sibling = frame.draw(TextArea()) { area -> area.text("never changes") }
+        val bound = TextArea()
+        val sibling = TextArea()
+        frame.layout {
+            draw(bound) { area ->
+                area.text(translations.getValue(state.value).getValue("test.translation"))
+            }
+            draw(sibling) { area -> area.text("never changes") }
+        }
+        bound.withState(state)
 
         assertEquals("翻译测试", bound.text)
         assertEquals("never changes", sibling.text)
@@ -158,9 +163,13 @@ class StateTest {
         val state = State("zh-cn")
         val translations = this.languages
         val frame = Frame()
-        frame.draw(TextArea()) { area ->
-            area.text(translations.getValue(state.value).getValue("test.translation"))
-        }.withState(state)
+        val text = TextArea()
+        frame.layout {
+            draw(text) { area ->
+                area.text(translations.getValue(state.value).getValue("test.translation"))
+            }
+        }
+        text.withState(state)
 
         state.update("en-us")
         state.update("zh-cn")

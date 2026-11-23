@@ -131,8 +131,8 @@ class ProgressBarTest {
     @Test
     fun `a bar cannot be drawn twice`() {
         val bar = ProgressBar()
-        Frame().draw(bar)
+        Frame().layout { draw(bar) }
 
-        assertFailsWith<IllegalArgumentException> { Frame().draw(bar) }
+        assertFailsWith<IllegalArgumentException> { Frame().layout { draw(bar) } }
     }
 }

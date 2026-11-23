@@ -653,10 +653,10 @@ class ListViewTest {
     fun `a list cannot be drawn twice`() {
         val frame = com.github.kusa233.ovatoxin.window.Frame()
         val list = ListView(listOf("a"))
-        frame.draw(list)
+        frame.layout { draw(list) }
 
         assertFailsWith<IllegalArgumentException> {
-            com.github.kusa233.ovatoxin.window.Frame().draw(list)
+            com.github.kusa233.ovatoxin.window.Frame().layout { draw(list) }
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.github.kusa233.ovatoxin.widget
 
-import com.github.kusa233.ovatoxin.component.Container
+import com.github.kusa233.ovatoxin.component.ComponentDrawable
 import javafx.scene.Node
 import javafx.scene.layout.Pane
 import javafx.scene.shape.Rectangle
@@ -38,14 +38,17 @@ import javafx.scene.shape.Rectangle
  * frame.show()
  * ```
  *
- * The inner block is reached through the [Container.layout] of the panel
- * (`outer.layout { ... }`); the outer `layout { ... }` passed to `draw` always configures the
- * panel's own geometry, as in the rest of the DSL.
+ * The inner block is reached through the [layout][com.github.kusa233.ovatoxin.component.ComponentDrawable.layout]
+ * of the panel (`outer.layout { ... }`); the outer `layout { ... }` passed to `draw` always
+ * configures the panel's own geometry, as in the rest of the DSL.
  *
  * A non-zero [corner][com.github.kusa233.ovatoxin.style.Style.corner] rounds the clipped region
  * as well, so the content is cut along the same outline as the fill.
+ *
+ * A panel is a drawing surface like the window, so a `Div` can be nested in a `Div` — see
+ * [ComponentDrawable].
  */
-class Div : Container<Div>() {
+class Div : ComponentDrawable<Div>() {
 
     private var clipValue: Boolean = true
 

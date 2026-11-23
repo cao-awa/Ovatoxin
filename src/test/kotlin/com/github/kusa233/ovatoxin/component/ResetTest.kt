@@ -160,15 +160,17 @@ class ResetTest {
     fun `drawing the same component twice starts from the defaults`() {
         val frame = Frame()
         val text = TextArea("Test")
-        frame.draw(text) {
-            layout { x = 50.percent }
-            style { corner = 4.px }
+        frame.layout {
+            draw(text) {
+                layout { x = 50.percent }
+                style { corner = 4.px }
+            }
         }
         assertEquals(50.percent, text.layoutSpec.x)
 
         frame.remove(text)
         text.text("Changed while detached")
-        frame.draw(text)
+        frame.layout { draw(text) }
 
         assertEquals(Length.ZERO, text.layoutSpec.x)
         assertEquals(Style.DEFAULT_CORNER, text.styleSpec.corner)
@@ -180,13 +182,17 @@ class ResetTest {
     fun `a redraw drops what the block no longer sets`() {
         val state = State("zh-cn")
         val frame = Frame()
-        val text = frame.draw(TextArea("Test")) {
-            if (state.value == "zh-cn") {
-                it.text("翻译测试")
-                layout { x = 10.percent }
-                style { background { color = Color.web("#4c8bf5") } }
+        val text = TextArea("Test")
+        frame.layout {
+            draw(text) {
+                if (state.value == "zh-cn") {
+                    it.text("翻译测试")
+                    layout { x = 10.percent }
+                    style { background { color = Color.web("#4c8bf5") } }
+                }
             }
-        }.withState(state)
+        }
+        text.withState(state)
 
         assertEquals("翻译测试", text.text)
         assertEquals(10.percent, text.layoutSpec.x)
@@ -206,14 +212,18 @@ class ResetTest {
     fun `a redraw keeps the children a replayed container still draws`() {
         val state = State("a")
         val frame = Frame()
-        val panel = frame.draw(Div()) { div ->
-            div.layout {
-                draw(TextArea()) { area ->
-                    layout { width = 50.percent }
-                    area.text(state.value)
+        val panel = Div()
+        frame.layout {
+            draw(panel) { div ->
+                div.layout {
+                    draw(TextArea()) { area ->
+                        layout { width = 50.percent }
+                        area.text(state.value)
+                    }
                 }
             }
-        }.withState(state)
+        }
+        panel.withState(state)
 
         state.update("b")
 

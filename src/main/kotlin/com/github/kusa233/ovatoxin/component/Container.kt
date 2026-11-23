@@ -11,21 +11,26 @@ import javafx.scene.layout.Region
 /**
  * Base class of every component that can hold children.
  *
- * Children are declared with [draw]; their geometry is expressed by a [Layout] whose slots each take
- * a percentage of the container size or an absolute pixel count. Layouts are re-resolved whenever
- * the container is resized.
+ * A container owns the children of a region and the [Layout] that places them; it does not by
+ * itself offer a way to declare them. Children are declared inside the `layout` block of a
+ * drawing surface — [com.github.kusa233.ovatoxin.component.ComponentDrawable], inherited by
+ * [com.github.kusa233.ovatoxin.window.Frame] and [com.github.kusa233.ovatoxin.widget.Div] — with
+ * [com.github.kusa233.ovatoxin.component.SurfaceScope.draw]. This class therefore holds everything
+ * a container needs *after* a child exists — the child list, the layout pass and the repaint of a
+ * single child — while the act of drawing is confined to [ComponentDrawable].
+ *
+ * Geometry is expressed by a [Layout] whose slots each take a percentage of the container size or
+ * an absolute pixel count. Layouts are re-resolved whenever the container is resized.
  *
  * Percentages always resolve against the container itself, not against the window, so nesting
  * a [com.github.kusa233.ovatoxin.widget.Div] rescopes them for everything inside.
  *
- * The class is marked with [OvatoxinDsl], so a nested container's [layout] block sees only the
- * container it declares children for, never the one around it: inside `panel.layout { }` a member
- * that belongs to the enclosing `Frame` — its `title`, for instance — does not resolve, and the
- * children are declared for `panel` and not by accident for the window. Calling a nested
- * container's own `layout { }` stays valid, because that member belongs to the innermost receiver.
+ * The class is marked with [OvatoxinDsl], so a nested surface's `layout` block sees only the scope
+ * it declares children for, never the one around it: inside `panel.layout { }` a member that
+ * belongs to the enclosing `Frame` — its `title`, for instance — does not resolve, and the
+ * children are declared for `panel` and not by accident for the window.
  *
- * @param T the concrete subclass, so `layout { }` returns the exact type and `this` inside the
- *   block is the concrete container rather than a bare [Container].
+ * @param T the concrete subclass, so the block entry point knows the exact type it was opened for.
  */
 @OvatoxinDsl
 abstract class Container<T : Container<T>> : Component<T>() {
@@ -41,90 +46,27 @@ abstract class Container<T : Container<T>> : Component<T>() {
     internal val contentPane: Pane? get() = this.pane
 
     /**
-     * Declares the children of this container, mirroring the top level block of the DSL:
+     * Runs [block] as one child-declaring pass and lays the container out afterwards.
      *
-     * ```kotlin
-     * frame.layout {
-     *     draw(Button()) { ... }
-     * }
-     * ```
+     * The caller is [ComponentDrawable.layout], which is the only place a block reaches this:
+     * declaring children is a property of a drawing surface, not of every container.
+     *
+     * A replayed block draws its children again, so the containment is registered here as well —
+     * a container whose new block draws fewer children than before still has to be trimmed.
      */
-    fun layout(block: T.() -> Unit): T {
-        // A replayed block draws its children again, so register here too: a container whose
-        // new block draws fewer children than before still has to be trimmed.
+    internal fun declareChildren(block: () -> Unit) {
         ReplayScope.current?.begin(this)
-        this.self.block()
+        block()
         relayout()
-        return this.self
     }
 
-    /**
-     * Draws [component] into this container and configures it with [config].
-     *
-     * The component is the lambda parameter; the receiver is a [DrawScope] that accepts a
-     * `layout { ... }` block. Drawing a container nests it, so its own `layout { ... }` blocks
-     * are scoped to that container.
-     *
-     * The block is remembered as the render function of the component, so a redraw — see
-     * [Component.withState] — can run it again and pick up the new value of a state.
-     *
-     * The component is [reset][Component.reset] right before [config] runs, so the block always
-     * starts from the defaults instead of inheriting what an earlier draw set.
-     */
-    fun <C : Component<*>> draw(component: C, config: DrawScope<C>.(C) -> Unit = {}): C {
-        val replayed = replay(component, config)
-        if (replayed != null) return replayed
-
-        require(component.parent == null) {
-            "${component::class.simpleName} is already attached to a container"
-        }
-        // Start from the documented defaults, so nothing a previous draw left behind leaks into
-        // this one. The component is reset before the block runs, never after.
-        component.reset()
-        component.parent = this
+    /** Appends [component] to the child list; [SurfaceScope.draw] sets its [parent] first. */
+    internal fun attach(component: Component<*>) {
         this.mutableChildren += component
-        val scope = DrawScope(component)
-        component.recordDrawBlock { scope.config(component) }
-        scope.config(component)
-        relayout()
-        return component
     }
 
-    /**
-     * Fills a slot of a replay with an existing child instead of a new one.
-     *
-     * Returns `null` when no replay is running or the slot does not hold a component of the
-     * same kind, in which case [draw] attaches [component] as usual.
-     */
-    private fun <C : Component<*>> replay(component: C, config: DrawScope<C>.(C) -> Unit): C? {
-        val scope = ReplayScope.current ?: return null
-        val existing = this.mutableChildren.getOrNull(scope.index(this))
-        if (existing == null || existing::class != component::class) return null
-        scope.advance(this)
-
-        @Suppress("UNCHECKED_CAST")
-        val target = existing as C
-        // A redraw re-runs the block, so the replayed child starts from its defaults as well;
-        // that is what makes a value dropped from the block disappear instead of lingering.
-        target.reset()
-        DrawScope(target).config(target)
-        return target
-    }
-
-    /** Re-runs the render function of this container, reconciling the children it draws. */
-    internal override fun replayDrawBlock() {
-        val previous = ReplayScope.current
-        val scope = ReplayScope()
-        ReplayScope.current = scope
-        scope.begin(this)
-        try {
-            super.replayDrawBlock()
-        } finally {
-            ReplayScope.current = previous
-            scope.finish()
-        }
-        relayout()
-    }
+    /** The child in slot [index], or `null` when the slot is empty. */
+    internal fun childAt(index: Int): Component<*>? = this.mutableChildren.getOrNull(index)
 
     /** Drops every child from [count] on, used when a replayed block draws fewer children. */
     internal fun trimTo(count: Int) {
