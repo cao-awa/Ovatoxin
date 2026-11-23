@@ -98,7 +98,7 @@ class ProgressBar(progress: Double = 0.0) : Component<ProgressBar>() {
     }
 
     /**
-     * Fills the bar to [length], a percentage from `0.percent` to `100.percent`.
+     * Fills the bar to [percent], a percentage from `0.percent` to `100.percent`.
      *
      * A bar is a fraction of itself, not a size, so only a [Percent] can be a progress: `40.percent`
      * is the same as `progress(0.4)`. A [Pixel] has nothing to be a fraction of, and the two units
@@ -110,8 +110,8 @@ class ProgressBar(progress: Double = 0.0) : Component<ProgressBar>() {
      * bar.progress(40.px)        // does not compile: a pixel is not a fraction
      * ```
      */
-    fun progress(length: Percent) {
-        progress(length.value / 100.0)
+    fun progress(percent: Percent) {
+        progress(percent.value / 100.0)
     }
 
     /**
