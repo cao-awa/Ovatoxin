@@ -77,17 +77,18 @@ class Layout {
      * percentage resolves against the width of the component itself.
      *
      * Defaults to [Length.ZERO], i.e. flush. Only a component that holds children is affected by
-     * it — see [com.github.kusa233.ovatoxin.component.Container.contentBox] — and
-     * [com.github.kusa233.ovatoxin.widget.FlexBox] additionally uses it as the gap between the
-     * children of one line.
+     * it — see [com.github.kusa233.ovatoxin.component.Container.contentBox]. It is an inset and
+     * nothing else: the space *between* the children of a
+     * [com.github.kusa233.ovatoxin.widget.FlexBox] is its
+     * [gap][com.github.kusa233.ovatoxin.widget.FlexBox.gap], which is a value of the box itself.
      */
     var hPadding: Length = Length.ZERO
 
     /**
      * How far the children of this component are kept from its top and bottom edge.
      *
-     * The vertical counterpart of [hPadding]; [com.github.kusa233.ovatoxin.widget.FlexBox] also
-     * uses it as the gap between two lines. Defaults to [Length.ZERO].
+     * The vertical counterpart of [hPadding]: an inset, never the space between the children.
+     * Defaults to [Length.ZERO].
      */
     var vPadding: Length = Length.ZERO
 

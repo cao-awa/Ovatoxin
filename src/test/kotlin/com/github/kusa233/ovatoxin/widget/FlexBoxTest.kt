@@ -145,8 +145,9 @@ class FlexBoxTest {
     }
 
     @Test
-    fun `children flow to the right with the padding as the gap`() {
+    fun `children flow to the right with the gap between them`() {
         val box = padded(FlexBox(), 10.px, 10.px)
+        box.gap = 10.px
         val first = TextArea("one")
         val second = TextArea("two")
         box.layout {
@@ -163,8 +164,62 @@ class FlexBoxTest {
     }
 
     @Test
+    fun `a fresh box keeps no gap`() {
+        val box = FlexBox()
+        box.layout {
+            draw(TextArea("one")) { layout { width = 50.px; height = 20.px } }
+            draw(TextArea("two")) { layout { width = 50.px; height = 20.px } }
+        }
+
+        assertEquals(Length.ZERO, box.gap)
+        assertEquals(Justify.START, box.justify)
+        assertEquals(Align.START, box.align)
+
+        // With nothing between them the second child starts where the first one ends.
+        val second = box.children[1]
+        assertEquals(50.0, this.slotOf(box, second, 400.0, 200.0).x)
+    }
+
+    @Test
+    fun `the gap is added between the children only`() {
+        val box = FlexBox()
+        box.gap = 8.px
+        val first = TextArea("one")
+        val second = TextArea("two")
+        val third = TextArea("three")
+        box.layout {
+            draw(first) { layout { width = 20.px; height = 10.px } }
+            draw(second) { layout { width = 20.px; height = 10.px } }
+            draw(third) { layout { width = 20.px; height = 10.px } }
+        }
+
+        // Three widths and two gaps, and the box still starts at its own corner: the gap is space
+        // *between* children, so it does not push the first one inwards the way padding does.
+        assertEquals(0.0, this.slotOf(box, first, 200.0, 100.0).x)
+        assertEquals(28.0, this.slotOf(box, second, 200.0, 100.0).x)
+        assertEquals(56.0, this.slotOf(box, third, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `a percentage gap resolves against the content box`() {
+        val box = padded(FlexBox(), 10.px, 10.px)
+        box.gap = 10.percent
+        val first = TextArea("one")
+        val second = TextArea("two")
+        box.layout {
+            draw(first) { layout { width = 40.px; height = 10.px } }
+            draw(second) { layout { width = 40.px; height = 10.px } }
+        }
+
+        // Ten percent of the 180px content box is 18px, measured from the inset corner.
+        assertEquals(10.0, this.slotOf(box, first, 200.0, 100.0).x)
+        assertEquals(68.0, this.slotOf(box, second, 200.0, 100.0).x)
+    }
+
+    @Test
     fun `a child that does not fit starts a new line`() {
         val box = padded(FlexBox(), 10.px, 6.px)
+        box.gap = 6.px
         val first = TextArea("one")
         val second = TextArea("two")
         box.layout {
@@ -172,7 +227,7 @@ class FlexBoxTest {
             draw(second) { layout { width = 100.px; height = 20.px } }
         }
 
-        // 10 + 100 + 10 + 100 exceeds the 200px content box, so the second child wraps below the
+        // 10 + 100 + 6 + 100 exceeds the 200px content box, so the second child wraps below the
         // first line: the inset, that line, and one gap.
         val secondSlot = this.slotOf(box, second, 220.0, 200.0)
         assertEquals(10.0, secondSlot.x)
@@ -180,8 +235,204 @@ class FlexBoxTest {
     }
 
     @Test
+    fun `justify leaves the start of a line alone`() {
+        val box = FlexBox()
+        val first = TextArea("one")
+        val second = TextArea("two")
+        box.layout {
+            draw(first) { layout { width = 40.px; height = 20.px } }
+            draw(second) { layout { width = 40.px; height = 20.px } }
+        }
+
+        // START is the default, and it is what a line does when it has no room to share out.
+        assertEquals(0.0, this.slotOf(box, first, 200.0, 100.0).x)
+        assertEquals(40.0, this.slotOf(box, second, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `justify centre splits the leftover room in two`() {
+        val box = FlexBox()
+        box.justify = Justify.CENTER
+        val first = TextArea("one")
+        val second = TextArea("two")
+        box.layout {
+            draw(first) { layout { width = 40.px; height = 20.px } }
+            draw(second) { layout { width = 40.px; height = 20.px } }
+        }
+
+        // 200 - 80 leaves 120 to share, so the pair starts 60px in and keeps touching.
+        assertEquals(60.0, this.slotOf(box, first, 200.0, 100.0).x)
+        assertEquals(100.0, this.slotOf(box, second, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `justify end pushes the line to the right edge`() {
+        val box = FlexBox()
+        box.justify = Justify.END
+        val first = TextArea("one")
+        val second = TextArea("two")
+        box.layout {
+            draw(first) { layout { width = 40.px; height = 20.px } }
+            draw(second) { layout { width = 40.px; height = 20.px } }
+        }
+
+        assertEquals(120.0, this.slotOf(box, first, 200.0, 100.0).x)
+        assertEquals(160.0, this.slotOf(box, second, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `justify space between moves the room into the gaps`() {
+        val box = FlexBox()
+        box.justify = Justify.SPACE_BETWEEN
+        val first = TextArea("one")
+        val second = TextArea("two")
+        box.layout {
+            draw(first) { layout { width = 40.px; height = 20.px } }
+            draw(second) { layout { width = 40.px; height = 20.px } }
+        }
+
+        // First against the start, last against the end, all 120px of room between them.
+        assertEquals(0.0, this.slotOf(box, first, 200.0, 100.0).x)
+        assertEquals(160.0, this.slotOf(box, second, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `justify space between keeps the gap it was given`() {
+        val box = FlexBox()
+        box.gap = 10.px
+        box.justify = Justify.SPACE_BETWEEN
+        val first = TextArea("one")
+        val second = TextArea("two")
+        box.layout {
+            draw(first) { layout { width = 40.px; height = 20.px } }
+            draw(second) { layout { width = 40.px; height = 20.px } }
+        }
+
+        // The gap is part of what the line uses up, so only 110px are left to share out.
+        assertEquals(0.0, this.slotOf(box, first, 200.0, 100.0).x)
+        assertEquals(160.0, this.slotOf(box, second, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `justify space around leaves half a share at each end`() {
+        val box = FlexBox()
+        box.justify = Justify.SPACE_AROUND
+        val first = TextArea("one")
+        val second = TextArea("two")
+        box.layout {
+            draw(first) { layout { width = 40.px; height = 20.px } }
+            draw(second) { layout { width = 40.px; height = 20.px } }
+        }
+
+        // A share of 60px per child: 30 before the first, 60 between, 30 after the last.
+        assertEquals(30.0, this.slotOf(box, first, 200.0, 100.0).x)
+        assertEquals(130.0, this.slotOf(box, second, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `a lone child is packed by between and centred by around`() {
+        val between = FlexBox()
+        between.justify = Justify.SPACE_BETWEEN
+        val packed = TextArea("one")
+        between.layout { draw(packed) { layout { width = 40.px; height = 20.px } } }
+        assertEquals(0.0, this.slotOf(between, packed, 200.0, 100.0).x)
+
+        val around = FlexBox()
+        around.justify = Justify.SPACE_AROUND
+        val centred = TextArea("two")
+        around.layout { draw(centred) { layout { width = 40.px; height = 20.px } } }
+        assertEquals(80.0, this.slotOf(around, centred, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `justify shares out nothing when a line overflows`() {
+        val box = FlexBox()
+        box.justify = Justify.CENTER
+        val wide = TextArea("wide")
+        box.layout { draw(wide) { layout { width = 300.px; height = 20.px } } }
+
+        // A child is never squeezed to fit, so this line is wider than the box and has nothing left
+        // over: it packs from the start, exactly as if it had been asked to.
+        assertEquals(0.0, this.slotOf(box, wide, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `justify does not move a line past the inset`() {
+        val box = padded(FlexBox(), 10.px, 10.px)
+        box.justify = Justify.END
+        val first = TextArea("one")
+        box.layout { draw(first) { layout { width = 40.px; height = 20.px } } }
+
+        // 10 + 140 + 40 + 10: the line ends against the inset, not against the box.
+        assertEquals(150.0, this.slotOf(box, first, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `align packs a child against the top of its line`() {
+        val box = FlexBox()
+        val short = TextArea("short")
+        val tall = TextArea("tall")
+        box.layout {
+            draw(short) { layout { width = 40.px; height = 20.px } }
+            draw(tall) { layout { width = 40.px; height = 60.px } }
+        }
+
+        // START is the default: the shorter child keeps the top of the 60px line.
+        assertEquals(0.0, this.slotOf(box, short, 200.0, 100.0).y)
+        assertEquals(0.0, this.slotOf(box, tall, 200.0, 100.0).y)
+    }
+
+    @Test
+    fun `align centre centres a child in its line`() {
+        val box = FlexBox()
+        box.align = Align.CENTER
+        val short = TextArea("short")
+        val tall = TextArea("tall")
+        box.layout {
+            draw(short) { layout { width = 40.px; height = 20.px } }
+            draw(tall) { layout { width = 40.px; height = 60.px } }
+        }
+
+        // The line is 60 tall, so the 20px child gets 20 above and 20 below it.
+        assertEquals(20.0, this.slotOf(box, short, 200.0, 100.0).y)
+        assertEquals(0.0, this.slotOf(box, tall, 200.0, 100.0).y)
+    }
+
+    @Test
+    fun `align end packs a child against the bottom of its line`() {
+        val box = FlexBox()
+        box.align = Align.END
+        val short = TextArea("short")
+        val tall = TextArea("tall")
+        box.layout {
+            draw(short) { layout { width = 40.px; height = 20.px } }
+            draw(tall) { layout { width = 40.px; height = 60.px } }
+        }
+
+        assertEquals(40.0, this.slotOf(box, short, 200.0, 100.0).y)
+        assertEquals(0.0, this.slotOf(box, tall, 200.0, 100.0).y)
+    }
+
+    @Test
+    fun `align leaves the height of a line alone`() {
+        val box = FlexBox()
+        box.align = Align.END
+        val tall = TextArea("tall")
+        val next = TextArea("next")
+        box.layout {
+            draw(tall) { layout { width = 40.px; height = 60.px } }
+            draw(next) { layout { width = 400.px; height = 10.px } }
+        }
+
+        // The second child cannot fit beside the first, so it opens a line below it — the first
+        // line is still as tall as its tallest child, whichever edge the children lean on.
+        assertEquals(60.0, this.slotOf(box, next, 200.0, 200.0).y)
+    }
+
+    @Test
     fun `a line is as tall as its tallest child`() {
         val box = padded(FlexBox(), 5.px, 5.px)
+        box.gap = 5.px
         val short = TextArea("short")
         val tall = TextArea("tall")
         val next = TextArea("next")

@@ -5,8 +5,11 @@ import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
+import com.github.kusa233.ovatoxin.widget.Align
 import com.github.kusa233.ovatoxin.widget.Button
 import com.github.kusa233.ovatoxin.widget.Div
+import com.github.kusa233.ovatoxin.widget.FlexBox
+import com.github.kusa233.ovatoxin.widget.Justify
 import com.github.kusa233.ovatoxin.widget.Link
 import com.github.kusa233.ovatoxin.widget.TextArea
 import com.github.kusa233.ovatoxin.widget.TextField
@@ -263,5 +266,48 @@ class ResetTest {
         val text = panel.children[0] as TextArea
         assertEquals("b", text.text)
         assertEquals(50.percent, text.layoutSpec.width)
+    }
+
+    @Test
+    fun `a redraw restores the gap and the flow of a flex box`() {
+        val state = State("a")
+        val frame = Frame()
+        val row = FlexBox()
+        frame.layout {
+            draw(row) { box ->
+                layout { width = 100.percent; height = 50.percent }
+                box.gap = 8.px
+                box.justify = Justify.SPACE_BETWEEN
+                box.align = Align.CENTER
+                box.layout {
+                    draw(TextArea()) { area -> area.text(state.value) }
+                }
+            }
+        }
+        row.withState(state)
+
+        // The gap and the two enums belong to the box itself, so the global reset before a redraw
+        // does not know about them: the block sets them again, and if it did not, a state change
+        // would silently drop them.
+        state.update("b")
+
+        assertEquals(8.px, row.gap)
+        assertEquals(Justify.SPACE_BETWEEN, row.justify)
+        assertEquals(Align.CENTER, row.align)
+    }
+
+    @Test
+    fun `a flex box without a block falls back to its own defaults`() {
+        val row = FlexBox()
+        row.gap = 8.px
+        row.justify = Justify.END
+        row.align = Align.END
+
+        row.reset()
+
+        // A box that is redrawn with a block that says nothing about the flow is a fresh box again.
+        assertEquals(Length.ZERO, row.gap)
+        assertEquals(Justify.START, row.justify)
+        assertEquals(Align.START, row.align)
     }
 }

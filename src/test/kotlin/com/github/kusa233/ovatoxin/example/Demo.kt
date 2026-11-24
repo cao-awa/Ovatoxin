@@ -1,7 +1,6 @@
 package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.example.I18N.languages
-import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
@@ -23,7 +22,7 @@ import javafx.scene.paint.Color
 fun main() {
     val frame = Frame()
     frame.title = "Ovatoxin – DSL demo"
-    testPadding(frame)
+    testFlexBox(frame)
     frame.show()
 }
 
@@ -256,6 +255,7 @@ fun testFlexBox(frame: Frame) {
                         hPadding = 8.px
                         vPadding = 8.px
                     }
+                    row.gap = 10.percent
                     row.layout {
                         for (index in 1..12) {
                             draw(Button()) { cell ->

@@ -5,6 +5,7 @@ import com.github.kusa233.ovatoxin.component.ComponentDrawable
 import com.github.kusa233.ovatoxin.component.ContentBox
 import com.github.kusa233.ovatoxin.component.Size
 import com.github.kusa233.ovatoxin.component.Slot
+import com.github.kusa233.ovatoxin.layout.Length
 import javafx.scene.Node
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Region
@@ -15,12 +16,14 @@ import javafx.scene.layout.Region
  * A [Div] places every child exactly where its own `x` and `y` say. A flex box instead flows them:
  * the first child goes to the top left corner of the content box, the next one is put to its right,
  * and so on until the line is full — then a new line starts underneath, as tall as the tallest child
- * of the line it follows. Like every surface it can draw, and the padding it declares in its layout
- * block is what separates its children:
+ * of the line it follows.
  *
- * * `hPadding` is the inset on the left and right *and* the gap between two children of the same
- *   line;
- * * `vPadding` is the inset at the top and bottom *and* the gap between two lines.
+ * Three properties of the box steer that flow, and they are set on the box itself rather than inside
+ * a layout block:
+ *
+ * * [gap] — the space between two children of a line *and* between two lines;
+ * * [justify] — how the room a line leaves over is shared out, from left to right;
+ * * [align] — where each child sits inside its own line, from top to bottom.
  *
  * ```kotlin
  * frame.layout {
@@ -30,6 +33,9 @@ import javafx.scene.layout.Region
  *             hPadding = 8.px
  *             vPadding = 8.px
  *         }
+ *         row.gap = 6.px
+ *         row.justify = Justify.SPACE_BETWEEN
+ *         row.align = Align.CENTER
  *         row.layout {
  *             draw(Button()) { it.text("One") }
  *             draw(Button()) { it.text("Two") }
@@ -39,10 +45,19 @@ import javafx.scene.layout.Region
  * }
  * ```
  *
+ * `hPadding` and `vPadding` keep their own meaning here: they are the inset that pushes the children
+ * away from the edges of the box, and they do not space the children apart — that is what [gap] is
+ * for. A padded row is still as large as the room it keeps clear, and a panel that draws a
+ * background around its children is written the same way.
+ *
  * The flow is decided by the widths the children resolve to, so a child still says how big it is in
  * its own `layout` block — `width = 30.percent` of the content box, or `width = 120.px`. A child
  * that says nothing is measured at its preferred size, which is what makes a row of buttons come
  * out right without any arithmetic.
+ *
+ * Neither [gap] nor [justify] resizes a child: the space they talk about is only ever *between*
+ * children, never inside one. A line that overflows the content box therefore leaves nothing to
+ * share out, and packs its children from the start exactly as if [justify] were [Justify.START].
  *
  * `x` and `y` do not lose their meaning: they are added onto the slot the flow computed, so
  * `y = 2.px` nudges a child two pixels down inside its line instead of pinning it near the top:
@@ -66,7 +81,72 @@ class FlexBox : ComponentDrawable<FlexBox>() {
     /** The slot the flow handed out to each child in the last pass. */
     private var slots: Map<Component<*>, Slot> = emptyMap()
 
+    private var gapValue: Length = Length.ZERO
+    private var justifyValue: Justify = Justify.START
+    private var alignValue: Align = Align.START
+
+    /**
+     * Reads the space this box keeps between its children.
+     *
+     * It is used twice: once between two children of the same line, and once between two lines. Like
+     * the padding it resolves against the side it separates — the width for the space within a line,
+     * the height for the space between two of them — so `gap = 2.percent` is a space that stays
+     * proportional in both directions.
+     */
+    fun gap(): Length = this.gapValue
+
+    /** Replaces the space this box keeps between its children. */
+    fun gap(value: Length) {
+        this.gapValue = value
+    }
+
+    /** The space this box keeps between two children of a line, and between two lines. Defaults to `0.px`. */
+    var gap: Length
+        get() = this.gapValue
+        set(value) = gap(value)
+
+    /** Reads how this box shares out the room a line leaves over. */
+    fun justify(): Justify = this.justifyValue
+
+    /** Replaces how this box shares out the room a line leaves over. */
+    fun justify(value: Justify) {
+        this.justifyValue = value
+    }
+
+    /** How this box shares out the room a line leaves over. Defaults to [Justify.START]. */
+    var justify: Justify
+        get() = this.justifyValue
+        set(value) = justify(value)
+
+    /** Reads where this box puts a child inside the line it was given. */
+    fun align(): Align = this.alignValue
+
+    /** Replaces where this box puts a child inside the line it was given. */
+    fun align(value: Align) {
+        this.alignValue = value
+    }
+
+    /** Where this box puts a child inside the line it was given. Defaults to [Align.START]. */
+    var align: Align
+        get() = this.alignValue
+        set(value) = align(value)
+
     override fun buildNode(): Node = FlowPane()
+
+    /**
+     * Restores the flow of a fresh box: no gap, children packed at the start of their line, and every
+     * child sitting at the top of it.
+     *
+     * The three values belong to the box itself rather than to its layout block, so [Component.reset]
+     * does not know about them and they have to be put back here — otherwise a redraw would keep the
+     * gap and the distribution of the pass before it.
+     */
+    override fun reset() {
+        super.reset()
+        this.gapValue = Length.ZERO
+        this.justifyValue = Justify.START
+        this.alignValue = Align.START
+    }
 
     /**
      * Flows [targets] through [box] before they are placed.
@@ -85,32 +165,87 @@ class FlexBox : ComponentDrawable<FlexBox>() {
     /**
      * Walks [children] through [box] and returns one slot per child.
      *
-     * One pass is enough: sizes are measured up front, so a line break never changes the size of a
-     * child that comes after it.
+     * Sizes are measured up front, so a line break never changes the size of a child that comes after
+     * it; what does need the whole line is [justify], which shares out the room only a finished line
+     * knows it has left over, and [align], which needs the line's height. The children are therefore
+     * gathered into a line first and only then given their slots.
      */
     private fun arrange(box: ContentBox, children: List<Component<*>>): Map<Component<*>, Slot> {
-        val gapX = this.layoutSpec.hPadding.resolve(box.width)
-        val gapY = this.layoutSpec.vPadding.resolve(box.height)
+        val gapX = this.gapValue.resolve(box.width)
+        val gapY = this.gapValue.resolve(box.height)
         val right = box.offsetX + box.width
 
         val result = LinkedHashMap<Component<*>, Slot>(children.size)
-        var lineX = box.offsetX
+        val line = mutableListOf<Placed>()
+        var cursor = box.offsetX
         var lineY = box.offsetY
-        var lineHeight = 0.0
 
         for (child in children) {
             val size = measure(child, box)
-            val fits = lineX == box.offsetX || lineX + size.width <= right
+            // A child that is on a line of its own is never moved on: it may overflow, it may not wrap.
+            val fits = line.isEmpty() || cursor + size.width <= right
             if (!fits) {
-                lineX = box.offsetX
-                lineY += lineHeight + gapY
-                lineHeight = 0.0
+                lineY += placeLine(line, box, gapX, lineY, result) + gapY
+                line.clear()
+                cursor = box.offsetX
             }
-            result[child] = Slot(lineX, lineY)
-            lineX += size.width + gapX
-            lineHeight = maxOf(lineHeight, size.height)
+            line.add(Placed(child, size))
+            cursor += size.width + gapX
         }
+        placeLine(line, box, gapX, lineY, result)
         return result
+    }
+
+    /**
+     * Gives every child of one finished [line] its slot and answers how tall the line turned out.
+     *
+     * The line is as tall as its tallest child, and [align] decides what a shorter child does with the
+     * room that leaves above and below it. [justify] moves the whole line along the main axis and
+     * widens the space between the children; neither ever changes a child's own size.
+     */
+    private fun placeLine(
+        line: List<Placed>,
+        box: ContentBox,
+        gap: Double,
+        lineY: Double,
+        result: MutableMap<Component<*>, Slot>,
+    ): Double {
+        if (line.isEmpty()) return 0.0
+        val lineHeight = line.maxOf { it.size.height }
+        val used = line.sumOf { it.size.width } + gap * (line.size - 1)
+        val free = (box.width - used).coerceAtLeast(0.0)
+        var x = box.offsetX + leadingRoom(free, line.size)
+        val between = gap + sharedRoom(free, line.size)
+
+        for (placed in line) {
+            result[placed.child] = Slot(x, lineY + crossRoom(lineHeight - placed.size.height))
+            x += placed.size.width + between
+        }
+        return lineHeight
+    }
+
+    /** The room [justify] keeps clear before the first child of a line. */
+    private fun leadingRoom(free: Double, count: Int): Double = when (this.justifyValue) {
+        Justify.START, Justify.SPACE_BETWEEN -> 0.0
+        Justify.CENTER -> free / 2.0
+        Justify.END -> free
+        // Half a share per side: one share per child, split evenly.
+        Justify.SPACE_AROUND -> free / (2.0 * count)
+    }
+
+    /** The room [justify] adds to [gap] between two children of a line. */
+    private fun sharedRoom(free: Double, count: Int): Double = when (this.justifyValue) {
+        Justify.START, Justify.CENTER, Justify.END -> 0.0
+        Justify.SPACE_BETWEEN -> if (count > 1) free / (count - 1) else 0.0
+        // Two half shares meet between two children, so the whole share goes there.
+        Justify.SPACE_AROUND -> free / count
+    }
+
+    /** The room [align] keeps clear above a child, out of the [room] its line leaves over it. */
+    private fun crossRoom(room: Double): Double = when (this.alignValue) {
+        Align.START -> 0.0
+        Align.CENTER -> room / 2.0
+        Align.END -> room
     }
 
     /**
@@ -142,27 +277,28 @@ class FlexBox : ComponentDrawable<FlexBox>() {
     /**
      * What this box wants to be when nothing else decides: a single line of children.
      *
-     * The insets and the gaps are part of it, so a padded row is as large as the room it keeps
-     * clear. A child sized in pixels contributes that size; a child sized in percent cannot be
-     * measured before the box has a width, so it contributes the preferred width of its node.
+     * The insets and the gaps are part of it, so a padded row is as large as the room it keeps clear
+     * and a row with a [gap] is as wide as the children plus the space it puts between them. A child
+     * sized in pixels contributes that size; a child sized in percent cannot be measured before the
+     * box has a width, so it contributes the preferred width of its node — and a percentage [gap]
+     * contributes nothing, for the same reason.
      */
     private fun contentWidth(): Double {
         val children = this.children
         val inset = this.layoutSpec.hPadding.resolve(0.0)
-        if (children.isEmpty()) return inset
-        var total = 0.0
-        for ((index, child) in children.withIndex()) {
+        if (children.isEmpty()) return inset * 2.0
+        var total = inset * 2.0 + this.gapValue.resolve(0.0) * (children.size - 1)
+        for (child in children) {
             total += child.layoutSpec.width?.resolve(0.0) ?: preferredWidth(child.node)
-            if (index > 0) total += inset
         }
-        return total + inset
+        return total
     }
 
     /** What this box wants to be when nothing else decides: one line, as tall as its tallest child. */
     private fun contentHeight(): Double {
         val children = this.children
         val inset = this.layoutSpec.vPadding.resolve(0.0)
-        if (children.isEmpty()) return inset
+        if (children.isEmpty()) return inset * 2.0
         var tallest = 0.0
         for (child in children) {
             val node = child.node
@@ -170,8 +306,11 @@ class FlexBox : ComponentDrawable<FlexBox>() {
             val height = child.layoutSpec.height?.resolve(0.0) ?: node.prefHeight(width)
             tallest = maxOf(tallest, height)
         }
-        return tallest + inset
+        return tallest + inset * 2.0
     }
+
+    /** One child of a line, with the size it was measured at. */
+    private data class Placed(val child: Component<*>, val size: Size)
 
     /**
      * The pane of the box, reporting the size of one line as the size it prefers.

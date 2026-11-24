@@ -181,16 +181,19 @@ fun main() {
             }
         }
 
-        // A flow: the padding is both the inset and the gap, and the children wrap by themselves.
+        // A flow: the padding is the inset, the gap separates the children, and they wrap by
+        // themselves. The two are deliberately different, so a gap that leaked into the inset — or
+        // the other way round — would move the children by more than the tolerance below.
         flowBox = draw(FlexBox()) { component ->
             layout {
                 x = 10.percent
                 y = 88.percent
                 width = 80.percent
                 height = 12.percent
-                hPadding = FLOW_PADDING.px
-                vPadding = FLOW_PADDING.px
+                hPadding = FLOW_INSET.px
+                vPadding = FLOW_INSET.px
             }
+            component.gap = FLOW_GAP.px
             component.layout {
                 for (name in listOf("A", "B", "C")) {
                     draw(TextArea()) { child ->
@@ -243,8 +246,11 @@ private val IMAGE_FALLBACK_COLOR: Color = Color.web("#123456")
 /** The height every child of the probe flow asks for, in pixels. */
 private const val FLOW_CHILD_HEIGHT: Double = 16.0
 
-/** The padding of the probe flow, which doubles as its gap. */
-private const val FLOW_PADDING: Double = 4.0
+/** The padding of the probe flow. It is the inset only, never the space between the children. */
+private const val FLOW_INSET: Double = 4.0
+
+/** The space the probe flow keeps between two children of a line, and between two lines. */
+private const val FLOW_GAP: Double = 10.0
 
 /** The padding of the probe surface. */
 private const val PAD_X: Double = 8.0
@@ -328,33 +334,35 @@ private fun padding(surface: Div): Boolean {
 
 /**
  * Proves the flow of a [FlexBox]: children are laid left to right, wrap when the line is full, and
- * the padding separates them instead of overlapping them.
+ * the gap separates them instead of overlapping them.
  *
  * The slots are recomputed here from the rendered size of the pane alone, so the check does not
- * consult the bookkeeping of the widget it is verifying.
+ * consult the bookkeeping of the widget it is verifying. The inset and the gap are different
+ * numbers on purpose, so a flow that confused the two could not pass both checks at once.
  */
 private fun flow(box: FlexBox): Boolean {
     println()
-    println("flow        (left to right, wrap at the edge, padding as inset and gap)")
+    println("flow        (left to right, wrap at the edge, padding as the inset, gap between children)")
     val pane = box.contentPane
     if (pane == null) {
         println("flow        FAIL  box has no pane")
         return false
     }
 
-    val gap = FLOW_PADDING
-    val innerWidth = pane.width - gap * 2.0
-    val right = gap + innerWidth
+    val inset = FLOW_INSET
+    val gap = FLOW_GAP
+    val innerWidth = pane.width - inset * 2.0
+    val right = inset + innerWidth
     val wide = innerWidth * 0.6
     val narrow = innerWidth * 0.3
 
     // A opens the first line; B does not fit beside it and wraps; C stays on B's line.
-    val firstLine = gap
-    val secondLine = gap + FLOW_CHILD_HEIGHT + gap
+    val firstLine = inset
+    val secondLine = inset + FLOW_CHILD_HEIGHT + gap
     val expected = listOf(
-        Triple("A", gap, firstLine),
-        Triple("B", gap, secondLine),
-        Triple("C", gap + wide + gap, secondLine),
+        Triple("A", inset, firstLine),
+        Triple("B", inset, secondLine),
+        Triple("C", inset + wide + gap, secondLine),
     )
 
     var allOk = true

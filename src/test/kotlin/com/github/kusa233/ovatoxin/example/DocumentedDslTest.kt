@@ -6,11 +6,13 @@ import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.runtime.Browser
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
+import com.github.kusa233.ovatoxin.widget.Align
 import com.github.kusa233.ovatoxin.widget.Button
 import com.github.kusa233.ovatoxin.widget.CheckBox
 import com.github.kusa233.ovatoxin.widget.ComboBox
 import com.github.kusa233.ovatoxin.widget.Div
 import com.github.kusa233.ovatoxin.widget.FlexBox
+import com.github.kusa233.ovatoxin.widget.Justify
 import com.github.kusa233.ovatoxin.widget.Link
 import com.github.kusa233.ovatoxin.widget.ProgressBar
 import com.github.kusa233.ovatoxin.widget.TextArea
@@ -558,9 +560,14 @@ class DocumentedDslTest {
                     y = 10.percent
                     width = 80.percent
                     height = 40.percent
+                    // 内边距只是内缩，和子组件之间的间距无关
                     hPadding = 8.px
                     vPadding = 8.px
                 }
+                // 间距和分布写在 FlexBox 自己身上
+                row.gap = 8.px
+                row.justify = Justify.SPACE_BETWEEN
+                row.align = Align.CENTER
                 row.layout {
                     for (index in 1..12) {
                         draw(Button()) { cell ->
@@ -594,6 +601,11 @@ class DocumentedDslTest {
         // The eleventh cell opens the third line, one line further down again.
         assertEquals(8.0, row.slotFor(row.children[10], content).x)
         assertEquals(8.0 + (30.0 + 8.0) * 2, row.slotFor(row.children[10], content).y)
+
+        // SPACE_BETWEEN pushes the last cell of a full line against the opposite inset: five cells
+        // and four gaps use 737.6px, and the 46.4px left over are shared between the four gaps.
+        val fifth = row.children[4].layoutSpec.width!!.resolve(content.width)
+        assertEquals(content.offsetX + content.width, row.slotFor(row.children[4], content).x + fifth)
     }
 
     @Test

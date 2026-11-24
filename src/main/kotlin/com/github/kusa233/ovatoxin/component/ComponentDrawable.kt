@@ -73,6 +73,11 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
  * container and nothing else: padding on a panel does not move the panel, and a component that
  * holds no children is unaffected by either value.
  *
+ * Padding is an inset and nothing more — it never pushes two children apart. A surface that flows
+ * its children keeps the space between them in its own
+ * [gap][com.github.kusa233.ovatoxin.widget.FlexBox.gap], which is a value of the surface rather
+ * than one of its layout.
+ *
  * @param T the concrete subclass, so [layout] returns the exact type and the block it opens is
  *   scoped to this surface.
  */
