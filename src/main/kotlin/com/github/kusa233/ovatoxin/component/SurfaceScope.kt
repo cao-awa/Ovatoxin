@@ -5,10 +5,11 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 /**
  * The scope a [ComponentDrawable.layout] block runs in — the only place a child can be declared.
  *
- * The library has exactly two drawing surfaces, [com.github.kusa233.ovatoxin.window.Frame] and
- * [com.github.kusa233.ovatoxin.widget.Div], and both are [ComponentDrawable]s. Neither of them
- * carries a `draw` of its own: the method lives here, on the scope the `layout` block receives,
- * so it is reachable only *inside* that block and nowhere else:
+ * The library has three drawing surfaces — [com.github.kusa233.ovatoxin.window.Frame],
+ * [com.github.kusa233.ovatoxin.widget.Div] and [com.github.kusa233.ovatoxin.widget.FlexBox] — and
+ * all of them are [ComponentDrawable]s. None of them carries a `draw` of its own: the method lives
+ * here, on the scope the `layout` block receives, so it is reachable only *inside* that block and
+ * nowhere else:
  *
  * ```kotlin
  * val frame = Frame()

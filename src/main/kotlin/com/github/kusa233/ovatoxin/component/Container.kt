@@ -14,7 +14,8 @@ import javafx.scene.layout.Region
  * A container owns the children of a region and the [Layout] that places them; it does not by
  * itself offer a way to declare them. Children are declared inside the `layout` block of a
  * drawing surface — [com.github.kusa233.ovatoxin.component.ComponentDrawable], inherited by
- * [com.github.kusa233.ovatoxin.window.Frame] and [com.github.kusa233.ovatoxin.widget.Div] — with
+ * [com.github.kusa233.ovatoxin.window.Frame], [com.github.kusa233.ovatoxin.widget.Div] and
+ * [com.github.kusa233.ovatoxin.widget.FlexBox] — with
  * [com.github.kusa233.ovatoxin.component.SurfaceScope.draw]. This class therefore holds everything
  * a container needs *after* a child exists — the child list, the layout pass and the repaint of a
  * single child — while the act of drawing is confined to [ComponentDrawable].
@@ -22,8 +23,15 @@ import javafx.scene.layout.Region
  * Geometry is expressed by a [Layout] whose slots each take a percentage of the container size or
  * an absolute pixel count. Layouts are re-resolved whenever the container is resized.
  *
- * Percentages always resolve against the container itself, not against the window, so nesting
- * a [com.github.kusa233.ovatoxin.widget.Div] rescopes them for everything inside.
+ * Percentages resolve against [contentBox] — the container itself, cut down by the `hPadding` and
+ * `vPadding` its [Layout] declares. For a container without padding that is simply its own size;
+ * for one padded by `10.px` it is twenty pixels narrower, and the content starts ten pixels in.
+ * Nesting a [com.github.kusa233.ovatoxin.widget.Div] therefore rescopes percentages for everything
+ * inside, and so does padding.
+ *
+ * A plain container gives every child the origin of its content box, so a child lands where its own
+ * `x` and `y` say. A flowing container is free to hand out a slot instead — see [slotFor], which
+ * [com.github.kusa233.ovatoxin.widget.FlexBox] overrides to lay its children out in a line.
  *
  * The class is marked with [OvatoxinDsl], so a nested surface's `layout` block sees only the scope
  * it declares children for, never the one around it: inside `panel.layout { }` a member that
@@ -44,6 +52,40 @@ abstract class Container<T : Container<T>> : Component<T>() {
 
     /** The pane hosting the children, or `null` while the container is not rendered. */
     internal val contentPane: Pane? get() = this.pane
+
+    /**
+     * The area children may be placed into, for a container of [width] by [height] pixels.
+     *
+     * It is the box of the container itself, cut down by the `hPadding` and `vPadding` of its
+     * [layoutSpec] — the inset a container keeps around its children. An inset is symmetric, so
+     * the room left over shrinks by the padding twice, and percentages of a child resolve against
+     * what is left: a `100.percent` child of a box padded by `10.px` is twenty pixels narrower than
+     * the box instead of running over its edge.
+     *
+     * Padding larger than half the box would leave no room at all — and, unresolved, would put the
+     * content outside the container — so an inset is capped at half the box. A container padded that
+     * far therefore has an empty content box in its middle rather than a negative one.
+     */
+    internal open fun contentBox(width: Double, height: Double): ContentBox {
+        val insetX = this.layoutSpec.hPadding.resolve(width).coerceIn(0.0, width / 2.0)
+        val insetY = this.layoutSpec.vPadding.resolve(height).coerceIn(0.0, height / 2.0)
+        return ContentBox(
+            offsetX = insetX,
+            offsetY = insetY,
+            width = width - insetX * 2.0,
+            height = height - insetY * 2.0,
+        )
+    }
+
+    /**
+     * The slot [child] is placed into, given the [box] its container offers.
+     *
+     * The default is the origin of the box, so a child of a plain container is positioned exactly
+     * as its own `x` and `y` describe. A flowing container overrides this to hand out a computed
+     * slot and thereby joins the flow; the child's own offsets still add onto it.
+     */
+    internal open fun slotFor(child: Component<*>, box: ContentBox): Slot =
+        Slot(box.offsetX, box.offsetY)
 
     /**
      * Runs [block] as one child-declaring pass and lays the container out afterwards.
@@ -107,10 +149,23 @@ abstract class Container<T : Container<T>> : Component<T>() {
         Fx.runOnFxThread { applyGeometry(host, component) }
     }
 
-    /** Resolves [spec] against the size of this container and moves [node] accordingly. */
-    internal fun place(node: Node, spec: Layout, width: Double, height: Double) {
-        val resolvedX = spec.x.resolve(width)
-        val resolvedY = spec.y.resolve(height)
+    /**
+     * Resolves [spec] against the width and height of the content box and moves [node] accordingly.
+     *
+     * [offsetX] and [offsetY] are added to the resolved position, which is how a padded surface
+     * keeps its children inside the inset box and how a flow hands over the slot it computed:
+     * the `x` of a child is a position *relative to* that offset, never an absolute one.
+     */
+    internal fun place(
+        node: Node,
+        spec: Layout,
+        width: Double,
+        height: Double,
+        offsetX: Double = 0.0,
+        offsetY: Double = 0.0,
+    ) {
+        val resolvedX = offsetX + spec.x.resolve(width)
+        val resolvedY = offsetY + spec.y.resolve(height)
         val resolvedWidth = spec.width?.resolve(width)
         val resolvedHeight = spec.height?.resolve(height)
         node.autosize()
@@ -147,24 +202,35 @@ abstract class Container<T : Container<T>> : Component<T>() {
      *
      * With [only] set, exactly that one child is placed and styled and its siblings are left as
      * they are — a partial pass used to redraw a single component.
+     *
+     * A flow is asked for its layout once per child, because its lines depend on the widths the
+     * children resolve to. [beginPass] lets it compute that layout before the first child is
+     * placed, and [slotFor] then answers with a slot it already knows.
      */
     private fun applyGeometry(host: Pane, only: Component<*>? = null) {
-        val width = host.width
-        val height = host.height
+        val box = contentBox(host.width, host.height)
 
         // The container styles itself against its own box; a percentage corner needs that size.
-        applyStyle(width, height)
+        applyStyle(host.width, host.height)
 
         val targets = if (only == null) this.mutableChildren.toList() else listOf(only)
+        beginPass(box, targets)
         for (child in targets) {
             val node = child.node
             if (node.parent == null) host.children += node
             node.isVisible = child.visible
             node.isManaged = false
-            place(node, child.layoutSpec, width, height)
+            val slot = slotFor(child, box)
+            place(node, child.layoutSpec, box.width, box.height, slot.x, slot.y)
             child.applyStyle(childBoxWidth(node), childBoxHeight(node))
         }
     }
+
+    /**
+     * Gives a flow the chance to lay itself out before its children are placed, one child at a
+     * time. A plain container has nothing to prepare, since every slot is the origin of the box.
+     */
+    internal open fun beginPass(box: ContentBox, targets: List<Component<*>>) = Unit
 
     /** The width a child actually occupies after [place], used to resolve its corner radius. */
     private fun childBoxWidth(node: Node): Double =

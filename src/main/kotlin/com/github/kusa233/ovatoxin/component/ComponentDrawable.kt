@@ -6,15 +6,16 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
  * A container that is itself a drawing surface, so children can be declared inside its `layout`
  * block.
  *
- * Only two types of the library extend this class, because only they define a region a child can
- * be placed into:
+ * Three types of the library extend this class, because only they define a region a child can be
+ * placed into:
  *
  * * [com.github.kusa233.ovatoxin.window.Frame] — the window, the root of every tree;
- * * [com.github.kusa233.ovatoxin.widget.Div] — a box inside it, which rescopes percentages.
+ * * [com.github.kusa233.ovatoxin.widget.Div] — a box inside it, which rescopes percentages;
+ * * [com.github.kusa233.ovatoxin.widget.FlexBox] — a box that flows its children in a line.
  *
  * Everything else is a plain [Component] and cannot draw at all: a button, a list or a text area
- * is *drawn*, it never draws. Even the two surfaces have no `draw` of their own — the method lives
- * on [SurfaceScope], the receiver of [layout], and therefore exists only while that block runs:
+ * is *drawn*, it never draws. Even the surfaces have no `draw` of their own — the method lives on
+ * [SurfaceScope], the receiver of [layout], and therefore exists only while that block runs:
  *
  * ```kotlin
  * val frame = Frame()
@@ -42,6 +43,36 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
  * }
  * ```
  *
+ * ## Padding
+ *
+ * A surface keeps its children away from its own edges with `hPadding` and `vPadding`, which are
+ * declared in the `layout` block of the surface — like every other value of a layout, right next
+ * to the position and the size it is drawn with:
+ *
+ * ```kotlin
+ * draw(Div()) { panel ->
+ *     layout {
+ *         x = 10.percent
+ *         width = 80.percent
+ *         hPadding = 24.px
+ *         vPadding = 16.px
+ *     }
+ *     panel.layout {
+ *         // children of the panel: 24px from its left, 16px from its top
+ *         draw(Button()) { it.layout { x = 0.px; y = 0.px } }
+ *     }
+ * }
+ * ```
+ *
+ * The padding is a *content inset*: the room left over shrinks by the padding on both sides, so a
+ * child at `100.percent` still ends one padding short of the edge instead of running over it. The
+ * inset box is what percentages resolve against, and its origin is what a child's `x` and `y` are
+ * counted from — see [com.github.kusa233.ovatoxin.component.Container.contentBox].
+ *
+ * It is declared in the layout block of the *container*, so it insets the children of that
+ * container and nothing else: padding on a panel does not move the panel, and a component that
+ * holds no children is unaffected by either value.
+ *
  * @param T the concrete subclass, so [layout] returns the exact type and the block it opens is
  *   scoped to this surface.
  */
@@ -61,6 +92,12 @@ abstract class ComponentDrawable<T : ComponentDrawable<T>> : Container<T>() {
      * from. Nothing else in the DSL offers `draw`, so a child cannot be attached outside a
      * `layout` block of the surface that should hold it.
      *
+     * The padding of the surface is not part of this call: it is one of the values of the
+     * [Layout][com.github.kusa233.ovatoxin.layout.Layout] the surface is drawn with — `hPadding`
+     * and `vPadding` inside the `layout { }` block of the surrounding `draw`, or [applyLayout] on
+     * a surface that already exists.
+     *
+     * @param block declares the children and returns nothing.
      * @return this surface, so the call chains.
      */
     fun layout(block: SurfaceScope<T>.() -> Unit): T {

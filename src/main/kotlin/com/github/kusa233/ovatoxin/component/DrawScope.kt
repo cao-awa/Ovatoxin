@@ -30,7 +30,23 @@ import com.github.kusa233.ovatoxin.style.Style
 @OvatoxinDsl
 class DrawScope<T : Component<*>>(internal val component: T) {
 
-    /** Configures the position and the size of the drawn component. */
+    /**
+     * Configures the position and the size of the drawn component.
+     *
+     * This is also where a component that holds children declares its `hPadding` and `vPadding`,
+     * so the inset sits next to the box it applies to and travels with it when the component is
+     * redrawn:
+     *
+     * ```kotlin
+     * draw(Div()) { panel ->
+     *     layout {
+     *         width = 80.percent
+     *         hPadding = 12.px
+     *     }
+     *     panel.layout { draw(TextArea()) { it.text("12px in") } }
+     * }
+     * ```
+     */
     fun layout(block: Layout.() -> Unit): DrawScope<T> {
         this.component.layoutSpec.configure(block)
         return this

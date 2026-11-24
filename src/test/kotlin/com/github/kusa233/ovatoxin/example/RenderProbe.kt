@@ -3,10 +3,12 @@ package com.github.kusa233.ovatoxin.example
 import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.component.Container
 import com.github.kusa233.ovatoxin.layout.percent
+import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.Button
 import com.github.kusa233.ovatoxin.widget.Div
+import com.github.kusa233.ovatoxin.widget.FlexBox
 import com.github.kusa233.ovatoxin.widget.Link
 import com.github.kusa233.ovatoxin.widget.TextArea
 import com.github.kusa233.ovatoxin.widget.TextField
@@ -40,6 +42,8 @@ fun main() {
     val imageUrl = probeImage()
     lateinit var panel: Div
     lateinit var imageBox: Div
+    lateinit var padBox: Div
+    lateinit var flowBox: FlexBox
     lateinit var boundText: TextArea
     lateinit var untouchedText: Button
     val translations = mapOf("test" to "Test", "changed" to "Changed")
@@ -154,6 +158,52 @@ fun main() {
                 }
             }
         }
+
+        // A padded surface: the child below asks for the top-left corner of the *content* box,
+        // so it may only land on the padding's inset, never on the corner of the surface.
+        padBox = draw(Div()) { component ->
+            layout {
+                x = 10.percent
+                y = 20.percent
+                width = 80.percent
+                height = 8.percent
+                hPadding = PAD_X.px
+                vPadding = PAD_Y.px
+            }
+            component.layout {
+                draw(TextArea()) { child ->
+                    layout {
+                        width = 50.percent
+                        height = 50.percent
+                    }
+                    child.text("padded")
+                }
+            }
+        }
+
+        // A flow: the padding is both the inset and the gap, and the children wrap by themselves.
+        flowBox = draw(FlexBox()) { component ->
+            layout {
+                x = 10.percent
+                y = 88.percent
+                width = 80.percent
+                height = 12.percent
+                hPadding = FLOW_PADDING.px
+                vPadding = FLOW_PADDING.px
+            }
+            component.layout {
+                for (name in listOf("A", "B", "C")) {
+                    draw(TextArea()) { child ->
+                        // Two wide children cannot share a line, the narrow one joins the second.
+                        layout {
+                            width = if (name == "C") 30.percent else 60.percent
+                            height = FLOW_CHILD_HEIGHT.px
+                        }
+                        child.text(name)
+                    }
+                }
+            }
+        }
     }
 
     frame.show()
@@ -162,7 +212,7 @@ fun main() {
     // after the size listeners have run.
     Platform.runLater {
         Platform.runLater {
-            val initial = report("initial 800x600", frame, probes, nested, panel, imageBox)
+            val initial = report("initial 800x600", frame, probes, nested, panel, imageBox, padBox, flowBox)
 
             // Percentages must be re-resolved against the new window size, not frozen.
             frame.stage?.let { stage ->
@@ -173,7 +223,7 @@ fun main() {
 
             Platform.runLater {
                 Platform.runLater {
-                    val resized = report("resized 1000x500", frame, probes, nested, panel, imageBox)
+                    val resized = report("resized 1000x500", frame, probes, nested, panel, imageBox, padBox, flowBox)
                     val stateOk = stateRedraw(boundText, untouchedText, state, "changed")
                     val ok = initial && resized && stateOk
                     Platform.exit()
@@ -190,6 +240,16 @@ private class Probe(val name: String, val component: Component<*>, val expectedT
 /** The probe colour set next to the image. It must never be visible. */
 private val IMAGE_FALLBACK_COLOR: Color = Color.web("#123456")
 
+/** The height every child of the probe flow asks for, in pixels. */
+private const val FLOW_CHILD_HEIGHT: Double = 16.0
+
+/** The padding of the probe flow, which doubles as its gap. */
+private const val FLOW_PADDING: Double = 4.0
+
+/** The padding of the probe surface. */
+private const val PAD_X: Double = 8.0
+private const val PAD_Y: Double = 6.0
+
 private fun report(
     label: String,
     frame: Frame,
@@ -197,6 +257,8 @@ private fun report(
     nested: List<Probe>,
     panel: Div,
     imageBox: Div,
+    padBox: Div,
+    flowBox: FlexBox,
 ): Boolean {
     val scene = probes.first().component.node.scene
     if (scene == null) {
@@ -215,11 +277,115 @@ private fun report(
     ok = styling(probes, panel) && ok
     ok = opacityLayer(probes.first { it.name == "Button" }) && ok
     ok = imageLayer(imageBox) && ok
+    ok = padding(padBox) && ok
+    ok = flow(flowBox) && ok
     ok = contents(probes + nested) && ok
 
     println()
     println(if (ok) "RESULT: ok" else "RESULT: MISMATCH —see rows above")
     return ok
+}
+
+/**
+ * Proves the padding of a surface is a *content inset* rather than a shift.
+ *
+ * A child asking for the top left corner must land on the inset, and one asking for `50.percent`
+ * must be measured against the box that is left over — twenty pixels narrower than the surface
+ * once both sides are padded, so the reserved room is genuinely gone.
+ */
+private fun padding(surface: Div): Boolean {
+    println()
+    println("padding     (content inset: room is taken off both sides, then percentages resolve)")
+    val pane = surface.contentPane
+    val child = surface.children.singleOrNull()?.node
+    if (pane == null || child == null) {
+        println("padding     FAIL  surface has no pane or no single child")
+        return false
+    }
+
+    val expectedX = PAD_X
+    val expectedY = PAD_Y
+    val expectedWidth = (pane.width - PAD_X * 2.0) * 0.5
+    val expectedHeight = (pane.height - PAD_Y * 2.0) * 0.5
+
+    val xOk = near(expectedX, child.layoutX)
+    val yOk = near(expectedY, child.layoutY)
+    val widthOk = near(expectedWidth, child.layoutBounds.width)
+    val heightOk = near(expectedHeight, child.layoutBounds.height)
+
+    println(
+        "origin      ${if (xOk && yOk) "ok  " else "FAIL"} " +
+            "child at (${num(child.layoutX)}, ${num(child.layoutY)}) " +
+            "expect (${num(expectedX)}, ${num(expectedY)}) —the inset, not the corner",
+    )
+    println(
+        "inner size  ${if (widthOk && heightOk) "ok  " else "FAIL"} " +
+            "50% resolves to ${num(child.layoutBounds.width)} x ${num(child.layoutBounds.height)} " +
+            "expect ${num(expectedWidth)} x ${num(expectedHeight)}",
+    )
+    return xOk && yOk && widthOk && heightOk
+}
+
+/**
+ * Proves the flow of a [FlexBox]: children are laid left to right, wrap when the line is full, and
+ * the padding separates them instead of overlapping them.
+ *
+ * The slots are recomputed here from the rendered size of the pane alone, so the check does not
+ * consult the bookkeeping of the widget it is verifying.
+ */
+private fun flow(box: FlexBox): Boolean {
+    println()
+    println("flow        (left to right, wrap at the edge, padding as inset and gap)")
+    val pane = box.contentPane
+    if (pane == null) {
+        println("flow        FAIL  box has no pane")
+        return false
+    }
+
+    val gap = FLOW_PADDING
+    val innerWidth = pane.width - gap * 2.0
+    val right = gap + innerWidth
+    val wide = innerWidth * 0.6
+    val narrow = innerWidth * 0.3
+
+    // A opens the first line; B does not fit beside it and wraps; C stays on B's line.
+    val firstLine = gap
+    val secondLine = gap + FLOW_CHILD_HEIGHT + gap
+    val expected = listOf(
+        Triple("A", gap, firstLine),
+        Triple("B", gap, secondLine),
+        Triple("C", gap + wide + gap, secondLine),
+    )
+
+    var allOk = true
+    for ((index, row) in expected.withIndex()) {
+        val (name, x, y) = row
+        val child = box.children.getOrNull(index)?.node
+        if (child == null) {
+            println("${pad(name, 12)} FAIL  missing child #$index")
+            allOk = false
+            continue
+        }
+        val width = if (index == expected.lastIndex) narrow else wide
+        val xOk = near(x, child.layoutX)
+        val yOk = near(y, child.layoutY)
+        val widthOk = near(width, child.layoutBounds.width)
+        val matched = xOk && yOk && widthOk
+        allOk = allOk && matched
+        println(
+            "${pad(name, 12)} ${if (matched) "ok  " else "FAIL"} " +
+                "at (${num(child.layoutX)}, ${num(child.layoutY)}) expect (${num(x)}, ${num(y)})  " +
+                "width ${num(child.layoutBounds.width)} expect ${num(width)}",
+        )
+    }
+
+    // A child that fits inside the box proves nothing wrapped past its right edge.
+    val overflow = box.children.map { it.node }.any { it.layoutX + it.layoutBounds.width > right + 0.5 }
+    println(
+        "${pad("right edge", 12)} ${if (!overflow) "ok  " else "FAIL"} " +
+            "no child crosses x=${num(right)} (the inset edge of the box)",
+    )
+    return allOk && !overflow
 }
 
 /** Compares every rendered box against the spec, resolved against the real parent size. */

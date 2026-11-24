@@ -139,12 +139,14 @@ class LengthTest {
 class LayoutTest {
 
     @Test
-    fun `defaults are anchored top left without an explicit size`() {
+    fun `defaults are anchored top left without an explicit size or padding`() {
         val layout = Layout()
         assertEquals(Length.ZERO, layout.x)
         assertEquals(Length.ZERO, layout.y)
         assertNull(layout.width)
         assertNull(layout.height)
+        assertEquals(Length.ZERO, layout.hPadding)
+        assertEquals(Length.ZERO, layout.vPadding)
     }
 
     @Test
@@ -154,11 +156,32 @@ class LayoutTest {
             y = 20.p
             width = 80.percent
             height = 10.px
+            hPadding = 12.px
+            vPadding = 6.px
         }
         assertEquals(10.percent, layout.x)
         assertEquals(20.percent, layout.y)
         assertEquals(80.percent, layout.width)
         assertEquals(10.px, layout.height)
+        assertEquals(12.px, layout.hPadding)
+        assertEquals(6.px, layout.vPadding)
+    }
+
+    @Test
+    fun `reset clears the padding together with everything else`() {
+        val layout = Layout().configure {
+            x = 10.percent
+            width = 5.px
+            hPadding = 12.px
+            vPadding = 6.px
+        }
+
+        layout.reset()
+
+        assertEquals(Length.ZERO, layout.x)
+        assertNull(layout.width)
+        assertEquals(Length.ZERO, layout.hPadding)
+        assertEquals(Length.ZERO, layout.vPadding)
     }
 
     @Test
@@ -168,11 +191,15 @@ class LayoutTest {
             y = 2.px
             width = 3.percent
             height = 4.px
+            hPadding = 5.px
+            vPadding = 6.percent
         }
         val target = Layout().configure { copyFrom(source) }
         assertEquals(source.x, target.x)
         assertEquals(source.y, target.y)
         assertEquals(source.width, target.width)
         assertEquals(source.height, target.height)
+        assertEquals(source.hPadding, target.hPadding)
+        assertEquals(source.vPadding, target.vPadding)
     }
 }

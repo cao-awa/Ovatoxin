@@ -57,3 +57,101 @@ frame.layout {
 }
 frame.show()
 ```
+
+# 内边距（padding）
+
+内边距是``layout``块里的两个值：``hPadding``（左右）和``vPadding``（上下）。它和``x``、``width``写在同一个地方——组件自己的``layout``块里：
+
+```kotlin
+import com.github.kusa233.ovatoxin.layout.percent
+import com.github.kusa233.ovatoxin.layout.px
+
+val frame = Frame()
+frame.layout {
+    draw(Div()) { panel ->
+        layout {
+            width = 80.percent
+            height = 50.percent
+            hPadding = 24.px
+            vPadding = 16.px
+        }
+        panel.layout {
+            draw(Button()) { button ->
+                layout {
+                    // 内容是往内缩的：x = 0 落在左内边距上，而不是 panel 最左边
+                    x = 0.px
+                    y = 0.px
+                    // 100% 是内缩之后剩下的宽度，所以右边不会溢出
+                    width = 100.percent
+                    height = 20.percent
+                }
+            }
+        }
+    }
+}
+```
+
+内边距是**内容内缩**，不是整体平移：
+
+* 左右各缩``hPadding``，上下各缩``vPadding``，可用区域相应变小；
+* 子组件的``x``/``y``从内缩后的盒子左上角开始计算；
+* 百分比按内缩后的盒子解析，所以``100.percent``正好停在内边距上；
+* 窗口、``Div``和``FlexBox``都支持；内边距只影响它自己的子组件，不影响外面；
+* 内边距超过自身宽度（或高度）的一半时，会被截到一半，内容区压成零而不是变成负数；
+* 写在哪个组件的``layout``里，就只决定那个组件的子组件怎么摆，位置和大小照旧。
+
+窗口本身不是谁的子组件，所以它的内边距直接写在窗口上：
+
+```kotlin
+frame.applyLayout {
+    hPadding = 24.px
+    vPadding = 16.px
+}
+```
+
+# FlexBox
+
+``FlexBox``是一个会自己摆放子组件的画布：从左往右排，排满就换到下一行，行高取该行最高的子组件。
+``FlexBox``同样可以``draw``，也可以放在``Div``里。
+
+导入：
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.FlexBox
+```
+
+```kotlin
+frame.layout {
+    draw(FlexBox()) { row ->
+        layout {
+            x = 10.percent
+            y = 10.percent
+            width = 80.percent
+            height = 40.percent
+            // 内边距同时是子组件之间的间距，也是行与行之间的间距
+            hPadding = 8.px
+            vPadding = 8.px
+        }
+        row.layout {
+            for (index in 1..12) {
+                draw(Button()) { cell ->
+                    layout {
+                        // 只给大小，位置交给 FlexBox
+                        width = 18.percent
+                        height = 30.px
+                    }
+                    cell.text = "$index"
+                }
+            }
+        }
+    }
+}
+```
+
+规则：
+
+* 不加``x``/``y``时，位置由流动排出；
+* 写了``x``/``y``也只当作偏移，叠加在``FlexBox``算出的位置上；
+* ``hPadding``是左右留白，也是同一行相邻子组件的间距；
+* ``vPadding``是上下留白，也是行与行之间的间距；
+* 百分比宽度按内缩后的宽度解析，比例为``100.percent``的子组件会独占一行。

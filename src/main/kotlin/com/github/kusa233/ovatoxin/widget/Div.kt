@@ -45,8 +45,9 @@ import javafx.scene.shape.Rectangle
  * A non-zero [corner][com.github.kusa233.ovatoxin.style.Style.corner] rounds the clipped region
  * as well, so the content is cut along the same outline as the fill.
  *
- * A panel is a drawing surface like the window, so a `Div` can be nested in a `Div` — see
- * [ComponentDrawable].
+ * A panel is a drawing surface like the window and a [FlexBox], so a `Div` can be nested in a
+ * `Div` — see [ComponentDrawable]. It places its children at absolute positions; when they should
+ * flow instead, draw a [FlexBox] into it and let that one arrange them.
  */
 class Div : ComponentDrawable<Div>() {
 

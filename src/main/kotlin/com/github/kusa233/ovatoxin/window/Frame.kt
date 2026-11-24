@@ -23,7 +23,9 @@ import javafx.stage.Stage
  * The size of the frame is the reference size for percentage based layouts of its children.
  * Percentages are resolved against the current window size and re-resolved on resize.
  *
- * A frame is a drawing surface, so `draw(...)` is available inside its
+ * A frame is a drawing surface like a
+ * [Div][com.github.kusa233.ovatoxin.widget.Div] or a
+ * [FlexBox][com.github.kusa233.ovatoxin.widget.FlexBox], so `draw(...)` is available inside its
  * [layout][com.github.kusa233.ovatoxin.component.ComponentDrawable.layout] block — see
  * [ComponentDrawable].
  */

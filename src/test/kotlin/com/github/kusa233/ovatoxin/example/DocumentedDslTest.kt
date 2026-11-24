@@ -2,6 +2,7 @@ package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.percent
+import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.runtime.Browser
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
@@ -9,6 +10,7 @@ import com.github.kusa233.ovatoxin.widget.Button
 import com.github.kusa233.ovatoxin.widget.CheckBox
 import com.github.kusa233.ovatoxin.widget.ComboBox
 import com.github.kusa233.ovatoxin.widget.Div
+import com.github.kusa233.ovatoxin.widget.FlexBox
 import com.github.kusa233.ovatoxin.widget.Link
 import com.github.kusa233.ovatoxin.widget.ProgressBar
 import com.github.kusa233.ovatoxin.widget.TextArea
@@ -474,6 +476,162 @@ class DocumentedDslTest {
 
         assertEquals(4, combo.size)
         assertEquals("Extra Large", combo.item(3))
+    }
+
+    @Test
+    fun `the padding snippet compiles and insets the content`() {
+        val frame = Frame()
+        // A frame is nobody's child, so its layout is applied to it directly; a surface that is
+        // drawn inside another one declares the same values in the `layout { }` block of its draw.
+        frame.applyLayout {
+            hPadding = 24.px
+            vPadding = 16.px
+        }
+        frame.layout {
+            draw(Button()) { button ->
+                layout {
+                    x = 0.px
+                    y = 0.px
+                    width = 100.percent
+                    height = 20.percent
+                }
+                button.text = "inset"
+            }
+        }
+
+        // Padding is a value of the layout the surface is laid out with, and the block keeps its
+        // children.
+        assertEquals(24.px, frame.layoutSpec.hPadding)
+        assertEquals(16.px, frame.layoutSpec.vPadding)
+        assertEquals(1, frame.children.size)
+
+        // The room left over is twenty-four pixels narrower on both axes, and the content starts
+        // one padding in, so a child at 100% still ends one padding short of the edge.
+        val content = frame.contentBox(800.0, 600.0)
+        assertEquals(24.0, content.offsetX)
+        assertEquals(16.0, content.offsetY)
+        assertEquals(752.0, content.width)
+        assertEquals(568.0, content.height)
+    }
+
+    @Test
+    fun `the div padding snippet compiles and rescopes the percentages`() {
+        val frame = Frame()
+        frame.layout {
+            draw(Div()) { panel ->
+                layout {
+                    width = 80.percent
+                    height = 50.percent
+                    hPadding = 12.px
+                    vPadding = 12.px
+                }
+                panel.layout {
+                    draw(TextArea()) { text ->
+                        layout {
+                            width = 100.percent
+                            height = 100.percent
+                        }
+                        text.text("12px from the edge")
+                    }
+                }
+            }
+        }
+
+        val panel = frame.children[0] as Div
+        val text = panel.children[0] as TextArea
+        assertEquals(12.px, panel.layoutSpec.hPadding)
+        assertEquals(12.px, panel.layoutSpec.vPadding)
+        assertEquals(100.percent, text.layoutSpec.width)
+        // 100% of the panel is its own width minus the padding on both sides.
+        val content = panel.contentBox(400.0, 200.0)
+        assertEquals(376.0, content.width)
+        assertEquals(176.0, content.height)
+    }
+
+    @Test
+    fun `the flex box snippet compiles and wraps its children`() {
+        val frame = Frame()
+        frame.layout {
+            draw(FlexBox()) { row ->
+                layout {
+                    x = 10.percent
+                    y = 10.percent
+                    width = 80.percent
+                    height = 40.percent
+                    hPadding = 8.px
+                    vPadding = 8.px
+                }
+                row.layout {
+                    for (index in 1..12) {
+                        draw(Button()) { cell ->
+                            layout {
+                                width = 18.percent
+                                height = 30.px
+                            }
+                            cell.text = "$index"
+                        }
+                    }
+                }
+            }
+        }
+
+        val row = frame.children[0] as FlexBox
+        assertEquals(12, row.children.size)
+        assertEquals("1", (row.children[0] as Button).text)
+
+        // Eighteen percent of the inset box is 141.12px, and five of them plus the gaps still fit
+        // into 784px, so twelve buttons need three lines of five, five and two.
+        val content = row.contentBox(800.0, 240.0)
+        assertEquals(8.0, content.offsetX)
+        assertEquals(784.0, content.width)
+        row.beginPass(content, row.children)
+        assertEquals(8.0, row.slotFor(row.children[0], content).x)
+        assertEquals(8.0, row.slotFor(row.children[0], content).y)
+        // The sixth cell cannot join the first line and opens the second one, below the tallest
+        // child of the first line rather than at the top of the box.
+        assertEquals(8.0, row.slotFor(row.children[5], content).x)
+        assertEquals(8.0 + 30.0 + 8.0, row.slotFor(row.children[5], content).y)
+        // The eleventh cell opens the third line, one line further down again.
+        assertEquals(8.0, row.slotFor(row.children[10], content).x)
+        assertEquals(8.0 + (30.0 + 8.0) * 2, row.slotFor(row.children[10], content).y)
+    }
+
+    @Test
+    fun `a flex child keeps its own offset instead of losing it`() {
+        val frame = Frame()
+        frame.layout {
+            draw(FlexBox()) { row ->
+                layout {
+                    width = 80.percent
+                    height = 40.percent
+                    hPadding = 8.px
+                    vPadding = 8.px
+                }
+                row.layout {
+                    draw(Button()) { cell ->
+                        layout {
+                            x = 5.px
+                            y = 3.px
+                            width = 20.percent
+                            height = 20.px
+                        }
+                        cell.text = "nudged"
+                    }
+                }
+            }
+        }
+
+        val row = frame.children[0] as FlexBox
+        val content = row.contentBox(800.0, 240.0)
+        row.beginPass(content, row.children)
+
+        // The slot is the position of the flow, i.e. the inset corner; the `x` and `y` the child
+        // declares are added on top when it is placed, so a flow is nudged but never overridden.
+        val slot = row.slotFor(row.children[0], content)
+        assertEquals(8.0, slot.x)
+        assertEquals(8.0, slot.y)
+        assertEquals(5.px, row.children[0].layoutSpec.x)
+        assertEquals(3.px, row.children[0].layoutSpec.y)
     }
 
     /** A custom item type, as the formatted snippet uses. */

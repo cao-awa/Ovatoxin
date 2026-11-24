@@ -4,12 +4,14 @@ import com.github.kusa233.ovatoxin.example.I18N.languages
 import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.percent
+import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.Button
 import com.github.kusa233.ovatoxin.widget.CheckBox
 import com.github.kusa233.ovatoxin.widget.ComboBox
 import com.github.kusa233.ovatoxin.widget.Div
+import com.github.kusa233.ovatoxin.widget.FlexBox
 import com.github.kusa233.ovatoxin.widget.Link
 import com.github.kusa233.ovatoxin.widget.ListView
 import com.github.kusa233.ovatoxin.widget.ProgressBar
@@ -21,7 +23,7 @@ import javafx.scene.paint.Color
 fun main() {
     val frame = Frame()
     frame.title = "Ovatoxin – DSL demo"
-    testProgressBarWithState(frame)
+    testPadding(frame)
     frame.show()
 }
 
@@ -167,6 +169,104 @@ fun testDiv(frame: Frame) {
                         height = 80.percent
                     }
                     right.text("outside the panel, not rendered")
+                }
+            }
+        }
+    }
+}
+
+fun testPadding(frame: Frame) {
+    frame.layout {
+        draw(Div()) { flush ->
+            layout {
+                x = 10.percent
+                y = 6.percent
+                width = 80.percent
+                height = 16.percent
+            }
+            style {
+                background {
+                    color = Style.DEFAULT_COLOR
+                }
+            }
+            flush.layout {
+                draw(TextArea()) { child ->
+                    layout {
+                        x = 0.percent
+                        y = 0.percent
+                        width = 100.percent
+                        height = 40.percent
+                    }
+                    child.text("no padding: flush with the edge")
+                }
+            }
+        }
+
+        draw(Div()) { inset ->
+            layout {
+                x = 10.percent
+                y = 24.percent
+                width = 80.percent
+                height = 16.percent
+                hPadding = 20.px
+                vPadding = 12.px
+            }
+            style {
+                background {
+                    color = Style.DEFAULT_COLOR
+                }
+            }
+            inset.layout {
+                draw(TextArea()) { child ->
+                    layout {
+                        x = 0.percent
+                        y = 0.percent
+                        width = 100.percent
+                        height = 40.percent
+                    }
+                    child.text("20px / 12px padding: inset from the edge")
+                }
+            }
+        }
+    }
+}
+
+fun testFlexBox(frame: Frame) {
+    frame.layout {
+        draw(Div()) { panel ->
+            layout {
+                x = 10.percent
+                y = 44.percent
+                width = 80.percent
+                height = 24.percent
+            }
+            style {
+                background {
+                    color = Style.DEFAULT_COLOR
+                }
+                corner = 12.percent
+            }
+            panel.layout {
+                draw(FlexBox()) { row ->
+                    layout {
+                        x = 0.percent
+                        y = 0.percent
+                        width = 100.percent
+                        height = 100.percent
+                        hPadding = 8.px
+                        vPadding = 8.px
+                    }
+                    row.layout {
+                        for (index in 1..12) {
+                            draw(Button()) { cell ->
+                                layout {
+                                    width = 18.percent
+                                    height = 18.percent
+                                }
+                                cell.text = "$index"
+                            }
+                        }
+                    }
                 }
             }
         }

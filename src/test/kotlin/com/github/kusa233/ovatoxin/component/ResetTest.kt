@@ -209,6 +209,38 @@ class ResetTest {
     }
 
     @Test
+    fun `a redraw restores the padding the block declares`() {
+        val state = State("a")
+        val frame = Frame()
+        val panel = Div()
+        frame.layout {
+            draw(panel) { div ->
+                layout {
+                    width = 100.percent
+                    hPadding = 12.px
+                    vPadding = 6.px
+                }
+                div.layout {
+                    draw(TextArea()) { area -> area.text(state.value) }
+                }
+            }
+        }
+        panel.withState(state)
+
+        // The global reset before every redraw clears the padding as well, so the second run of
+        // the block has to put it back — otherwise a state change would silently close the inset.
+        state.update("b")
+
+        assertEquals(12.px, panel.layoutSpec.hPadding)
+        assertEquals(6.px, panel.layoutSpec.vPadding)
+        val content = panel.contentBox(200.0, 100.0)
+        assertEquals(12.0, content.offsetX)
+        assertEquals(6.0, content.offsetY)
+        assertEquals(176.0, content.width)
+        assertEquals(88.0, content.height)
+    }
+
+    @Test
     fun `a redraw keeps the children a replayed container still draws`() {
         val state = State("a")
         val frame = Frame()
