@@ -1,4 +1,4 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.input
 
 import com.github.kusa233.ovatoxin.component.Component
 import javafx.scene.Node
@@ -29,7 +29,7 @@ import javafx.scene.control.CheckBox as FxCheckBox
  * still works and runs on the same click, in addition to [onChange], when both are registered.
  *
  * A tick the caller writes is silent: `box.checked = true` changes what is on screen and runs no
- * handler, exactly like a programmatic selection in a [ListView]. Only a click on the box reaches
+ * handler, exactly like a programmatic selection in a [ListView][com.github.kusa233.ovatoxin.widget.list.ListView]. Only a click on the box reaches
  * the handlers, so a handler that also writes [checked] cannot call itself in a loop.
  */
 class CheckBox(text: String = "") : Component<CheckBox>() {

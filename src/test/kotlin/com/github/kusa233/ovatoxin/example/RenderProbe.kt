@@ -6,15 +6,16 @@ import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
-import com.github.kusa233.ovatoxin.widget.Button
-import com.github.kusa233.ovatoxin.widget.Div
-import com.github.kusa233.ovatoxin.widget.FlexBox
-import com.github.kusa233.ovatoxin.widget.Link
-import com.github.kusa233.ovatoxin.widget.TextArea
-import com.github.kusa233.ovatoxin.widget.TextField
+import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.widget.container.Div
+import com.github.kusa233.ovatoxin.widget.container.FlexBox
+import com.github.kusa233.ovatoxin.widget.text.Label
+import com.github.kusa233.ovatoxin.widget.text.Link
+import com.github.kusa233.ovatoxin.widget.text.TextArea
+import com.github.kusa233.ovatoxin.widget.input.TextField
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.application.Platform
-import javafx.scene.control.Label
+import javafx.scene.control.Label as FxLabel
 import javafx.scene.paint.Color
 import java.awt.image.BufferedImage
 import java.nio.file.Files
@@ -73,6 +74,19 @@ fun main() {
             component.hint = "type here"
         }
         probes += Probe("TextField", field, "")
+
+        // A form label: a caption on the left, annotating the field above it. It goes through the
+        // same style, geometry and content checks as every other probe, which is the point — a
+        // label is a styled component like the rest, not a bare JavaFX `Label`.
+        val caption = draw(Label("Form label", labelFor = field)) { component ->
+            layout {
+                x = 10.percent
+                y = 42.percent
+                width = 30.percent
+                height = 6.percent
+            }
+        }
+        probes += Probe("Label", caption, "Form label")
 
         val button = draw(Button()) { component ->
             layout {
@@ -286,6 +300,7 @@ private fun report(
     ok = padding(padBox) && ok
     ok = flow(flowBox) && ok
     ok = contents(probes + nested) && ok
+    ok = association(probes) && ok
 
     println()
     println(if (ok) "RESULT: ok" else "RESULT: MISMATCH —see rows above")
@@ -578,7 +593,7 @@ private fun pixels(node: javafx.scene.Node): String? = try {
 }
 
 /** The label a text area renders, so the probe reads what is on screen. */
-private fun TextArea.labelNode(): Label = node as Label
+private fun TextArea.labelNode(): FxLabel = node as FxLabel
 
 /** Verifies the text every probed component actually shows. */
 private fun contents(probes: List<Probe>): Boolean {
@@ -588,6 +603,7 @@ private fun contents(probes: List<Probe>): Boolean {
         val actual = when (val component = probe.component) {
             is TextArea -> component.text()
             is TextField -> component.text()
+            is Label -> component.text
             is Button -> component.text
             is Link -> component.text()
             else -> null
@@ -600,6 +616,40 @@ private fun contents(probes: List<Probe>): Boolean {
         )
     }
     return allOk
+}
+
+/**
+ * Verifies the association of a form [Label] reached the rendered node.
+ *
+ * The rendered `Label` is asked for its `labelFor`, and that node is then looked up among the
+ * rendered controls — identity, not equality, because two controls can look the same and a label
+ * that pointed at the wrong one would still show the right caption.
+ */
+private fun association(probes: List<Probe>): Boolean {
+    val label = probes.firstOrNull { it.component is Label }?.component as? Label
+    if (label == null) {
+        println()
+        println("assoc       FAIL  no label to check")
+        return false
+    }
+
+    val node = label.node as FxLabel
+    val target = label.labelFor
+    val wired = target != null && node.labelFor === target.node
+    val modelMatchesNode = (node.text ?: "") == label.text
+
+    println()
+    println("assoc       (a form label points at the control it captions, on the node itself)")
+    println(
+        "labelFor    ${if (wired) "ok  " else "FAIL"} " +
+            "node.labelFor=${node.labelFor?.javaClass?.simpleName ?: "<none>"} " +
+            "target=${target?.javaClass?.simpleName ?: "<none>"}",
+    )
+    println(
+        "caption     ${if (modelMatchesNode) "ok  " else "FAIL"} " +
+            "node.text=${quote(node.text)} model=${quote(label.text)}",
+    )
+    return wired && modelMatchesNode
 }
 
 /** Verifies every probed component renders as a solid, borderless box with the intended radius. */

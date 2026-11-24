@@ -1,4 +1,4 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.text
 
 import com.github.kusa233.ovatoxin.component.Component
 import javafx.scene.Node
@@ -21,7 +21,7 @@ import javafx.scene.text.TextAlignment
  * ```
  *
  * The content is exposed both as the [text] property and through the `text(..)` accessors,
- * so assignment and call style can be mixed. For editable input use [TextField].
+ * so assignment and call style can be mixed. For editable input use [TextField][com.github.kusa233.ovatoxin.widget.input.TextField].
  */
 class TextArea(text: String = "") : Component<TextArea>() {
 

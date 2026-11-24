@@ -1,7 +1,7 @@
 package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.layout.percent
-import com.github.kusa233.ovatoxin.widget.ListView
+import com.github.kusa233.ovatoxin.widget.list.ListView
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.application.Platform
 import javafx.geometry.Orientation

@@ -10,8 +10,8 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
  * placed into:
  *
  * * [com.github.kusa233.ovatoxin.window.Frame] — the window, the root of every tree;
- * * [com.github.kusa233.ovatoxin.widget.Div] — a box inside it, which rescopes percentages;
- * * [com.github.kusa233.ovatoxin.widget.FlexBox] — a box that flows its children in a line.
+ * * [com.github.kusa233.ovatoxin.widget.container.Div] — a box inside it, which rescopes percentages;
+ * * [com.github.kusa233.ovatoxin.widget.container.FlexBox] — a box that flows its children in a line.
  *
  * Everything else is a plain [Component] and cannot draw at all: a button, a list or a text area
  * is *drawn*, it never draws. Even the surfaces have no `draw` of their own — the method lives on
@@ -75,7 +75,7 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
  *
  * Padding is an inset and nothing more — it never pushes two children apart. A surface that flows
  * its children keeps the space between them in its own
- * [gap][com.github.kusa233.ovatoxin.widget.FlexBox.gap], which is a value of the surface rather
+ * [gap][com.github.kusa233.ovatoxin.widget.container.FlexBox.gap], which is a value of the surface rather
  * than one of its layout.
  *
  * @param T the concrete subclass, so [layout] returns the exact type and the block it opens is

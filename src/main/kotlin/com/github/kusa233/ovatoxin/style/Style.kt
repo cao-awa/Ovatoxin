@@ -72,7 +72,7 @@ class Style {
      * }
      * ```
      *
-     * A component with no text of its own — a [com.github.kusa233.ovatoxin.widget.Div] or a
+     * A component with no text of its own — a [com.github.kusa233.ovatoxin.widget.container.Div] or a
      * [com.github.kusa233.ovatoxin.window.Frame] — simply ignores it.
      */
     var foreground: Color? = DEFAULT_FOREGROUND

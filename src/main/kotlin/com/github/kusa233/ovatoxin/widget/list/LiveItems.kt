@@ -1,4 +1,4 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.list
 
 /**
  * A [MutableList] over [backing] that reports what every change did.
@@ -16,7 +16,7 @@ package com.github.kusa233.ovatoxin.widget
  * Bulk removals ([removeAll], [retainAll]) are reported as one change per element removed, so the
  * owner sees each removal instead of having to diff the list afterwards.
  *
- * This is the live collection behind [ListView.items] and [ComboBox.items]: both widgets expose the
+ * This is the live collection behind [items][com.github.kusa233.ovatoxin.widget.list.ListView.items] and [items][com.github.kusa233.ovatoxin.widget.input.ComboBox.items]: both widgets expose the
  * same "mutate the list and the widget follows" behaviour, so the reporting is implemented once.
  */
 internal class LiveItems<T>(

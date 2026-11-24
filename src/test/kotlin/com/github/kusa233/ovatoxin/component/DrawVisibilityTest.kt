@@ -1,9 +1,9 @@
 package com.github.kusa233.ovatoxin.component
 
-import com.github.kusa233.ovatoxin.widget.Button
-import com.github.kusa233.ovatoxin.widget.Div
-import com.github.kusa233.ovatoxin.widget.FlexBox
-import com.github.kusa233.ovatoxin.widget.TextArea
+import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.widget.container.Div
+import com.github.kusa233.ovatoxin.widget.container.FlexBox
+import com.github.kusa233.ovatoxin.widget.text.TextArea
 import com.github.kusa233.ovatoxin.window.Frame
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.WildcardType

@@ -24,8 +24,8 @@ import javafx.stage.Stage
  * Percentages are resolved against the current window size and re-resolved on resize.
  *
  * A frame is a drawing surface like a
- * [Div][com.github.kusa233.ovatoxin.widget.Div] or a
- * [FlexBox][com.github.kusa233.ovatoxin.widget.FlexBox], so `draw(...)` is available inside its
+ * [Div][com.github.kusa233.ovatoxin.widget.container.Div] or a
+ * [FlexBox][com.github.kusa233.ovatoxin.widget.container.FlexBox], so `draw(...)` is available inside its
  * [layout][com.github.kusa233.ovatoxin.component.ComponentDrawable.layout] block — see
  * [ComponentDrawable].
  */

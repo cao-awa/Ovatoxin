@@ -123,8 +123,8 @@ abstract class Component<T : Component<T>> {
      *
      * What counts as a default is the *construction* of the component, not the bare class: a
      * `Button("Ok")` resets to the caption `"Ok"`, and a widget re-applies whatever its `init`
-     * block seeded — the transparent background of a [com.github.kusa233.ovatoxin.widget.Div],
-     * the foreground of a [com.github.kusa233.ovatoxin.widget.Link].
+     * block seeded — the transparent background of a [com.github.kusa233.ovatoxin.widget.container.Div],
+     * the foreground of a [com.github.kusa233.ovatoxin.widget.text.Link].
      *
      * What is **not** touched is the identity of the component: its [parent], the children of a
      * container and the JavaFX node it already built stay as they are. A redraw reconciles the
@@ -147,7 +147,7 @@ abstract class Component<T : Component<T>> {
      * ```
      *
      * A component without a handler ignores clicks, unless it defines a default behaviour of its
-     * own — see [com.github.kusa233.ovatoxin.widget.Link], which opens its `url` in the browser.
+     * own — see [com.github.kusa233.ovatoxin.widget.text.Link], which opens its `url` in the browser.
      *
      * The receiver is the component that was clicked, not a builder scope, so it deliberately
      * carries no [com.github.kusa233.ovatoxin.dsl.OvatoxinDsl] marker: a handler is where the

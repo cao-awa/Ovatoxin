@@ -1,7 +1,7 @@
 package com.github.kusa233.ovatoxin.state
 
 import com.github.kusa233.ovatoxin.component.Component
-import com.github.kusa233.ovatoxin.widget.TextArea
+import com.github.kusa233.ovatoxin.widget.text.TextArea
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.scene.Node
 import javafx.scene.layout.Pane

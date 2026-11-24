@@ -6,7 +6,7 @@ import java.net.URI
 /**
  * Opens URLs in the browser of the operating system.
  *
- * This is the seam through which [com.github.kusa233.ovatoxin.widget.Link] reaches the outside
+ * This is the seam through which [com.github.kusa233.ovatoxin.widget.text.Link] reaches the outside
  * world. Tests replace [opener] so that clicking a link never launches a real browser:
  *
  * ```kotlin

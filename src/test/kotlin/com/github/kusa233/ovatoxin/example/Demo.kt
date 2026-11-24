@@ -6,23 +6,24 @@ import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
-import com.github.kusa233.ovatoxin.widget.Button
-import com.github.kusa233.ovatoxin.widget.CheckBox
-import com.github.kusa233.ovatoxin.widget.ComboBox
-import com.github.kusa233.ovatoxin.widget.Div
-import com.github.kusa233.ovatoxin.widget.FlexBox
-import com.github.kusa233.ovatoxin.widget.Link
-import com.github.kusa233.ovatoxin.widget.ListView
-import com.github.kusa233.ovatoxin.widget.ProgressBar
-import com.github.kusa233.ovatoxin.widget.TextArea
-import com.github.kusa233.ovatoxin.widget.TextField
+import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.widget.input.CheckBox
+import com.github.kusa233.ovatoxin.widget.input.ComboBox
+import com.github.kusa233.ovatoxin.widget.container.Div
+import com.github.kusa233.ovatoxin.widget.container.FlexBox
+import com.github.kusa233.ovatoxin.widget.text.Label
+import com.github.kusa233.ovatoxin.widget.text.Link
+import com.github.kusa233.ovatoxin.widget.list.ListView
+import com.github.kusa233.ovatoxin.widget.progress.ProgressBar
+import com.github.kusa233.ovatoxin.widget.text.TextArea
+import com.github.kusa233.ovatoxin.widget.input.TextField
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.scene.paint.Color
 
 fun main() {
     val frame = Frame()
     frame.title = "Ovatoxin – DSL demo"
-    testFlexBox(frame)
+    testLabel(frame)
     frame.show()
 }
 
@@ -225,6 +226,31 @@ fun testPadding(frame: Frame) {
                     }
                     child.text("20px / 12px padding: inset from the edge")
                 }
+            }
+        }
+    }
+}
+
+fun testLabel(frame: Frame) {
+    frame.layout {
+        val field = draw(TextField()) { input ->
+            layout {
+                x = 30.percent
+                y = 20.percent
+                width = 30.percent
+                height = 6.percent
+            }
+            input.hint = "your name"
+        }
+        draw(Label("User name", labelFor = field)) {
+            layout {
+                x = 30.percent
+                y = 10.percent
+                width = 30.percent
+                height = 6.percent
+            }
+            style {
+                foreground = Color.web("#4c8bf5")
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.text
 
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.runtime.Browser

@@ -1,4 +1,4 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.container
 
 /**
  * How a [FlexBox] places a child inside the line it was given, from top to bottom.

@@ -1,10 +1,10 @@
 package com.github.kusa233.ovatoxin.component
 
 import com.github.kusa233.ovatoxin.layout.percent
-import com.github.kusa233.ovatoxin.widget.Button
-import com.github.kusa233.ovatoxin.widget.Div
-import com.github.kusa233.ovatoxin.widget.TextArea
-import com.github.kusa233.ovatoxin.widget.TextField
+import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.widget.container.Div
+import com.github.kusa233.ovatoxin.widget.text.TextArea
+import com.github.kusa233.ovatoxin.widget.input.TextField
 import com.github.kusa233.ovatoxin.window.Frame
 import kotlin.test.Test
 import kotlin.test.assertEquals

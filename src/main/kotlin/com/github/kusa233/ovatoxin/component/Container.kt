@@ -14,8 +14,8 @@ import javafx.scene.layout.Region
  * A container owns the children of a region and the [Layout] that places them; it does not by
  * itself offer a way to declare them. Children are declared inside the `layout` block of a
  * drawing surface — [com.github.kusa233.ovatoxin.component.ComponentDrawable], inherited by
- * [com.github.kusa233.ovatoxin.window.Frame], [com.github.kusa233.ovatoxin.widget.Div] and
- * [com.github.kusa233.ovatoxin.widget.FlexBox] — with
+ * [com.github.kusa233.ovatoxin.window.Frame], [com.github.kusa233.ovatoxin.widget.container.Div] and
+ * [com.github.kusa233.ovatoxin.widget.container.FlexBox] — with
  * [com.github.kusa233.ovatoxin.component.SurfaceScope.draw]. This class therefore holds everything
  * a container needs *after* a child exists — the child list, the layout pass and the repaint of a
  * single child — while the act of drawing is confined to [ComponentDrawable].
@@ -26,12 +26,12 @@ import javafx.scene.layout.Region
  * Percentages resolve against [contentBox] — the container itself, cut down by the `hPadding` and
  * `vPadding` its [Layout] declares. For a container without padding that is simply its own size;
  * for one padded by `10.px` it is twenty pixels narrower, and the content starts ten pixels in.
- * Nesting a [com.github.kusa233.ovatoxin.widget.Div] therefore rescopes percentages for everything
+ * Nesting a [com.github.kusa233.ovatoxin.widget.container.Div] therefore rescopes percentages for everything
  * inside, and so does padding.
  *
  * A plain container gives every child the origin of its content box, so a child lands where its own
  * `x` and `y` say. A flowing container is free to hand out a slot instead — see [slotFor], which
- * [com.github.kusa233.ovatoxin.widget.FlexBox] overrides to lay its children out in a line.
+ * [com.github.kusa233.ovatoxin.widget.container.FlexBox] overrides to lay its children out in a line.
  *
  * The class is marked with [OvatoxinDsl], so a nested surface's `layout` block sees only the scope
  * it declares children for, never the one around it: inside `panel.layout { }` a member that

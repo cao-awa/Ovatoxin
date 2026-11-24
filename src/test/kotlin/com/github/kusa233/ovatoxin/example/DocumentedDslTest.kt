@@ -6,23 +6,25 @@ import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.runtime.Browser
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
-import com.github.kusa233.ovatoxin.widget.Align
-import com.github.kusa233.ovatoxin.widget.Button
-import com.github.kusa233.ovatoxin.widget.CheckBox
-import com.github.kusa233.ovatoxin.widget.ComboBox
-import com.github.kusa233.ovatoxin.widget.Div
-import com.github.kusa233.ovatoxin.widget.FlexBox
-import com.github.kusa233.ovatoxin.widget.Justify
-import com.github.kusa233.ovatoxin.widget.Link
-import com.github.kusa233.ovatoxin.widget.ProgressBar
-import com.github.kusa233.ovatoxin.widget.TextArea
-import com.github.kusa233.ovatoxin.widget.TextField
+import com.github.kusa233.ovatoxin.widget.container.Align
+import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.widget.input.CheckBox
+import com.github.kusa233.ovatoxin.widget.input.ComboBox
+import com.github.kusa233.ovatoxin.widget.container.Div
+import com.github.kusa233.ovatoxin.widget.container.FlexBox
+import com.github.kusa233.ovatoxin.widget.container.Justify
+import com.github.kusa233.ovatoxin.widget.text.Label
+import com.github.kusa233.ovatoxin.widget.text.Link
+import com.github.kusa233.ovatoxin.widget.progress.ProgressBar
+import com.github.kusa233.ovatoxin.widget.text.TextArea
+import com.github.kusa233.ovatoxin.widget.input.TextField
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.scene.paint.Color
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -478,6 +480,43 @@ class DocumentedDslTest {
 
         assertEquals(4, combo.size)
         assertEquals("Extra Large", combo.item(3))
+    }
+
+    @Test
+    fun `the label snippet compiles and annotates its control`() {
+        val frame = Frame()
+        frame.layout {
+            val field = draw(TextField()) { input ->
+                layout(
+                    45.percent, 10.percent, 45.percent, 6.percent
+                )
+                input.hint = "your name"
+            }
+            draw(Label("User name", labelFor = field)) { label ->
+                layout(
+                    10.percent, 10.percent, 30.percent, 6.percent
+                )
+            }
+        }
+
+        val label = frame.children[1] as Label
+        assertEquals("User name", label.text)
+        assertSame(frame.children[0], label.labelFor)
+        // A label is a caption, so it builds no node until the frame is rendered.
+        assertFalse(label.isNodeCreated)
+    }
+
+    @Test
+    fun `a label can be associated after it was created`() {
+        val field = TextField()
+        val label = Label("Password")
+        label.labelFor(field)
+
+        assertSame(field, label.labelFor)
+        assertEquals("Password", label.text)
+
+        label.labelFor = null
+        assertNull(label.labelFor)
     }
 
     @Test

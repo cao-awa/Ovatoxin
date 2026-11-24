@@ -1,4 +1,4 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.container
 
 import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.component.ContentBox
@@ -6,6 +6,8 @@ import com.github.kusa233.ovatoxin.component.Slot
 import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
+import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.widget.text.TextArea
 import com.github.kusa233.ovatoxin.window.Frame
 import kotlin.test.Test
 import kotlin.test.assertEquals

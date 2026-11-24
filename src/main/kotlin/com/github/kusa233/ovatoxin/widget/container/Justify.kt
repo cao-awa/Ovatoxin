@@ -1,4 +1,4 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.container
 
 /**
  * How a [FlexBox] shares out the room a line has left over, from left to right.

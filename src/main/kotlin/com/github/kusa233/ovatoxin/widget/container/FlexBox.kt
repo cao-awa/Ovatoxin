@@ -1,4 +1,4 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.container
 
 import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.component.ComponentDrawable

@@ -1,5 +1,56 @@
 # 组件
 
+## Label
+
+``Label``是表单标签：一小段文字，用来标注旁边那个控件是什么。它自己不带内容，内容是它标的那一项的。
+
+它的特别之处不在于文字，而在于**它和控件的关联**：``labelFor``指向谁，点这段文字就会把焦点交给谁，读屏软件也会把两者一起念出来。所以``Label("用户名", labelFor = nameField)``旁边的输入框不必再把标题写进占位符。
+
+导入：
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.input.TextField
+import com.github.kusa233.ovatoxin.widget.text.Label
+```
+
+```kotlin
+frame.layout {
+    // 先画出控件，好把它的引用交给标签
+    val name = draw(TextField()) { field ->
+        layout {
+            x = 10.percent
+            y = 20.percent
+            width = 45.percent
+            height = 6.percent
+        }
+        field.hint = "Your name"
+    }
+    // 这个标签标注的就是上面那个输入框
+    draw(Label("User name", labelFor = name)) { label ->
+        layout {
+            x = 10.percent
+            y = 10.percent
+            width = 45.percent
+            height = 6.percent
+        }
+        // 标签的文字走前景色，和其它文字组件一样
+        style {
+            foreground = Color.web("#4c8bf5")
+        }
+    }
+}
+```
+
+规则：
+
+* 标签只负责一段短文字，不摆放任何东西，位置和大小照旧由``layout``决定；
+* ``labelFor``可以先写在构造里，也可以之后再挂：``label.labelFor = name``和``label.labelFor(name)``等价，``label.labelFor``读回来的就是当前标的那一项；
+* 顺序不重要：控件还没渲染时关联会先记下来，等标签真正建出节点时再补上，所以标签画在控件前面也可以；
+* ``labelFor``传``null``就断开关联，标签退化成一截普通文字；
+* ``text``可以随时改：``label.text = "账户"``，已经建出的节点会立刻跟着变；
+* ``reset()``回到创建时的样子——文字和关联都回到构造里给的那一对，而不是清成空文字；
+* 要一段自己承载内容的只读文字（段落、译文）请用``TextArea``，标签只是旁边那一项的短名字。
+
 ## FlexBox
 
 ``FlexBox``是一个会自己摆放子组件的画布：从左往右排，排满就换到下一行，行高取该行最高的子组件。
@@ -11,13 +62,13 @@
 * ``justify``——一行排完之后剩下的空位怎么分，默认``Justify.START``；
 * ``align``——子组件在自己那一行里靠上、居中还是靠下，默认``Align.START``。
 
-导入（Button见前面的导入）：
+导入：
 
 ```kotlin
-import com.github.kusa233.ovatoxin.widget.FlexBox
-import com.github.kusa233.ovatoxin.widget.Align
-import com.github.kusa233.ovatoxin.widget.FlexBox
-import com.github.kusa233.ovatoxin.widget.Justify
+import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.widget.container.Align
+import com.github.kusa233.ovatoxin.widget.container.FlexBox
+import com.github.kusa233.ovatoxin.widget.container.Justify
 ```
 
 ```kotlin

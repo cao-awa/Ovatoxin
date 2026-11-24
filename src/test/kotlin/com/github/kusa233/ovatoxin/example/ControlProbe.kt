@@ -1,24 +1,28 @@
 package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.layout.percent
-import com.github.kusa233.ovatoxin.widget.CheckBox
-import com.github.kusa233.ovatoxin.widget.ComboBox
-import com.github.kusa233.ovatoxin.widget.ProgressBar
+import com.github.kusa233.ovatoxin.widget.input.CheckBox
+import com.github.kusa233.ovatoxin.widget.input.ComboBox
+import com.github.kusa233.ovatoxin.widget.text.Label
+import com.github.kusa233.ovatoxin.widget.progress.ProgressBar
+import com.github.kusa233.ovatoxin.widget.input.TextField
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.application.Platform
 import javafx.scene.control.CheckBox as FxCheckBox
 import javafx.scene.control.ComboBox as FxComboBox
+import javafx.scene.control.Label as FxLabel
 import javafx.scene.control.ProgressBar as FxProgressBar
+import javafx.scene.control.TextField as FxTextField
 import kotlin.math.abs
 import kotlin.system.exitProcess
 
 /**
  * Manual rendering probe for the form controls — not a unit test, and never part of `build`.
  *
- * The three controls are real JavaFX nodes, so they cannot be built without a toolkit and their
+ * The controls are real JavaFX nodes, so they cannot be built without a toolkit and their
  * behaviour cannot be checked from a plain unit test. This probe shows them for real and then works
- * them the way a user would: it fires the action of the checkbox, picks a row in the dropdown and
- * moves the progress bar through a state, reading the resulting nodes each time.
+ * them the way a user would: it fires the action of the checkbox, picks a row in the dropdown, moves
+ * the progress bar through a state, and reads a form label back through the field it annotates.
  *
  * Run it with:
  *
@@ -31,8 +35,13 @@ fun main() {
     lateinit var bar: ProgressBar
     lateinit var box: CheckBox
     lateinit var combo: ComboBox<String>
+    lateinit var label: Label
     val reported = mutableListOf<Boolean>()
     val picked = mutableListOf<String>()
+
+    // Created outside the tree so the label can annotate it while being drawn *first*: the
+    // association then has to survive a target whose node does not exist yet.
+    val field = TextField()
 
     frame.layout {
         bar = draw(ProgressBar(25.percent)) { component ->
@@ -67,6 +76,26 @@ fun main() {
             // Selected before the node exists; the control must show it once it is built.
             component.select(0)
         }
+
+        // A form row: the caption is drawn before the control it captions, so the association is
+        // applied when the label builds its node — not when it is declared.
+        label = draw(Label("User name", labelFor = field)) { component ->
+            layout {
+                x = 10.percent
+                y = 70.percent
+                width = 30.percent
+                height = 6.percent
+            }
+        }
+        draw(field) { component ->
+            layout {
+                x = 45.percent
+                y = 70.percent
+                width = 45.percent
+                height = 6.percent
+            }
+            component.hint = "your name"
+        }
     }
 
     frame.show()
@@ -77,6 +106,7 @@ fun main() {
             val barOk = progressBar(bar)
             val boxOk = checkBox(box, reported)
             val comboOk = comboBox(combo, picked)
+            val labelOk = formLabel(label, field)
 
             println()
             println("=== control probe ===")
@@ -84,14 +114,56 @@ fun main() {
             println("bar    : ${if (barOk) "ok  " else "FAIL"} the bar shows the percentage it was given")
             println("box    : ${if (boxOk) "ok  " else "FAIL"} a click ticks the box and reports it once")
             println("combo  : ${if (comboOk) "ok  " else "FAIL"} the dropdown shows its items and reports the picked one")
+            println("label  : ${if (labelOk) "ok  " else "FAIL"} a form label captions and points at its field")
             println()
-            val allOk = barOk && boxOk && comboOk
+            val allOk = barOk && boxOk && comboOk && labelOk
             println(if (allOk) "RESULT: ok" else "RESULT: MISMATCH")
 
             Platform.exit()
             if (!allOk) exitProcess(1)
         }
     }
+}
+
+/**
+ * Reads the form label back and follows its association into the node.
+ *
+ * The association is the point of the component, so the probe checks the node rather than the
+ * model: JavaFX keeps it in `labelFor`, and the label was drawn *before* its field, so a link here
+ * proves the deferred wiring really happened when the label was rendered.
+ *
+ * `reset()` restores what the label was created with — caption and association both, following the
+ * rule the other components use — so the label here is created with its control rather than
+ * associated in the draw block.
+ */
+private fun formLabel(label: Label, field: TextField): Boolean {
+    val node = label.node as FxLabel
+    val fieldNode = field.node as FxTextField
+
+    val caption = node.text == "User name"
+    val linked = node.labelFor === fieldNode
+    val showsHint = fieldNode.promptText == "your name"
+
+    label.text = "Account"
+    val renamed = node.text == "Account"
+
+    label.reset()
+    val restored = node.text == "User name" && node.labelFor === fieldNode
+
+    label.labelFor = null
+    val detached = node.labelFor == null
+    label.labelFor = field
+    val reattached = node.labelFor === fieldNode
+
+    println()
+    println("label (node ${probeNum(node.layoutBounds.width)}x${probeNum(node.layoutBounds.height)})")
+    println("  caption : ${mark(caption)} \"${node.text}\"")
+    println("  link    : ${mark(linked)} labelFor is the field drawn after it")
+    println("  rename  : ${mark(renamed)} a new text reaches the node")
+    println("  reset   : ${mark(restored)} caption and association are back")
+    println("  unlink  : ${mark(detached && reattached)} the association can be dropped and restored")
+    println("  hint    : ${mark(showsHint)} the annotated field is untouched")
+    return caption && linked && renamed && restored && detached && reattached && showsHint
 }
 
 /**

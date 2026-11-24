@@ -79,8 +79,8 @@ class Layout {
      * Defaults to [Length.ZERO], i.e. flush. Only a component that holds children is affected by
      * it — see [com.github.kusa233.ovatoxin.component.Container.contentBox]. It is an inset and
      * nothing else: the space *between* the children of a
-     * [com.github.kusa233.ovatoxin.widget.FlexBox] is its
-     * [gap][com.github.kusa233.ovatoxin.widget.FlexBox.gap], which is a value of the box itself.
+     * [com.github.kusa233.ovatoxin.widget.container.FlexBox] is its
+     * [gap][com.github.kusa233.ovatoxin.widget.container.FlexBox.gap], which is a value of the box itself.
      */
     var hPadding: Length = Length.ZERO
 

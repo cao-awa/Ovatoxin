@@ -1,4 +1,4 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.list
 
 import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.style.cssColor

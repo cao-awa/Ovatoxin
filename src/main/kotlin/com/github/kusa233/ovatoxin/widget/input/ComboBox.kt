@@ -1,6 +1,7 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.input
 
 import com.github.kusa233.ovatoxin.component.Component
+import com.github.kusa233.ovatoxin.widget.list.LiveItems
 import javafx.scene.Node
 import javafx.scene.control.ListCell
 import javafx.scene.control.ListView as FxListView
@@ -30,7 +31,7 @@ import javafx.util.Callback
  * draw(ComboBox(languages) { it.name }) { combo -> ... }
  * ```
  *
- * [items] is a live collection, exactly as [ListView.items] is: adding to it grows the dropdown
+ * [items] is a live collection, exactly as [items][com.github.kusa233.ovatoxin.widget.list.ListView.items] is: adding to it grows the dropdown
  * before the call returns, and the selection follows the item it points at — a row inserted above
  * the selected one shifts the selection down so it keeps pointing at the same item, and losing the
  * selected item drops the selection:
@@ -58,7 +59,7 @@ class ComboBox<T>(
     /**
      * The items of the dropdown, live.
      *
-     * Working with it is the same as working with [ListView.items]: every `MutableList` method is
+     * Working with it is the same as working with [items][com.github.kusa233.ovatoxin.widget.list.ListView.items]: every `MutableList` method is
      * available, and each one updates the dropdown and the selection immediately.
      */
     val items: MutableList<T> = LiveItems(this.rowValues) { start, removed, inserted ->
@@ -209,7 +210,7 @@ class ComboBox<T>(
      * Restores what the dropdown looks like, keeping the items it currently holds.
      *
      * The items are not part of the draw block the way a caption is: [items] is a live collection
-     * the caller owns, so a reset leaves it alone, exactly as [ListView.reset] does. To go back to
+     * the caller owns, so a reset leaves it alone, exactly as [reset][com.github.kusa233.ovatoxin.widget.list.ListView.reset] does. To go back to
      * the items the combo box was created with, call [items] with [initialItems].
      */
     override fun reset() {
@@ -256,7 +257,7 @@ class ComboBox<T>(
     /**
      * Handles a change to the items: follows the selection through it, then renders the new items.
      *
-     * The same arithmetic as [ListView]: [start] is the index the change begins at, [removed] how
+     * The same arithmetic as [ListView][com.github.kusa233.ovatoxin.widget.list.ListView]: [start] is the index the change begins at, [removed] how
      * many items it took out there and [inserted] how many it put back, which is enough to tell a
      * change below the selection, above it and on it apart.
      */

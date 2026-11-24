@@ -1,4 +1,4 @@
-package com.github.kusa233.ovatoxin.widget
+package com.github.kusa233.ovatoxin.widget.action
 
 import com.github.kusa233.ovatoxin.component.Component
 import javafx.scene.Node

@@ -6,7 +6,7 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
  * The scope a [ComponentDrawable.layout] block runs in — the only place a child can be declared.
  *
  * The library has three drawing surfaces — [com.github.kusa233.ovatoxin.window.Frame],
- * [com.github.kusa233.ovatoxin.widget.Div] and [com.github.kusa233.ovatoxin.widget.FlexBox] — and
+ * [com.github.kusa233.ovatoxin.widget.container.Div] and [com.github.kusa233.ovatoxin.widget.container.FlexBox] — and
  * all of them are [ComponentDrawable]s. None of them carries a `draw` of its own: the method lives
  * here, on the scope the `layout` block receives, so it is reachable only *inside* that block and
  * nowhere else:

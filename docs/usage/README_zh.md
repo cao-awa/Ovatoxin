@@ -22,7 +22,7 @@ frame.title = "Ovatoxin - demo"
 
 首先导入Button类：
 ```kotlin
-import com.github.kusa233.ovatoxin.widget.Button
+import com.github.kusa233.ovatoxin.widget.action.Button
 ```
 
 ```kotlin
