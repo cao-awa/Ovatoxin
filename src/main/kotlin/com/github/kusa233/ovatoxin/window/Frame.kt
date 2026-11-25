@@ -8,6 +8,7 @@ import javafx.scene.Scene
 import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
 import javafx.stage.Stage
+import javafx.stage.StageStyle
 
 /**
  * The root container of a component tree, backed by a JavaFX [Stage].
@@ -36,6 +37,8 @@ class Frame(
     width: Double = DEFAULT_WIDTH,
     /** The initial window height in pixels. */
     height: Double = DEFAULT_HEIGHT,
+    /** Whether the window shows a title bar; pass `false` for a borderless window. */
+    titleBarEnabled: Boolean = true,
 ) : ComponentDrawable<Frame>() {
 
     private val defaultTitle: String = title
@@ -67,6 +70,15 @@ class Frame(
     var stage: Stage? = null
         private set
 
+    /**
+     * Whether the window shows its title bar, as set by the constructor argument.
+     *
+     * Defaults to `true`. JavaFX fixes a window's decorations when it is first shown, so it can only
+     * be chosen at construction: pass `titleBarEnabled = false` for a borderless window.
+     */
+    var titleBarEnabled: Boolean = titleBarEnabled
+        private set
+
     private var root: Pane? = null
 
     /** Every handler registered with [onClose], in the order they were added. */
@@ -82,10 +94,13 @@ class Frame(
     }
 
     /**
-     * Restores the title and the size this frame was created with, plus the window surface colour.
+     * Restores the title and the size this frame was created with, plus the window surface colour,
+     * and clears the [onClose] subscriptions.
      *
      * The size is part of the defaults, so a live window is resized back to it; the listeners
-     * installed by [show] then keep the logical size in sync with the real one as usual.
+     * installed by [show] then keep the logical size in sync with the real one as usual. The title
+     * bar setting is window configuration, not part of the drawn defaults, so [titleBarEnabled] is
+     * left as it is.
      */
     override fun reset() {
         super.reset()
@@ -124,23 +139,42 @@ class Frame(
                 return@runOnFxThread
             }
 
-            val pane = this.root ?: (this.node as Pane)
-            val stage = Stage()
-            stage.title = this.title
-            stage.scene = Scene(pane, this.width, this.height)
-
-            // Keep the logical size in sync with the real one so percentages stay correct.
-            stage.widthProperty().addListener { _, _, value -> this.width = value.toDouble() }
-            stage.heightProperty().addListener { _, _, value -> this.height = value.toDouble() }
-
-            // The title-bar close button asks the stage to close; hand that request to the
-            // subscribers before JavaFX hides the window, so they can still read its state.
-            stage.setOnCloseRequest { this.performCloseRequest() }
-
+            val stage = this.createStage()
             this.stage = stage
             // The pane is bound by Container.onNodeCreated, so children are already tracked.
             stage.show()
         }
+    }
+
+    /**
+     * Builds a stage for this frame, matching the current [titleBarEnabled] and [title].
+     *
+     * A borderless stage loses the native resize handles, so [FramelessResizer] puts edge dragging
+     * back. The caller owns the stage: it is stored in [stage] and shown.
+     */
+    private fun createStage(): Stage {
+        val pane = this.root ?: (this.node as Pane)
+        val stage = Stage()
+        val scene = Scene(pane, this.width, this.height)
+        if (!this.titleBarEnabled) {
+            // A window's decorations are fixed once it is shown, so this must be decided here.
+            stage.initStyle(StageStyle.UNDECORATED)
+            // Undecorated windows have no native frame, hence no resize handles: add them back.
+            stage.isResizable = true
+            FramelessResizer.install(stage, scene)
+        }
+        stage.title = this.title
+        stage.scene = scene
+
+        // Keep the logical size in sync with the real one so percentages stay correct.
+        stage.widthProperty().addListener { _, _, value -> this.width = value.toDouble() }
+        stage.heightProperty().addListener { _, _, value -> this.height = value.toDouble() }
+
+        // The title-bar close button asks the stage to close; hand that request to the
+        // subscribers before JavaFX hides the window, so they can still read its state.
+        stage.setOnCloseRequest { this.performCloseRequest() }
+
+        return stage
     }
 
     /** Hides the window without stopping the JavaFX runtime. */

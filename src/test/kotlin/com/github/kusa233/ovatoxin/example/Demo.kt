@@ -25,8 +25,7 @@ import com.github.kusa233.ovatoxin.window.Frame
 import javafx.scene.paint.Color
 
 fun main() {
-    val frame = Frame()
-    frame.title = "Ovatoxin - DSL demo"
+    val frame = Frame("Ovatoxin - DSL demo", titleBarEnabled = false)
     testTemplate(frame)
     frame.onClose {
         println("Closing '${this.title}'")

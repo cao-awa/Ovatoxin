@@ -28,6 +28,17 @@ frame.onClose {
 
 可以订阅多次，每个处理块都会按注册顺序执行。需要注意：``onClose``只是**观察**关闭请求，不能阻止窗口关闭；而代码里直接调用``frame.close()``也不会触发它。
 
+## 标题栏（titleBarEnabled）
+
+JavaFX 在窗口第一次显示时就固定了窗口装饰，之后无法再切换标题栏。所以在构造时传入``titleBarEnabled``决定是否显示标题栏：
+
+```kotlin
+// 无标题栏（无边框）窗口
+val frame = Frame("Ovatoxin - demo", titleBarEnabled = false)
+```
+
+无标题栏的窗口没有系统关闭按钮，需要自己提供关闭方式（例如自定义的关闭按钮）。
+
 # 布局和渲染
 
 在此先引入按钮作为示例，API请在后续内容了解。

@@ -75,4 +75,14 @@ class FrameTest {
 
         assertFalse(frame.hasOnClose)
     }
+
+    @Test
+    fun `a frame shows its title bar by default`() {
+        assertTrue(Frame().titleBarEnabled)
+    }
+
+    @Test
+    fun `the constructor can start a frame without a title bar`() {
+        assertFalse(Frame(titleBarEnabled = false).titleBarEnabled)
+    }
 }
