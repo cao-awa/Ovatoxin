@@ -26,8 +26,11 @@ import javafx.scene.paint.Color
 
 fun main() {
     val frame = Frame()
-    frame.title = "Ovatoxin – DSL demo"
+    frame.title = "Ovatoxin - DSL demo"
     testTemplate(frame)
+    frame.onClose {
+        println("Closing '${this.title}'")
+    }
     frame.show()
 }
 

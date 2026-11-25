@@ -69,6 +69,12 @@ class Frame(
 
     private var root: Pane? = null
 
+    /** Every handler registered with [onClose], in the order they were added. */
+    private val closeHandlers: MutableList<Frame.() -> Unit> = mutableListOf()
+
+    /** Whether at least one [onClose] handler is registered. */
+    val hasOnClose: Boolean get() = this.closeHandlers.isNotEmpty()
+
     init {
         // The window surface is its own colour; it is not a widget box.
         this.styleSpec.background { color = WINDOW_BACKGROUND }
@@ -88,6 +94,7 @@ class Frame(
         this.height = this.defaultHeight
         this.styleSpec.background { color = WINDOW_BACKGROUND }
         this.styleSpec.corner = 0.px
+        this.closeHandlers.clear()
     }
 
     override fun buildNode(): Node {
@@ -126,6 +133,10 @@ class Frame(
             stage.widthProperty().addListener { _, _, value -> this.width = value.toDouble() }
             stage.heightProperty().addListener { _, _, value -> this.height = value.toDouble() }
 
+            // The title-bar close button asks the stage to close; hand that request to the
+            // subscribers before JavaFX hides the window, so they can still read its state.
+            stage.setOnCloseRequest { this.performCloseRequest() }
+
             this.stage = stage
             // The pane is bound by Container.onNodeCreated, so children are already tracked.
             stage.show()
@@ -142,6 +153,41 @@ class Frame(
         Fx.runOnFxThread {
             this.stage?.close()
             this.stage = null
+        }
+    }
+
+    /**
+     * Subscribes [handler] to the window's close request, invoked when the user asks to close it.
+     *
+     * The request is the title-bar close button (or the platform equivalent); a programmatic
+     * [close] does not raise it, so code that shuts the window down itself is not reported back to
+     * its own handler. Handlers run before JavaFX hides the window, so [title], [width], [height]
+     * and the component tree are all still live inside the block.
+     *
+     * Every call adds one more subscriber; all of them run, in the order they were added:
+     *
+     * ```kotlin
+     * frame.onClose { println("bye from ${this.title}") }
+     * ```
+     *
+     * The handler cannot veto the close: it observes the request, it does not consume it.
+     *
+     * @return this frame, so the call chains onto the window it registers on.
+     */
+    fun onClose(handler: Frame.() -> Unit): Frame {
+        this.closeHandlers += handler
+        return this
+    }
+
+    /**
+     * Runs every [onClose] handler as if the user had asked to close the window.
+     *
+     * The backing stage calls this on a close request; tests call it directly.
+     */
+    fun performCloseRequest() {
+        // Copy first: a handler is allowed to subscribe another one without a concurrent change.
+        for (handler in this.closeHandlers.toList()) {
+            handler(this)
         }
     }
 

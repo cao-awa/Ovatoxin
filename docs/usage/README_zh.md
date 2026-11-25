@@ -16,6 +16,18 @@ frame.show()
 frame.title = "Ovatoxin - demo"
 ```
 
+## 关闭订阅（onClose）
+
+用``.onClose { }``订阅“用户请求关闭窗口”的事件（点击标题栏的关闭按钮或平台等价操作）。处理块里的``this``就是这个窗口，标题、宽高和组件树都还能读取，适合保存状态、做确认提示等：
+
+```kotlin
+frame.onClose {
+    println("Closing '${this.title}'")
+}
+```
+
+可以订阅多次，每个处理块都会按注册顺序执行。需要注意：``onClose``只是**观察**关闭请求，不能阻止窗口关闭；而代码里直接调用``frame.close()``也不会触发它。
+
 # 布局和渲染
 
 在此先引入按钮作为示例，API请在后续内容了解。
