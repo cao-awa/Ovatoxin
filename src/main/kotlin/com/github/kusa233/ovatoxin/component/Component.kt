@@ -339,12 +339,45 @@ abstract class Component<T : Component<T>> {
         this.parent?.relayout()
     }
 
+    /**
+     * Copies a [Layout] preset into this component, tunes it with [block] and renders the change
+     * immediately.
+     *
+     * The runtime counterpart of [DrawScope.layout]'s preset overload: the whole geometry of this
+     * component becomes the preset's, and [block] supplies the per-component difference.
+     */
+    fun applyLayout(preset: Layout, block: Layout.() -> Unit = {}) {
+        this.layoutSpec.copyFrom(preset)
+        this.layoutSpec.configure(block)
+        this.parent?.relayout()
+    }
+
     /** Replaces the appearance of this component and renders the change immediately. */
     fun applyStyle(block: Style.() -> Unit) {
         val previous = this.styleSpec.fontSize
         this.styleSpec.configure(block)
         // A font size is not just a colour: it moves the pixels of every `em` below this
         // component, so a change of it has to lay the tree out again rather than repaint a node.
+        if (this.styleSpec.fontSize != previous) {
+            relayoutAfterStyleChange()
+        } else {
+            this.parent?.relayout()
+        }
+    }
+
+    /**
+     * Copies a [Style] preset into this component, tunes it with [block] and renders the change
+     * immediately.
+     *
+     * The runtime counterpart of [DrawScope.style]'s preset overload: the whole appearance of this
+     * component becomes the preset's (its background included), and [block] supplies the
+     * per-component difference. A font size that really changed lays the tree out again, exactly as
+     * [applyStyle] does.
+     */
+    fun applyStyle(preset: Style, block: Style.() -> Unit = {}) {
+        val previous = this.styleSpec.fontSize
+        this.styleSpec.copyFrom(preset)
+        this.styleSpec.configure(block)
         if (this.styleSpec.fontSize != previous) {
             relayoutAfterStyleChange()
         } else {

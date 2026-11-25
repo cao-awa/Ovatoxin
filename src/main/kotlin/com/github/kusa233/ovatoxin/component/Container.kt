@@ -4,6 +4,7 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 import com.github.kusa233.ovatoxin.layout.Layout
 import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.Pixel
+import com.github.kusa233.ovatoxin.layout.insetBox
 import com.github.kusa233.ovatoxin.runtime.Fx
 import javafx.application.Platform
 import javafx.scene.Node
@@ -181,6 +182,15 @@ abstract class Container<T : Container<T>> : Component<T>() {
      * The relative units of [spec] resolve against the box being placed into; an `em` resolves
      * against [fontSize], since the offsets and the size belong to the child being placed and not to
      * the box around it.
+     *
+     * With [insetPadding] set the child is a leaf — a component with no children of its own — and
+     * its `hPadding`/`vPadding` act on the child's own box instead of on children it does not have.
+     * The box is narrowed horizontally by `hPadding`; vertically, when [bandHeight] says how tall the
+     * band the flow reserved is, the box keeps its height and is centred in that band (so the space
+     * above and below is equal) and only shrinks when it would overrun it. See
+     * [insetBox][com.github.kusa233.ovatoxin.layout.insetBox]. A container's padding never comes
+     * here, because its padding insets its children in [contentBox] and must not also shrink the
+     * container itself.
      */
     internal fun place(
         node: Node,
@@ -190,6 +200,8 @@ abstract class Container<T : Container<T>> : Component<T>() {
         offsetX: Double = 0.0,
         offsetY: Double = 0.0,
         fontSize: Double = this.resolvedFontSize,
+        insetPadding: Boolean = false,
+        bandHeight: Double? = null,
     ) {
         val resolvedX = offsetX + spec.x.resolve(width, fontSize)
         val resolvedY = offsetY + spec.y.resolve(height, fontSize)
@@ -199,12 +211,14 @@ abstract class Container<T : Container<T>> : Component<T>() {
 
         if (node is Region) {
             val fallbackWidth = node.prefWidth(-1.0)
-            node.resizeRelocate(
-                resolvedX,
-                resolvedY,
-                resolvedWidth ?: fallbackWidth,
-                resolvedHeight ?: node.prefHeight(resolvedWidth ?: fallbackWidth),
-            )
+            val boxWidth = resolvedWidth ?: fallbackWidth
+            val boxHeight = resolvedHeight ?: node.prefHeight(boxWidth)
+            val box = if (insetPadding) {
+                spec.insetBox(resolvedX, resolvedY, boxWidth, boxHeight, fontSize, bandHeight)
+            } else {
+                LeafBox(resolvedX, resolvedY, boxWidth, boxHeight)
+            }
+            node.resizeRelocate(box.x, box.y, box.width, box.height)
         } else {
             node.layoutX = resolvedX
             node.layoutY = resolvedY
@@ -259,6 +273,8 @@ abstract class Container<T : Container<T>> : Component<T>() {
                 slot.x,
                 slot.y,
                 childFont(child, box, selfFont),
+                insetPadding = child !is Container<*>,
+                bandHeight = slot.bandHeight,
             )
             child.applyStyle(childBoxWidth(node), childBoxHeight(node))
         }

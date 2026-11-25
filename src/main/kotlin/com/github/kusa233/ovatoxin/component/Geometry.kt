@@ -52,8 +52,38 @@ internal data class ContentBox(
  *
  * @property x the x of the slot, in pixels.
  * @property y the y of the slot, in pixels.
+ * @property bandHeight the height of the band the flow reserved for this child, in pixels, or `null`
+ *   when the child is not in a flow and its own box is the whole story. A padded leaf uses it to
+ *   centre itself in the room it was given before it has to give any of its own height up — see
+ *   [com.github.kusa233.ovatoxin.layout.insetBox].
  */
-internal data class Slot(val x: Double, val y: Double)
+internal data class Slot(val x: Double, val y: Double, val bandHeight: Double? = null)
+
+/**
+ * The absolute rectangle a leaf node is drawn into, in pixels.
+ *
+ * A [ContentBox] describes the room a container keeps for its children; a leaf has no children of
+ * its own, so its padding cannot inset anything inside it. Instead the padding acts on the box the
+ * component itself is drawn into, and this is that box: [x] and [y] are its top-left corner in the
+ * parent's coordinate space, [width] and [height] its drawn size.
+ *
+ * The horizontal padding always insets: the box is narrowed by [Layout.hPadding][com.github.kusa233.ovatoxin.layout.Layout.hPadding]
+ * on each side. The vertical padding prefers to move the box rather than shrink it: when the band the
+ * flow left for the child is tall enough, the box keeps its height and is centred in that band, so
+ * the space above and below comes out equal; only when it would not fit does the box give up height,
+ * leaving the padding clear on both sides.
+ *
+ * @property x the left edge of the drawn box, in pixels.
+ * @property y the top edge of the drawn box, in pixels.
+ * @property width the drawn width, in pixels.
+ * @property height the drawn height, in pixels.
+ */
+internal data class LeafBox(
+    val x: Double,
+    val y: Double,
+    val width: Double,
+    val height: Double,
+)
 
 /**
  * The size a flow has to work with for one child, in pixels.

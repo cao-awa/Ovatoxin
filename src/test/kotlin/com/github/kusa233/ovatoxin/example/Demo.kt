@@ -1,7 +1,10 @@
 package com.github.kusa233.ovatoxin.example
 
+import com.github.kusa233.ovatoxin.dsl.layout
+import com.github.kusa233.ovatoxin.dsl.style
 import com.github.kusa233.ovatoxin.example.I18N.languages
 import com.github.kusa233.ovatoxin.layout.Percent
+import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.state.State
@@ -11,6 +14,7 @@ import com.github.kusa233.ovatoxin.widget.input.CheckBox
 import com.github.kusa233.ovatoxin.widget.input.ComboBox
 import com.github.kusa233.ovatoxin.widget.container.Div
 import com.github.kusa233.ovatoxin.widget.container.FlexBox
+import com.github.kusa233.ovatoxin.widget.container.Justify
 import com.github.kusa233.ovatoxin.widget.text.Label
 import com.github.kusa233.ovatoxin.widget.text.Link
 import com.github.kusa233.ovatoxin.widget.list.ListView
@@ -23,8 +27,45 @@ import javafx.scene.paint.Color
 fun main() {
     val frame = Frame()
     frame.title = "Ovatoxin – DSL demo"
-    testButton(frame)
+    testTemplate(frame)
     frame.show()
+}
+
+fun testTemplate(frame: Frame) {
+    val layout = layout {
+        width = 20.percent
+        height = 80.percent
+        vPadding = 10.percent
+    }
+    val style = style {
+        corner = 55.percent
+    }
+    val selected = State(0)
+    frame.layout {
+        draw(FlexBox()) { flexBox ->
+            layout(0.percent, 0.percent, 100.percent, 8.percent)
+            style { background { color = Color.web("#4c8bf5") } }
+            flexBox.justify = Justify.CENTER
+            flexBox.gap = 1.em
+            flexBox.layout {
+                for (index in 0..3) {
+                    draw(Button()) { button ->
+                        layout(layout)
+                        style(style) {
+                            background {
+                                color = if (selected.value == index) Color.WHITE else Color.web("#4c8bf5")
+                            }
+                            foreground = if (selected.value == index) Color.web("#4c8bf5") else Color.WHITE
+                        }
+                        button.text = "$index"
+                        button.onClick {
+                            selected.update(index)
+                        }
+                    }
+                }
+            }
+        }.withState(selected)
+    }
 }
 
 fun testProgressBarWithState(frame: Frame) {

@@ -1,5 +1,6 @@
 package com.github.kusa233.ovatoxin.layout
 
+import com.github.kusa233.ovatoxin.component.LeafBox
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -262,5 +263,89 @@ class LayoutTest {
         assertEquals(source.height, target.height)
         assertEquals(source.hPadding, target.hPadding)
         assertEquals(source.vPadding, target.vPadding)
+    }
+
+    @Test
+    fun `insetBox insets a leaf's own box on all four sides`() {
+        val layout = Layout().configure {
+            hPadding = 10.px
+            vPadding = 6.px
+        }
+
+        assertEquals(LeafBox(110.0, 56.0, 180.0, 68.0), layout.insetBox(100.0, 50.0, 200.0, 80.0))
+    }
+
+    @Test
+    fun `insetBox resolves a percentage against the leaf's own box`() {
+        val layout = Layout().configure {
+            hPadding = 5.percent
+            vPadding = 10.percent
+        }
+
+        // 5% of 200 is 10, 10% of 80 is 8: the fill shrinks twice by each inset.
+        assertEquals(LeafBox(10.0, 8.0, 180.0, 64.0), layout.insetBox(0.0, 0.0, 200.0, 80.0))
+    }
+
+    @Test
+    fun `insetBox caps padding at half the box instead of going negative`() {
+        val layout = Layout().configure {
+            hPadding = 500.px
+            vPadding = 500.px
+        }
+
+        assertEquals(LeafBox(100.0, 40.0, 0.0, 0.0), layout.insetBox(0.0, 0.0, 200.0, 80.0))
+    }
+
+    @Test
+    fun `insetBox leaves an unpadded leaf where it was`() {
+        assertEquals(LeafBox(3.0, 4.0, 5.0, 6.0), Layout().insetBox(3.0, 4.0, 5.0, 6.0))
+    }
+
+    @Test
+    fun `insetBox centres a leaf in its band before shrinking it`() {
+        val layout = Layout().configure { vPadding = 10.percent }
+
+        // A 60 tall leaf in a 100 tall band: twice the 10px gap still fits in the 40px of slack, so
+        // the leaf keeps its height and is moved down to sit centred, 20 above and 20 below.
+        assertEquals(
+            LeafBox(0.0, 20.0, 200.0, 60.0),
+            layout.insetBox(0.0, 0.0, 200.0, 60.0, bandHeight = 100.0),
+        )
+    }
+
+    @Test
+    fun `insetBox gives height up only when the leaf overruns its band`() {
+        val layout = Layout().configure { vPadding = 10.percent }
+
+        // A 90 tall leaf in a 100 tall band: 90 + 2*10 overruns it, so it shrinks to 80 and leaves
+        // the 10px gap clear at the top and the bottom, the space above and below still equal.
+        assertEquals(
+            LeafBox(0.0, 10.0, 200.0, 80.0),
+            layout.insetBox(0.0, 0.0, 200.0, 90.0, bandHeight = 100.0),
+        )
+    }
+
+    @Test
+    fun `insetBox centres exactly when the slack is twice the padding`() {
+        val layout = Layout().configure { vPadding = 10.percent }
+
+        // 80 + 2*10 == 100: the leaf fits with the minimum gap, so it is centred, not shrunk.
+        assertEquals(
+            LeafBox(0.0, 10.0, 200.0, 80.0),
+            layout.insetBox(0.0, 0.0, 200.0, 80.0, bandHeight = 100.0),
+        )
+    }
+
+    @Test
+    fun `insetBox still insets horizontally while it centres vertically`() {
+        val layout = Layout().configure {
+            hPadding = 5.px
+            vPadding = 10.percent
+        }
+
+        assertEquals(
+            LeafBox(5.0, 20.0, 190.0, 60.0),
+            layout.insetBox(0.0, 0.0, 200.0, 60.0, bandHeight = 100.0),
+        )
     }
 }

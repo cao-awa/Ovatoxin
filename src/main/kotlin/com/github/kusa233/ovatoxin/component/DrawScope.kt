@@ -52,13 +52,45 @@ class DrawScope<T : Component<*>>(internal val component: T) {
         return this
     }
 
-    fun layout(layoutX: Length = Length.ZERO, layoutY: Length = Length.ZERO, layoutWidth: Length? = null, layoutHeight: Length? = null): DrawScope<T> {
+    fun layout(
+        layoutX: Length = Length.ZERO,
+        layoutY: Length = Length.ZERO,
+        layoutWidth: Length? = null,
+        layoutHeight: Length? = null,
+        tuning: Layout.() -> Unit = { }
+    ): DrawScope<T> {
         layout {
             x = layoutX
             y = layoutY
             width = layoutWidth
             height = layoutHeight
         }
+        layout(tuning)
+        return this
+    }
+
+    /**
+     * Applies a [Layout] preset, then tunes it with [block].
+     *
+     * The preset — built with
+     * [layout][com.github.kusa233.ovatoxin.dsl.layout] outside any component — is copied into this
+     * component first, so [block] starts from exactly the values of the template rather than from
+     * whatever the component held before. That makes the block the natural place for the one or two
+     * slots that differ per component:
+     *
+     * ```kotlin
+     * val halfWidth = layout { width = 50.percent; height = 100.percent }
+     * draw(Div()) { panel ->
+     *     layout(halfWidth) { x = 50.percent }
+     * }
+     * ```
+     *
+     * @param preset the template to copy in; every slot of this component is replaced by it.
+     * @param block per-component overrides applied on top of the preset.
+     */
+    fun layout(preset: Layout, block: Layout.() -> Unit = {}): DrawScope<T> {
+        this.component.layoutSpec.copyFrom(preset)
+        this.component.layoutSpec.configure(block)
         return this
     }
 
@@ -86,6 +118,33 @@ class DrawScope<T : Component<*>>(internal val component: T) {
      */
     fun style(block: Style.() -> Unit): DrawScope<T> {
         val previous = this.component.styleSpec.fontSize
+        this.component.styleSpec.configure(block)
+        if (this.component.styleSpec.fontSize != previous) {
+            this.component.relayoutAfterStyleChange()
+        }
+        return this
+    }
+
+    /**
+     * Applies a [Style] preset, then tunes it with [block].
+     *
+     * The preset — built with
+     * [style][com.github.kusa233.ovatoxin.dsl.style] outside any component — is copied into this
+     * component first, so [block] starts from exactly the appearance of the template. The copy
+     * reaches into the [Background][com.github.kusa233.ovatoxin.style.Background], so two components
+     * that share one template do not share a fill:
+     *
+     * ```kotlin
+     * val card = style { background { color = Color.web("#4c8bf5") }; corner = 8.px }
+     * draw(Div()) { panel -> style(card) { corner = 50.percent } }
+     * ```
+     *
+     * @param preset the template to copy in; every slot of this component is replaced by it.
+     * @param block per-component overrides applied on top of the preset.
+     */
+    fun style(preset: Style, block: Style.() -> Unit = {}): DrawScope<T> {
+        val previous = this.component.styleSpec.fontSize
+        this.component.styleSpec.copyFrom(preset)
         this.component.styleSpec.configure(block)
         if (this.component.styleSpec.fontSize != previous) {
             this.component.relayoutAfterStyleChange()

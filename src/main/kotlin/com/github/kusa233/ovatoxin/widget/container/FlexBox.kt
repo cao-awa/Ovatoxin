@@ -2,6 +2,7 @@ package com.github.kusa233.ovatoxin.widget.container
 
 import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.component.ComponentDrawable
+import com.github.kusa233.ovatoxin.component.Container
 import com.github.kusa233.ovatoxin.component.ContentBox
 import com.github.kusa233.ovatoxin.component.Size
 import com.github.kusa233.ovatoxin.component.Slot
@@ -179,20 +180,22 @@ class FlexBox : ComponentDrawable<FlexBox>() {
         val line = mutableListOf<Placed>()
         var cursor = box.offsetX
         var lineY = box.offsetY
+        var wrapped = false
 
         for (child in children) {
             val size = measure(child, box)
             // A child that is on a line of its own is never moved on: it may overflow, it may not wrap.
             val fits = line.isEmpty() || cursor + size.width <= right
             if (!fits) {
-                lineY += placeLine(line, box, gapX, lineY, result) + gapY
+                wrapped = true
+                lineY += placeLine(line, box, gapX, lineY, result, onlyLine = false) + gapY
                 line.clear()
                 cursor = box.offsetX
             }
             line.add(Placed(child, size))
             cursor += size.width + gapX
         }
-        placeLine(line, box, gapX, lineY, result)
+        placeLine(line, box, gapX, lineY, result, onlyLine = !wrapped)
         return result
     }
 
@@ -202,6 +205,12 @@ class FlexBox : ComponentDrawable<FlexBox>() {
      * The line is as tall as its tallest child, and [align] decides what a shorter child does with the
      * room that leaves above and below it. [justify] moves the whole line along the main axis and
      * widens the space between the children; neither ever changes a child's own size.
+     *
+     * A padded leaf is the exception to [align]: it is given the whole band as its slot so it can
+     * centre itself in it and keep the space above and below equal, giving height up only when it
+     * does not fit — see [com.github.kusa233.ovatoxin.layout.insetBox]. A flow of one line hands the
+     * whole content height down as that band (as in a flex row that stretches to its container);
+     * once it wraps, each line is its own band, as tall as the tallest child on it.
      */
     private fun placeLine(
         line: List<Placed>,
@@ -209,6 +218,7 @@ class FlexBox : ComponentDrawable<FlexBox>() {
         gap: Double,
         lineY: Double,
         result: MutableMap<Component<*>, Slot>,
+        onlyLine: Boolean,
     ): Double {
         if (line.isEmpty()) return 0.0
         val lineHeight = line.maxOf { it.size.height }
@@ -216,9 +226,17 @@ class FlexBox : ComponentDrawable<FlexBox>() {
         val free = (box.width - used).coerceAtLeast(0.0)
         var x = box.offsetX + leadingRoom(free, line.size)
         val between = gap + sharedRoom(free, line.size)
+        val bandTop = if (onlyLine) box.offsetY else lineY
+        val bandHeight = if (onlyLine) box.height else lineHeight
 
         for (placed in line) {
-            result[placed.child] = Slot(x, lineY + crossRoom(lineHeight - placed.size.height))
+            val child = placed.child
+            val paddedLeaf = child !is Container<*> && child.layoutSpec.vPadding != Length.ZERO
+            result[child] = if (paddedLeaf) {
+                Slot(x, bandTop, bandHeight)
+            } else {
+                Slot(x, lineY + crossRoom(lineHeight - placed.size.height))
+            }
             x += placed.size.width + between
         }
         return lineHeight
