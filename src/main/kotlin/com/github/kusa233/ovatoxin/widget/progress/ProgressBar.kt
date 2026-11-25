@@ -162,7 +162,7 @@ class ProgressBar(progress: Double = 0.0) : Component<ProgressBar>() {
     override fun applyStyle(width: Double, height: Double) {
         super.applyStyle(width, height)
         val bar = this.builtNode as? Region ?: return
-        val radius = this.styleSpec.cornerPixels(width, height)
+        val radius = this.styleSpec.cornerPixels(width, height, this.resolvedFontSize)
         if (radius <= 0.0 || width <= 0.0 || height <= 0.0) {
             bar.clip = null
             return

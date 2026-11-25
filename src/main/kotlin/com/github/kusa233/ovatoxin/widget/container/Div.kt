@@ -117,7 +117,7 @@ class Div : ComponentDrawable<Div>() {
         }
 
         // `arcWidth` is a diameter, hence the doubling of the pixel radius.
-        val radius = this.styleSpec.cornerPixels(pane.width, pane.height) * 2.0
+        val radius = this.styleSpec.cornerPixels(pane.width, pane.height, this.resolvedFontSize) * 2.0
         bounds.arcWidth = radius
         bounds.arcHeight = radius
         pane.clip = bounds

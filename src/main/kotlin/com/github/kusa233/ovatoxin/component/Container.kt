@@ -2,6 +2,8 @@ package com.github.kusa233.ovatoxin.component
 
 import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 import com.github.kusa233.ovatoxin.layout.Layout
+import com.github.kusa233.ovatoxin.layout.Percent
+import com.github.kusa233.ovatoxin.layout.Pixel
 import com.github.kusa233.ovatoxin.runtime.Fx
 import javafx.application.Platform
 import javafx.scene.Node
@@ -65,10 +67,18 @@ abstract class Container<T : Container<T>> : Component<T>() {
      * Padding larger than half the box would leave no room at all — and, unresolved, would put the
      * content outside the container — so an inset is capped at half the box. A container padded that
      * far therefore has an empty content box in its middle rather than a negative one.
+     *
+     * A padding written in `em` resolves against [fontSize], the size of *this* container by
+     * default: the inset belongs to the container, so it follows the container's font and not the
+     * font of whichever child happens to sit next to it.
      */
-    internal open fun contentBox(width: Double, height: Double): ContentBox {
-        val insetX = this.layoutSpec.hPadding.resolve(width).coerceIn(0.0, width / 2.0)
-        val insetY = this.layoutSpec.vPadding.resolve(height).coerceIn(0.0, height / 2.0)
+    internal open fun contentBox(
+        width: Double,
+        height: Double,
+        fontSize: Double = this.resolvedFontSize,
+    ): ContentBox {
+        val insetX = this.layoutSpec.hPadding.resolve(width, fontSize).coerceIn(0.0, width / 2.0)
+        val insetY = this.layoutSpec.vPadding.resolve(height, fontSize).coerceIn(0.0, height / 2.0)
         return ContentBox(
             offsetX = insetX,
             offsetY = insetY,
@@ -139,6 +149,18 @@ abstract class Container<T : Container<T>> : Component<T>() {
     }
 
     /**
+     * Lays this container out again after its font size changed, and then its own box.
+     *
+     * The order matters: the children inherit the font size this container now has, so they have to
+     * be placed with their new `em`s — which is a pass over *this* container's pane. Only then does
+     * the container itself have to move, since the `em`s it is placed with may have moved too.
+     */
+    internal override fun relayoutAfterStyleChange() {
+        relayout()
+        this.parent?.relayout()
+    }
+
+    /**
      * Re-applies the geometry of [component] alone, leaving every sibling untouched.
      *
      * This is what a [com.github.kusa233.ovatoxin.state.State] uses when its value changes: a
@@ -155,6 +177,10 @@ abstract class Container<T : Container<T>> : Component<T>() {
      * [offsetX] and [offsetY] are added to the resolved position, which is how a padded surface
      * keeps its children inside the inset box and how a flow hands over the slot it computed:
      * the `x` of a child is a position *relative to* that offset, never an absolute one.
+     *
+     * The relative units of [spec] resolve against the box being placed into; an `em` resolves
+     * against [fontSize], since the offsets and the size belong to the child being placed and not to
+     * the box around it.
      */
     internal fun place(
         node: Node,
@@ -163,11 +189,12 @@ abstract class Container<T : Container<T>> : Component<T>() {
         height: Double,
         offsetX: Double = 0.0,
         offsetY: Double = 0.0,
+        fontSize: Double = this.resolvedFontSize,
     ) {
-        val resolvedX = offsetX + spec.x.resolve(width)
-        val resolvedY = offsetY + spec.y.resolve(height)
-        val resolvedWidth = spec.width?.resolve(width)
-        val resolvedHeight = spec.height?.resolve(height)
+        val resolvedX = offsetX + spec.x.resolve(width, fontSize)
+        val resolvedY = offsetY + spec.y.resolve(height, fontSize)
+        val resolvedWidth = spec.width?.resolve(width, fontSize)
+        val resolvedHeight = spec.height?.resolve(height, fontSize)
         node.autosize()
 
         if (node is Region) {
@@ -208,7 +235,10 @@ abstract class Container<T : Container<T>> : Component<T>() {
      * placed, and [slotFor] then answers with a slot it already knows.
      */
     private fun applyGeometry(host: Pane, only: Component<*>? = null) {
-        val box = contentBox(host.width, host.height)
+        // The container resolves its own font first: a percentage font size needs the box height,
+        // and every child inherits whatever this resolves to.
+        val selfFont = resolveFontFor(host.height)
+        val box = contentBox(host.width, host.height, selfFont)
 
         // The container styles itself against its own box; a percentage corner needs that size.
         applyStyle(host.width, host.height)
@@ -221,9 +251,35 @@ abstract class Container<T : Container<T>> : Component<T>() {
             node.isVisible = child.visible
             node.isManaged = false
             val slot = slotFor(child, box)
-            place(node, child.layoutSpec, box.width, box.height, slot.x, slot.y)
+            place(
+                node,
+                child.layoutSpec,
+                box.width,
+                box.height,
+                slot.x,
+                slot.y,
+                childFont(child, box, selfFont),
+            )
             child.applyStyle(childBoxWidth(node), childBoxHeight(node))
         }
+    }
+
+    /**
+     * The font size [child] resolves inside [box], inheriting [inherited].
+     *
+     * A percentage font size is taken of the child's own box height, so the child's declared height
+     * is resolved here — without the font, since only a pixel or percentage height is font
+     * independent. An `auto` or `em` height stays unknown and the percentage falls back to
+     * [inherited]; the child's real box, once placed, carries the right size into [Component.applyStyle]
+     * anyway.
+     */
+    private fun childFont(child: Component<*>, box: ContentBox, inherited: Double): Double {
+        val height = when (val declared = child.layoutSpec.height) {
+            is Pixel -> declared.value
+            is Percent -> box.height * declared.value / 100.0
+            else -> null
+        }
+        return child.fontSizeForHeight(height, inherited)
     }
 
     /**

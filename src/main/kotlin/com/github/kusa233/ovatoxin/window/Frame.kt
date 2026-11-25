@@ -99,7 +99,7 @@ class Frame(
     /** A frame cannot be styled as a box: it is the window, so its style is its background. */
     override fun applyStyle(width: Double, height: Double) {
         val pane = this.root ?: return
-        pane.style = this.styleSpec.toCss(width, height)
+        pane.style = this.styleSpec.toCss(width, height, this.resolvedFontSize)
     }
 
     /**

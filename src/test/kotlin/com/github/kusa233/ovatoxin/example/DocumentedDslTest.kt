@@ -1,6 +1,7 @@
 package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.layout.Percent
+import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.runtime.Browser
@@ -587,6 +588,44 @@ class DocumentedDslTest {
         val content = panel.contentBox(400.0, 200.0)
         assertEquals(376.0, content.width)
         assertEquals(176.0, content.height)
+    }
+
+    @Test
+    fun `the font size snippet compiles and keeps its ems in step`() {
+        val frame = Frame()
+        frame.layout {
+            draw(Div()) { panel ->
+                // 字号写在 style 里，和颜色、圆角一样属于"画成什么样"
+                style { fontSize = 20.px }
+                layout {
+                    hPadding = 1.em
+                    vPadding = 0.5.em
+                }
+                panel.layout {
+                    draw(Button()) { button ->
+                        style { fontSize = 16.px }
+                        layout {
+                            width = 6.em
+                            height = 2.em
+                        }
+                        button.text = "em"
+                    }
+                }
+            }
+        }
+
+        val panel = frame.children[0] as Div
+        val button = panel.children[0] as Button
+        assertEquals(20.0, panel.resolvedFontSize)
+        // 内边距和字号写在同一个 style 里，1.em 就是二十像素
+        val content = panel.contentBox(400.0, 200.0)
+        assertEquals(20.0, content.offsetX)
+        assertEquals(10.0, content.offsetY)
+
+        // 子组件自己写了 16，就不再跟外面的 20：6.em 是 96，2.em 是 32
+        assertEquals(16.0, button.resolvedFontSize)
+        assertEquals(96.0, button.layoutSpec.width!!.resolve(400.0, button.resolvedFontSize))
+        assertEquals(32.0, button.layoutSpec.height!!.resolve(200.0, button.resolvedFontSize))
     }
 
     @Test

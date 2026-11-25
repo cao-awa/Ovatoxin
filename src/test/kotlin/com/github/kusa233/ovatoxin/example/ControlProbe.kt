@@ -1,6 +1,8 @@
 package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.layout.percent
+import com.github.kusa233.ovatoxin.layout.px
+import com.github.kusa233.ovatoxin.widget.action.Button
 import com.github.kusa233.ovatoxin.widget.input.CheckBox
 import com.github.kusa233.ovatoxin.widget.input.ComboBox
 import com.github.kusa233.ovatoxin.widget.text.Label
@@ -36,6 +38,7 @@ fun main() {
     lateinit var box: CheckBox
     lateinit var combo: ComboBox<String>
     lateinit var label: Label
+    lateinit var fontButton: Button
     val reported = mutableListOf<Boolean>()
     val picked = mutableListOf<String>()
 
@@ -96,6 +99,19 @@ fun main() {
             }
             component.hint = "your name"
         }
+
+        // A percentage font size: the control's own box height is the reference, so a 40px tall
+        // button asked for "50 percent" of text must render at 20px — the text scales with the box.
+        fontButton = draw(Button()) { component ->
+            layout {
+                x = 10.percent
+                y = 85.percent
+                width = 60.percent
+                height = 40.px
+            }
+            style { fontSize = 50.percent }
+            component.text = "50%"
+        }
     }
 
     frame.show()
@@ -107,6 +123,7 @@ fun main() {
             val boxOk = checkBox(box, reported)
             val comboOk = comboBox(combo, picked)
             val labelOk = formLabel(label, field)
+            val fontOk = percentFont(fontButton)
 
             println()
             println("=== control probe ===")
@@ -115,8 +132,9 @@ fun main() {
             println("box    : ${if (boxOk) "ok  " else "FAIL"} a click ticks the box and reports it once")
             println("combo  : ${if (comboOk) "ok  " else "FAIL"} the dropdown shows its items and reports the picked one")
             println("label  : ${if (labelOk) "ok  " else "FAIL"} a form label captions and points at its field")
+            println("font   : ${if (fontOk) "ok  " else "FAIL"} a percentage font scales to the control's own box")
             println()
-            val allOk = barOk && boxOk && comboOk && labelOk
+            val allOk = barOk && boxOk && comboOk && labelOk && fontOk
             println(if (allOk) "RESULT: ok" else "RESULT: MISMATCH")
 
             Platform.exit()
@@ -294,6 +312,27 @@ private fun comboBox(combo: ComboBox<String>, picked: MutableList<String>): Bool
 
 /** Renders a check column. */
 private fun mark(ok: Boolean): String = if (ok) "ok  " else "FAIL"
+
+/**
+ * Proves a percentage font size is taken of the control's own box, and really reaches the text.
+ *
+ * The button is laid out 40px tall and asks for `50.percent`: the resolved size is 20px, which both
+ * the inline CSS and the JavaFX font on the node have to carry. Reading the font back is what makes
+ * this more than a layout check — it is the pixels that must scale with the box.
+ */
+private fun percentFont(button: Button): Boolean {
+    val node = button.node as javafx.scene.control.Button
+
+    val css = node.style ?: ""
+    val declared = css.contains("-fx-font-size: 20px")
+    val measured = near(node.font.size, 20.0)
+
+    println()
+    println("percent font (a 40px tall button with fontSize = 50.percent)")
+    println("  css     : ${mark(declared)} the inline style carries \"-fx-font-size: 20px\"")
+    println("  render  : ${mark(measured)} node.font.size = ${node.font.size}, expect 20.0")
+    return declared && measured
+}
 
 private fun near(actual: Double, expected: Double): Boolean = abs(actual - expected) < 0.001
 

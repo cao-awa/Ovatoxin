@@ -171,8 +171,8 @@ class FlexBox : ComponentDrawable<FlexBox>() {
      * gathered into a line first and only then given their slots.
      */
     private fun arrange(box: ContentBox, children: List<Component<*>>): Map<Component<*>, Slot> {
-        val gapX = this.gapValue.resolve(box.width)
-        val gapY = this.gapValue.resolve(box.height)
+        val gapX = this.gapValue.resolve(box.width, this.resolvedFontSize)
+        val gapY = this.gapValue.resolve(box.height, this.resolvedFontSize)
         val right = box.offsetX + box.width
 
         val result = LinkedHashMap<Component<*>, Slot>(children.size)
@@ -261,12 +261,17 @@ class FlexBox : ComponentDrawable<FlexBox>() {
         val spec = child.layoutSpec
         val declaredWidth = spec.width
         val declaredHeight = spec.height
+        // A child measures its own em against its own font, inherited from this box.
+        val fontSize = child.resolvedFontSize
         if (declaredWidth != null && declaredHeight != null) {
-            return Size(declaredWidth.resolve(box.width), declaredHeight.resolve(box.height))
+            return Size(
+                declaredWidth.resolve(box.width, fontSize),
+                declaredHeight.resolve(box.height, fontSize),
+            )
         }
         val node = child.node
-        val width = declaredWidth?.resolve(box.width) ?: preferredWidth(node)
-        val height = declaredHeight?.resolve(box.height) ?: node.prefHeight(width)
+        val width = declaredWidth?.resolve(box.width, fontSize) ?: preferredWidth(node)
+        val height = declaredHeight?.resolve(box.height, fontSize) ?: node.prefHeight(width)
         return Size(width, height)
     }
 
@@ -279,17 +284,19 @@ class FlexBox : ComponentDrawable<FlexBox>() {
      *
      * The insets and the gaps are part of it, so a padded row is as large as the room it keeps clear
      * and a row with a [gap] is as wide as the children plus the space it puts between them. A child
-     * sized in pixels contributes that size; a child sized in percent cannot be measured before the
-     * box has a width, so it contributes the preferred width of its node — and a percentage [gap]
-     * contributes nothing, for the same reason.
+     * sized in pixels or in `em` contributes that size; a child sized in percent cannot be measured
+     * before the box has a width, so it contributes the preferred width of its node — and a
+     * percentage [gap] contributes nothing, for the same reason.
      */
     private fun contentWidth(): Double {
         val children = this.children
-        val inset = this.layoutSpec.hPadding.resolve(0.0)
+        val inset = this.layoutSpec.hPadding.resolve(0.0, this.resolvedFontSize)
         if (children.isEmpty()) return inset * 2.0
-        var total = inset * 2.0 + this.gapValue.resolve(0.0) * (children.size - 1)
+        val gap = this.gapValue.resolve(0.0, this.resolvedFontSize)
+        var total = inset * 2.0 + gap * (children.size - 1)
         for (child in children) {
-            total += child.layoutSpec.width?.resolve(0.0) ?: preferredWidth(child.node)
+            val width = child.layoutSpec.width?.resolve(0.0, child.resolvedFontSize)
+            total += width ?: preferredWidth(child.node)
         }
         return total
     }
@@ -297,13 +304,14 @@ class FlexBox : ComponentDrawable<FlexBox>() {
     /** What this box wants to be when nothing else decides: one line, as tall as its tallest child. */
     private fun contentHeight(): Double {
         val children = this.children
-        val inset = this.layoutSpec.vPadding.resolve(0.0)
+        val inset = this.layoutSpec.vPadding.resolve(0.0, this.resolvedFontSize)
         if (children.isEmpty()) return inset * 2.0
         var tallest = 0.0
         for (child in children) {
             val node = child.node
-            val width = child.layoutSpec.width?.resolve(contentWidth()) ?: preferredWidth(node)
-            val height = child.layoutSpec.height?.resolve(0.0) ?: node.prefHeight(width)
+            val fontSize = child.resolvedFontSize
+            val width = child.layoutSpec.width?.resolve(contentWidth(), fontSize) ?: preferredWidth(node)
+            val height = child.layoutSpec.height?.resolve(0.0, fontSize) ?: node.prefHeight(width)
             tallest = maxOf(tallest, height)
         }
         return tallest + inset * 2.0

@@ -1,6 +1,7 @@
 package com.github.kusa233.ovatoxin.component
 
 import com.github.kusa233.ovatoxin.layout.Length
+import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.state.State
@@ -309,5 +310,40 @@ class ResetTest {
         assertEquals(Length.ZERO, row.gap)
         assertEquals(Justify.START, row.justify)
         assertEquals(Align.START, row.align)
+    }
+
+    @Test
+    fun `a redraw drops a font size the block no longer sets`() {
+        val state = State("a")
+        val frame = Frame()
+        val panel = Div()
+        frame.layout {
+            draw(panel) { box ->
+                layout { hPadding = 1.em }
+                style { fontSize = 20.px }
+                box.layout { draw(TextArea()) { area -> area.text(state.value) } }
+            }
+        }
+        panel.withState(state)
+        assertEquals(20.0, panel.resolvedFontSize)
+
+        // The size lives in the style, so it is part of what the reset clears before the block
+        // runs again; the block sets it again, and if it did not, the em padding would silently
+        // fall back to the 14px default.
+        state.update("b")
+
+        assertEquals(20.0, panel.resolvedFontSize)
+        assertEquals(20.0, panel.contentBox(200.0, 100.0).offsetX)
+    }
+
+    @Test
+    fun `a surface without a block falls back to inheriting its font size`() {
+        val panel = Div()
+        panel.applyStyle { fontSize = 20.px }
+
+        panel.reset()
+
+        assertNull(panel.styleSpec.fontSize)
+        assertEquals(Length.DEFAULT_FONT_SIZE, panel.resolvedFontSize)
     }
 }

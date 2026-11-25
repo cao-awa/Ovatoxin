@@ -1,6 +1,7 @@
 package com.github.kusa233.ovatoxin.style
 
 import com.github.kusa233.ovatoxin.layout.Length
+import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import javafx.scene.paint.Color
@@ -72,6 +73,24 @@ class StyleTest {
         val style = Style().configure { corner = 10.percent }
         assertEquals(4.0, style.cornerPixels(200.0, 40.0))
         assertEquals(8.0, style.cornerPixels(400.0, 80.0))
+    }
+
+    @Test
+    fun `an em corner follows the font size`() {
+        val style = Style().configure { corner = 1.em }
+
+        // No size given: the library default of 14px applies.
+        assertEquals(14.0, style.cornerPixels(200.0, 100.0))
+        // One em is the font size the component is drawn with, whatever the box is.
+        assertEquals(24.0, style.cornerPixels(200.0, 100.0, fontSize = 24.0))
+        // An em does not scale with the box the way a percentage does.
+        assertEquals(20.0, style.cornerPixels(800.0, 400.0, fontSize = 20.0))
+    }
+
+    @Test
+    fun `an em corner reaches the css radius`() {
+        val css = Style().configure { corner = 1.em }.toCss(200.0, 100.0, fontSize = 20.0)
+        assertTrue(css.contains("-fx-background-radius: 20px"), css)
     }
 
     @Test
@@ -265,6 +284,7 @@ class StyleTest {
             }
             corner = 4.px
             foreground = Color.web("#4c8bf5")
+            fontSize = 20.px
         }
         val target = Style()
         target.copyFrom(source)
@@ -273,6 +293,7 @@ class StyleTest {
         assertEquals(source.background.image, target.background.image)
         assertEquals(source.corner, target.corner)
         assertEquals(Color.web("#4c8bf5"), target.foreground)
+        assertEquals(20.px, target.fontSize)
         // The lengths are values, not shared boxes.
         assertEquals(Length.pixels(4.0), target.corner)
     }
@@ -326,5 +347,74 @@ class StyleTest {
         val css = style.toCss(100.0, 40.0)
         assertTrue(css.contains("-fx-text-fill: #4c8bf5;"), css)
         assertTrue(css.contains("-fx-background-color: #ffffff;"), css)
+    }
+
+    @Test
+    fun `the font size inherits until a style states one`() {
+        // `null` is "nobody said anything", not "14": the component walks up to its parent.
+        assertNull(Style().fontSize)
+        assertNull(Style.DEFAULT_FONT_SIZE)
+    }
+
+    @Test
+    fun `the font size survives a reset only as the inherited default`() {
+        val style = Style().configure { fontSize = 20.px }
+        assertEquals(20.px, style.fontSize)
+
+        style.reset()
+
+        assertNull(style.fontSize)
+    }
+
+    @Test
+    fun `a pixel font size is used as it stands`() {
+        // A pixel is already absolute, so the box height is irrelevant.
+        assertEquals(20.0, 20.px.resolveFontSize(14.0))
+        assertEquals(20.0, 20.px.resolveFontSize(64.0))
+        assertEquals(20.0, 20.px.resolveFontSize(null))
+    }
+
+    @Test
+    fun `a percentage font size is that much of the box height`() {
+        // 120% of a 20px tall box: the text scales with the box it is drawn in.
+        assertEquals(24.0, 120.percent.resolveFontSize(20.0))
+        assertEquals(14.0, 100.percent.resolveFontSize(14.0))
+        // Without a box height there is nothing to take a fraction of.
+        assertNull(120.percent.resolveFontSize(null))
+    }
+
+    @Test
+    fun `an em font size is refused`() {
+        // An em is a multiple of the font size, so it cannot also be the font size.
+        assertFailsWith<IllegalArgumentException> {
+            Style().configure { fontSize = 1.em }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            1.em.resolveFontSize(14.0)
+        }
+    }
+
+    @Test
+    fun `an em corner resolves against the font size of the style`() {
+        val style = Style().configure { corner = 1.em }
+
+        // The corner of a component drawn at 20px of text is a full line of that text.
+        assertEquals(20.0, style.cornerPixels(100.0, 100.0, 20.0))
+        // With no size around, the documented default applies.
+        assertEquals(Length.DEFAULT_FONT_SIZE, style.cornerPixels(100.0, 100.0))
+    }
+
+    @Test
+    fun `the fontSize block in the documentation compiles`() {
+        val style = Style().configure {
+            background { color = Color.web("#ffffff") }
+            corner = 4.px
+            fontSize = 20.px
+        }
+        assertEquals(20.px, style.fontSize)
+        assertTrue(style.toString().contains("fontSize=20px"), style.toString())
+
+        val relative = Style().configure { fontSize = 120.percent }
+        assertEquals(120.percent, relative.fontSize)
     }
 }

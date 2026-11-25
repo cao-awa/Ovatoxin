@@ -1,6 +1,7 @@
 package com.github.kusa233.ovatoxin.component
 
 import com.github.kusa233.ovatoxin.layout.Layout
+import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.runtime.Fx
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
@@ -38,6 +39,95 @@ abstract class Component<T : Component<T>> {
     /** The container this component was drawn into, or `null` while it is not attached. */
     var parent: Container<*>? = null
         internal set
+
+    /**
+     * The font size, in pixels, this component resolved the last time it was laid out, or the one
+     * it would resolve outside a layout pass.
+     *
+     * A component states its size in the [style][com.github.kusa233.ovatoxin.style.Style.fontSize]
+     * of the block that draws it; a component that says nothing there inherits the size of its
+     * [parent], and a component that is not attached to anything yet — or whose tree never sets a
+     * size — falls back to [Length.DEFAULT_FONT_SIZE]. A [TextArea][com.github.kusa233.ovatoxin.widget.text.TextArea]
+     * is the exception: it renders text of its own and defaults to that same number instead of
+     * inheriting.
+     *
+     * The size is what the layout resolves every [Length.Em] of the component against, and what a
+     * control renders its text with. It is resolved afresh on each pass by [resolveFontFor], because
+     * a [percent][Length.Percent] size is taken of the component's *own box height* and therefore
+     * cannot be known before that box is:
+     *
+     * ```kotlin
+     * draw(Button()) { button ->
+     *     layout { height = 40.px }
+     *     style { fontSize = 50.percent }   // half of the button's own 40px: 20px of text
+     * }
+     * ```
+     *
+     * Inheriting rather than defaulting keeps a whole subtree on one reference, so `1.em` means the
+     * same thing for a container and for the text inside it:
+     *
+     * ```kotlin
+     * draw(Div()) { panel ->
+     *     panel.layout { width = 200.px; height = 120.px; hPadding = 1.em }
+     *     style { fontSize = 20.px }
+     *     // the padding of 1.em is 20px, on a panel whose style set 20; the child drawn into it
+     *     // says nothing about a size, so its own ems resolve against that same 20px.
+     * }
+     * ```
+     */
+    internal open val resolvedFontSize: Double
+        get() = this.layoutFontSize ?: this.fontSizeForHeight(null, this.inheritedFontSize)
+
+    /**
+     * The font size this component resolved during the last layout pass, or `null` before the first
+     * one. Subclasses that render their own text read it; the base class fills it in when it styles
+     * the node.
+     */
+    protected var layoutFontSize: Double? = null
+
+    /**
+     * Resolves the [Style.fontSize] of this component for a box [height] pixels tall, falling back
+     * to [inherited] when the style names no size.
+     *
+     * A [percent][Length.Percent] size is taken of [height], the component's own box height. Because
+     * that box may not be known yet — or may itself grow with the font, when its height is `auto` or
+     * written in `em` — [height] may be `null`, in which case a percentage falls back to
+     * [inherited] rather than resolving against a size that depends on the answer.
+     */
+    internal open fun fontSizeForHeight(height: Double?, inherited: Double): Double =
+        this.styleSpec.fontSize?.resolveFontSize(height) ?: inherited
+
+    /**
+     * Computes the font size for a box [height] pixels tall and remembers it as [layoutFontSize], so
+     * that [resolvedFontSize] reports it for the rest of this pass.
+     */
+    internal fun resolveFontFor(height: Double): Double {
+        val font = this.fontSizeForHeight(this.percentReferenceHeight(height), this.inheritedFontSize)
+        this.layoutFontSize = font
+        return font
+    }
+
+    /**
+     * The height a [percent][Length.Percent] font size resolves against — the box height, but only
+     * when the declared height is itself a pixel or percentage value that does not need the font.
+     * An `auto` or `em` height would grow with the very font being resolved, so it yields `null`
+     * and the percentage falls back to the inherited size.
+     */
+    private fun percentReferenceHeight(height: Double): Double? =
+        when (this.layoutSpec.height) {
+            is com.github.kusa233.ovatoxin.layout.Pixel,
+            is com.github.kusa233.ovatoxin.layout.Percent,
+            -> height
+            else -> null
+        }
+
+    /**
+     * The font size this component inherits from its [parent], in pixels, or the library default
+     * when it has none — the reference a child falls back to when its own size is not spelled out,
+     * or when a percentage of its box cannot be resolved yet.
+     */
+    internal val inheritedFontSize: Double
+        get() = this.parent?.resolvedFontSize ?: Length.DEFAULT_FONT_SIZE
 
     /** This component typed as its concrete subclass. */
     @Suppress("UNCHECKED_CAST")
@@ -251,21 +341,67 @@ abstract class Component<T : Component<T>> {
 
     /** Replaces the appearance of this component and renders the change immediately. */
     fun applyStyle(block: Style.() -> Unit) {
+        val previous = this.styleSpec.fontSize
         this.styleSpec.configure(block)
+        // A font size is not just a colour: it moves the pixels of every `em` below this
+        // component, so a change of it has to lay the tree out again rather than repaint a node.
+        if (this.styleSpec.fontSize != previous) {
+            relayoutAfterStyleChange()
+        } else {
+            this.parent?.relayout()
+        }
+    }
+
+    /**
+     * Lays this component out again after a style value that changes what its `em` lengths measure.
+     *
+     * A plain component only has to be placed again by its [parent], since its own `x`, `y`, width
+     * and height are the ones written in `em`. A container also has to place its *children* again —
+     * see [Container.relayoutAfterStyleChange] — because their inherited font size changed with it.
+     */
+    internal open fun relayoutAfterStyleChange() {
         this.parent?.relayout()
     }
 
     /**
      * Applies [styleSpec] to the node, given the box it currently occupies.
      *
-     * Called on every layout pass, because a percentage corner radius depends on the box size.
-     * Identical CSS is not re-applied, so resizing stays cheap.
+     * Called on every layout pass, because a percentage corner radius — and a percentage font
+     * size — depends on the box size. Identical CSS is not re-applied, so resizing stays cheap.
+     *
+     * A control also renders its text at the resolved size: the font size is appended to the inline
+     * style so a `50.percent` font really is half the control's box on screen, not just in the
+     * layout maths. A component that paints its own text ([appliesOwnFont]) sets its font itself
+     * and is left alone.
      */
     internal open fun applyStyle(width: Double, height: Double) {
-        val css = this.styleSpec.toCss(width, height)
+        val font = this.resolveFontFor(height)
+        val css = this.styleSpec.toCss(width, height, font) + this.fontCss(font)
         if (css == this.appliedStyle) return
         this.appliedStyle = css
         this.node.style = css
+    }
+
+    /**
+     * The `-fx-font-size` declaration that makes a control render the resolved [font], or an empty
+     * string when the node is not a control or the size is simply the inherited default.
+     *
+     * Leaving the library default in place keeps a plain tree looking native; a control only picks
+     * up an explicit size — its own, or one inherited from an ancestor that stated a size.
+     */
+    private fun fontCss(font: Double): String {
+        if (this.builtNode !is javafx.scene.control.Control || this.appliesOwnFont) return ""
+        if (this.styleSpec.fontSize == null && this.inheritedFontSize == Length.DEFAULT_FONT_SIZE) return ""
+        return " -fx-font-size: ${formatFont(font)}px;"
+    }
+
+    /** Whether this component paints its own text and must keep [fontCss] off its node. */
+    protected open val appliesOwnFont: Boolean get() = false
+
+    /** Formats a font size the way CSS likes it: `20`, not `20.0`. */
+    private fun formatFont(value: Double): String {
+        val rounded = kotlin.math.round(value * 100.0) / 100.0
+        return if (rounded == kotlin.math.floor(rounded)) rounded.toInt().toString() else rounded.toString()
     }
 
     private var appliedStyle: String? = null

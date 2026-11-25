@@ -62,9 +62,34 @@ class DrawScope<T : Component<*>>(internal val component: T) {
         return this
     }
 
-    /** Configures the appearance of the drawn component. */
+    /**
+     * Configures the appearance of the drawn component.
+     *
+     * This is also where a component states the font size its `em`s are measured against — see
+     * [Style.fontSize]. Changing it moves the pixels of every `em` below, so the component is laid
+     * out again as soon as the value really changed:
+     *
+     * ```kotlin
+     * draw(Div()) { panel ->
+     *     layout { hPadding = 1.em }   // 14px, the size in force when this line runs
+     *     style { fontSize = 20.px }   // now the same padding is 20px, and so is the aside below
+     *     panel.layout {
+     *         draw(TextArea("inherits 20")) { }   // its own ems would be 20px each
+     *         draw(TextArea("says 32")) { style { fontSize = 32.px } }   // this one resolves against 32px
+     *     }
+     * }
+     * ```
+     *
+     * The size is a [Length] but only `px` and `percent` are accepted — `percent` of the component's
+     * own box height, so the text scales with the box — because an `em` would be measuring the font
+     * against itself.
+     */
     fun style(block: Style.() -> Unit): DrawScope<T> {
+        val previous = this.component.styleSpec.fontSize
         this.component.styleSpec.configure(block)
+        if (this.component.styleSpec.fontSize != previous) {
+            this.component.relayoutAfterStyleChange()
+        }
         return this
     }
 }

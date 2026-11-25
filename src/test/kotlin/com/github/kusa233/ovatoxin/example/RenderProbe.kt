@@ -2,6 +2,7 @@ package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.component.Container
+import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.state.State
@@ -44,6 +45,7 @@ fun main() {
     lateinit var panel: Div
     lateinit var imageBox: Div
     lateinit var padBox: Div
+    lateinit var emBox: Div
     lateinit var flowBox: FlexBox
     lateinit var boundText: TextArea
     lateinit var untouchedText: Button
@@ -179,7 +181,7 @@ fun main() {
             layout {
                 x = 10.percent
                 y = 20.percent
-                width = 80.percent
+                width = 38.percent
                 height = 8.percent
                 hPadding = PAD_X.px
                 vPadding = PAD_Y.px
@@ -191,6 +193,31 @@ fun main() {
                         height = 50.percent
                     }
                     child.text("padded")
+                }
+            }
+        }
+
+        // The same surface beside it, but its inset is written in `em`: the pixels of the padding
+        // may only come from the font size this surface was given, never from the 14px default the
+        // library falls back to. It sits next to the padded surface so the two insets are rendered
+        // from the same window — one in pixels, one in lines of text.
+        emBox = draw(Div()) { component ->
+            layout {
+                x = 52.percent
+                y = 20.percent
+                width = 38.percent
+                height = 8.percent
+                hPadding = 1.em
+                vPadding = 0.5.em
+            }
+            style { fontSize = EM_FONT_SIZE.px }
+            component.layout {
+                draw(TextArea()) { child ->
+                    layout {
+                        width = 50.percent
+                        height = 50.percent
+                    }
+                    child.text("em")
                 }
             }
         }
@@ -229,7 +256,7 @@ fun main() {
     // after the size listeners have run.
     Platform.runLater {
         Platform.runLater {
-            val initial = report("initial 800x600", frame, probes, nested, panel, imageBox, padBox, flowBox)
+            val initial = report("initial 800x600", frame, probes, nested, panel, imageBox, padBox, emBox, flowBox)
 
             // Percentages must be re-resolved against the new window size, not frozen.
             frame.stage?.let { stage ->
@@ -240,7 +267,7 @@ fun main() {
 
             Platform.runLater {
                 Platform.runLater {
-                    val resized = report("resized 1000x500", frame, probes, nested, panel, imageBox, padBox, flowBox)
+                    val resized = report("resized 1000x500", frame, probes, nested, panel, imageBox, padBox, emBox, flowBox)
                     val stateOk = stateRedraw(boundText, untouchedText, state, "changed")
                     val ok = initial && resized && stateOk
                     Platform.exit()
@@ -270,6 +297,15 @@ private const val FLOW_GAP: Double = 10.0
 private const val PAD_X: Double = 8.0
 private const val PAD_Y: Double = 6.0
 
+/**
+ * The font size the `em` probe surface is given.
+ *
+ * It is deliberately not the 14 device independent pixels a component falls back to: an `em` that
+ * resolved against the default instead of against the size the surface was handed would still look
+ * plausible at 14, and only a size that differs from the default tells the two apart.
+ */
+private const val EM_FONT_SIZE: Double = 20.0
+
 private fun report(
     label: String,
     frame: Frame,
@@ -278,6 +314,7 @@ private fun report(
     panel: Div,
     imageBox: Div,
     padBox: Div,
+    emBox: Div,
     flowBox: FlexBox,
 ): Boolean {
     val scene = probes.first().component.node.scene
@@ -298,6 +335,7 @@ private fun report(
     ok = opacityLayer(probes.first { it.name == "Button" }) && ok
     ok = imageLayer(imageBox) && ok
     ok = padding(padBox) && ok
+    ok = emPadding(emBox) && ok
     ok = flow(flowBox) && ok
     ok = contents(probes + nested) && ok
     ok = association(probes) && ok
@@ -338,6 +376,49 @@ private fun padding(surface: Div): Boolean {
         "origin      ${if (xOk && yOk) "ok  " else "FAIL"} " +
             "child at (${num(child.layoutX)}, ${num(child.layoutY)}) " +
             "expect (${num(expectedX)}, ${num(expectedY)}) —the inset, not the corner",
+    )
+    println(
+        "inner size  ${if (widthOk && heightOk) "ok  " else "FAIL"} " +
+            "50% resolves to ${num(child.layoutBounds.width)} x ${num(child.layoutBounds.height)} " +
+            "expect ${num(expectedWidth)} x ${num(expectedHeight)}",
+    )
+    return xOk && yOk && widthOk && heightOk
+}
+
+/**
+ * Proves an `em` inset is resolved against the font size of the surface, not the default one.
+ *
+ * The surface declares `hPadding = 1.em` and `vPadding = 0.5.em` while being given a font size of
+ * [EM_FONT_SIZE], so the rendered inset has to be exactly one font size sideways and half of one
+ * vertically. Resolving against the 14px default would give 14 and 7 instead — different enough to
+ * fail both rows — and resolving against the window would not produce a number at all.
+ */
+private fun emPadding(surface: Div): Boolean {
+    println()
+    println("em padding  (an em inset resolves against the font size of its own surface)")
+    val pane = surface.contentPane
+    val child = surface.children.singleOrNull()?.node
+    if (pane == null || child == null) {
+        println("em padding  FAIL  surface has no pane or no single child")
+        return false
+    }
+
+    val expectedX = EM_FONT_SIZE
+    val expectedY = EM_FONT_SIZE * 0.5
+    val xOk = near(expectedX, child.layoutX)
+    val yOk = near(expectedY, child.layoutY)
+
+    // The inner box follows the same two numbers: half of what the padded width leaves over.
+    val expectedWidth = (pane.width - expectedX * 2.0) * 0.5
+    val expectedHeight = (pane.height - expectedY * 2.0) * 0.5
+    val widthOk = near(expectedWidth, child.layoutBounds.width)
+    val heightOk = near(expectedHeight, child.layoutBounds.height)
+
+    println(
+        "origin      ${if (xOk && yOk) "ok  " else "FAIL"} " +
+            "child at (${num(child.layoutX)}, ${num(child.layoutY)}) " +
+            "expect (${num(expectedX)}, ${num(expectedY)}) —one em wide, half an em tall, " +
+            "not the ${num(14.0)} px default",
     )
     println(
         "inner size  ${if (widthOk && heightOk) "ok  " else "FAIL"} " +

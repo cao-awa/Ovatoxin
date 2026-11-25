@@ -3,6 +3,7 @@ package com.github.kusa233.ovatoxin.widget.container
 import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.component.ContentBox
 import com.github.kusa233.ovatoxin.component.Slot
+import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
@@ -216,6 +217,147 @@ class FlexBoxTest {
         // Ten percent of the 180px content box is 18px, measured from the inset corner.
         assertEquals(10.0, this.slotOf(box, first, 200.0, 100.0).x)
         assertEquals(68.0, this.slotOf(box, second, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `an em gap follows the font size of the box`() {
+        val box = padded(FlexBox(), 10.px, 10.px)
+        box.gap = 1.em
+        val first = TextArea("one")
+        val second = TextArea("two")
+        box.layout {
+            draw(first) { layout { width = 40.px; height = 10.px } }
+            draw(second) { layout { width = 40.px; height = 10.px } }
+        }
+
+        // A box without text of its own has no font size, so one em is the 14px default: the
+        // second child starts after 40px of child and 14px of gap.
+        assertEquals(10.0, this.slotOf(box, first, 200.0, 100.0).x)
+        assertEquals(64.0, this.slotOf(box, second, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `an em gap inherits the font size of the surface it sits in`() {
+        val frame = Frame()
+        val box = FlexBox()
+        val first = TextArea("one")
+        val second = TextArea("two")
+        frame.layout {
+            draw(Div()) { panel ->
+                style { fontSize = 20.px }
+                panel.layout {
+                    draw(box) {
+                        layout { width = 200.px }
+                        box.gap = 1.em
+                        box.layout {
+                            draw(first) { layout { width = 40.px; height = 10.px } }
+                            draw(second) { layout { width = 40.px; height = 10.px } }
+                        }
+                    }
+                }
+            }
+        }
+
+        // The box carries no font of its own, so it inherits the 20px of the panel it was drawn
+        // into — one em is 20px, not the 14px default.
+        assertEquals(20.0, box.resolvedFontSize)
+        assertEquals(60.0, this.slotOf(box, second, 200.0, 100.0).x)
+    }
+
+    @Test
+    fun `a font size of its own wins over the inherited one`() {
+        val frame = Frame()
+        val box = FlexBox()
+        frame.layout {
+            draw(Div()) { panel ->
+                style { fontSize = 10.px }
+                panel.layout {
+                    draw(box) {
+                        style { fontSize = 30.px }
+                        box.gap = 1.em
+                        box.layout {
+                            draw(TextArea("one")) { layout { width = 40.px; height = 10.px } }
+                        }
+                    }
+                }
+            }
+        }
+
+        assertEquals(30.0, box.resolvedFontSize)
+        assertEquals(30.0, box.gap.resolve(200.0, box.resolvedFontSize))
+    }
+
+    @Test
+    fun `a percentage font size is taken of the box height`() {
+        val box = FlexBox()
+        box.applyStyle { fontSize = 150.percent }
+
+        // 150% of a 50px tall box is 75px of text.
+        assertEquals(75.0, box.fontSizeForHeight(50.0, 10.0))
+        // Without a box height there is nothing to take a fraction of, so the inherited size stays.
+        assertEquals(10.0, box.fontSizeForHeight(null, 10.0))
+        // An auto-height box does not know its height, so it falls back to the inherited default.
+        assertEquals(Length.DEFAULT_FONT_SIZE, box.resolvedFontSize)
+    }
+
+    @Test
+    fun `a cleared font size falls back to the inherited one`() {
+        val frame = Frame()
+        val panel = Div()
+        frame.layout {
+            draw(panel) {
+                layout { hPadding = 1.em }
+                style { fontSize = 18.px }
+            }
+        }
+        assertEquals(18.0, panel.resolvedFontSize)
+
+        panel.applyStyle { fontSize = null }
+        assertEquals(Length.DEFAULT_FONT_SIZE, panel.resolvedFontSize)
+    }
+
+    @Test
+    fun `an em padding resolves against the font size of the surface`() {
+        val div = padded(Div(), 1.em, 2.em)
+
+        // No text around it and no size of its own, so the 14px default applies: 14px left and
+        // right, 28px top and bottom.
+        val content = div.contentBox(200.0, 100.0)
+        assertEquals(14.0, content.offsetX)
+        assertEquals(28.0, content.offsetY)
+        assertEquals(172.0, content.width)
+        assertEquals(44.0, content.height)
+    }
+
+    @Test
+    fun `an em padding follows the size the surface was given`() {
+        val div = padded(Div(), 1.em, 1.em)
+        div.applyStyle { fontSize = 20.px }
+
+        val content = div.contentBox(200.0, 100.0)
+        assertEquals(20.0, content.offsetX)
+        assertEquals(20.0, content.offsetY)
+        assertEquals(160.0, content.width)
+        assertEquals(60.0, content.height)
+    }
+
+    @Test
+    fun `a child sized in em measures against its own font size`() {
+        val box = FlexBox()
+        val child = TextArea("one")
+        box.layout {
+            draw(child) {
+                layout { width = 10.em; height = 2.em }
+                // A text area renders text of its own, so the size is stated here — either way of
+                // writing it lands in the same style, and a draw block always starts from it again.
+                child.fontSize = 20.0
+            }
+        }
+
+        // 10 x 20px wide and 2 x 20px tall, resolved from the font of the child, not of the box.
+        assertEquals(200.0, child.layoutSpec.width!!.resolve(400.0, child.resolvedFontSize))
+        assertEquals(40.0, child.layoutSpec.height!!.resolve(200.0, child.resolvedFontSize))
+        assertEquals(0.0, this.slotOf(box, child, 400.0, 200.0).x)
     }
 
     @Test

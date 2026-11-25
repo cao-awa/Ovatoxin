@@ -29,6 +29,12 @@ class LengthTest {
     }
 
     @Test
+    fun `em and its factory produce identical lengths`() {
+        assertEquals(2.em, Length.ems(2.0))
+        assertEquals(2.0, 2.em.value)
+    }
+
+    @Test
     fun `percentages resolve against the available space`() {
         assertEquals(80.0, 10.percent.resolve(800.0))
         assertEquals(540.0, 90.percent.resolve(600.0))
@@ -44,30 +50,59 @@ class LengthTest {
     }
 
     @Test
+    fun `an em resolves against the font size`() {
+        assertIs<Em>(1.5.em)
+        assertEquals(1.5, 1.5.em.value)
+        assertEquals(21.0, 1.5.em.resolve(800.0, 14.0))
+        assertEquals(36.0, 1.5.em.resolve(800.0, 24.0))
+        assertEquals(0.0, 0.em.resolve(800.0, 24.0))
+    }
+
+    @Test
+    fun `an em ignores the parent space`() {
+        assertEquals(1.em.resolve(100.0, 16.0), 1.em.resolve(9999.0, 16.0))
+        assertEquals(16.0, 1.em.resolve(100.0, 16.0))
+    }
+
+    @Test
+    fun `an em without a font size falls back to the library default`() {
+        assertEquals(14.0, 1.em.resolve(100.0))
+        assertEquals(21.0, 1.5.em.resolve(100.0))
+        assertEquals(Length.DEFAULT_FONT_SIZE, 1.em.resolve(100.0, Length.DEFAULT_FONT_SIZE))
+        assertEquals(21.0, 1.5.em.toPixels(100.0).resolve(0.0))
+    }
+
+    @Test
     fun `toString is human readable`() {
         assertEquals("10%", 10.percent.toString())
         assertEquals("12.5%", 12.5.percent.toString())
         assertEquals("10px", 10.px.toString())
+        assertEquals("1.5em", 1.5.em.toString())
     }
 
     @Test
-    fun `zero is empty in either unit`() {
+    fun `zero is empty in any unit`() {
         assertEquals(0.px, Pixel.ZERO)
         assertEquals(0.percent, Percent.ZERO)
+        assertEquals(0.em, Em.ZERO)
         assertEquals(Pixel.ZERO, Length.ZERO)
         assertTrue(Length.ZERO.isZero)
         assertTrue(Percent.ZERO.isZero)
+        assertTrue(Em.ZERO.isZero)
         assertTrue(!Length.FULL.isZero)
     }
 
     @Test
-    fun `the zero of one unit is not the zero of the other`() {
+    fun `the zero of one unit is not the zero of another`() {
         val emptyPercent: Length = Percent.ZERO
         val emptyPixel: Length = Pixel.ZERO
+        val emptyEm: Length = Em.ZERO
 
         // Both are nothing, but they are not the same length, so neither can feed the other's
         // operators.
         assertNotEquals(emptyPercent, emptyPixel)
+        assertNotEquals(emptyPercent, emptyEm)
+        assertNotEquals(emptyPixel, emptyEm)
     }
 
     @Test
@@ -77,7 +112,9 @@ class LengthTest {
         assertTrue(2.percent > 1.percent)
         assertTrue(1.percent < 2.percent)
         assertTrue(10.px > 4.px)
+        assertTrue(2.em > 1.em)
         assertEquals(0, 4.px.compareTo(4.px))
+        assertEquals(0, 4.em.compareTo(4.em))
     }
 
     @Test
@@ -86,12 +123,15 @@ class LengthTest {
         assertEquals(-1.percent, 1.percent - 2.percent)
         assertEquals(6.px, 2.px + 4.px)
         assertEquals(2.px, 6.px - 4.px)
+        assertEquals(2.em, 1.5.em + 0.5.em)
+        assertEquals(-1.em, 1.em - 2.em)
     }
 
     @Test
     fun `a zero stays in its own unit`() {
         assertEquals(1.percent, Percent.ZERO + 1.percent)
         assertEquals(1.px, Pixel.ZERO + 1.px)
+        assertEquals(1.em, Em.ZERO + 1.em)
     }
 
     @Test
@@ -105,6 +145,11 @@ class LengthTest {
         assertIs<Pixel>(Pixel.ZERO + 1.px)
         assertIs<Pixel>(Pixel.ZERO - 1.px)
         assertIs<Pixel>(Pixel.ZERO * 2)
+
+        assertIs<Em>(1.em + 2.em)
+        assertIs<Em>(Em.ZERO + 1.em)
+        assertIs<Em>(Em.ZERO - 1.em)
+        assertIs<Em>(Em.ZERO * 2)
     }
 
     @Test
@@ -117,12 +162,17 @@ class LengthTest {
         assertEquals(20.percent, 2 * 10.percent)
         assertEquals(20.px, 2.0 * 10.px)
         assertEquals(-10.percent, -(10.percent))
+        assertEquals(3.em, 1.5.em * 2)
+        assertEquals(3.em, 2 * 1.5.em)
+        assertEquals(1.5.em, 3.em / 2)
+        assertEquals(-1.em, -(1.em))
     }
 
     @Test
     fun `dividing two lengths gives a ratio`() {
         assertEquals(4.0, 100.percent / 25.percent)
         assertEquals(2.5, 10.px / 4.px)
+        assertEquals(2.0, 3.em / 1.5.em)
     }
 
     @Test
@@ -133,6 +183,17 @@ class LengthTest {
         }
         assertEquals(Length.FULL, done)
         assertEquals(0, done.compareTo(100.percent))
+    }
+
+    @Test
+    fun `the default zero agrees with the pixel zero`() {
+        // `Pixel` is a `Length`, so using a pixel initialises the superclass first. The zero of the
+        // superclass must therefore not be a field holding `Pixel.ZERO`: it would be read while the
+        // companion of `Pixel` is still empty, and every pixel length would follow it into a
+        // failure. Reading it here, next to the unit it mirrors, is what pins the two together.
+        assertTrue(Length.ZERO.isZero)
+        assertEquals(Pixel.ZERO, Length.ZERO)
+        assertEquals(0.0, Length.ZERO.resolve(100.0, 20.0))
     }
 }
 

@@ -5,8 +5,9 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 /**
  * The position and the size of a component inside its parent container.
  *
- * Every value is a [Length], so each of the four slots takes either unit — a percentage for a size
- * that follows the window, a pixel for one that must not:
+ * Every value is a [Length], so each of the four slots takes any of the three units — a percentage for
+ * a size that follows the window, a pixel for one that must not, an `em` for one that follows the
+ * font:
  *
  * ```kotlin
  * layout {
@@ -14,12 +15,13 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
  *     y = 10.px
  *     width = 80.percent
  *     height = 10.percent
+ *     vPadding = 0.5.em
  * }
  * ```
  *
  * Choosing a unit per slot is not the same as mixing units inside one value: a [Percent] only does
- * arithmetic with a [Percent] and a [Pixel] only with a [Pixel], so no slot can end up holding a
- * length whose unit is half of one and half of the other.
+ * arithmetic with a [Percent], an [Em] only with an [Em], and a [Pixel] only with a [Pixel], so no
+ * slot can end up holding a length whose unit is half of one and half of another.
  *
  * When [width] or [height] is `null` the component keeps its natural (content based) size.
  *
@@ -51,21 +53,30 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
 class Layout {
 
     /**
-     * Horizontal offset from the left edge of the parent: `10.percent` of its width, or `10.px`.
-     * Defaults to [Length.ZERO], i.e. flush left.
+     * Horizontal offset from the left edge of the parent: `10.percent` of its width, `10.px`, or a
+     * multiple of the font size. Defaults to [Length.ZERO], i.e. flush left.
      */
     var x: Length = Length.ZERO
 
     /**
-     * Vertical offset from the top edge of the parent: `10.percent` of its height, or `10.px`.
-     * Defaults to [Length.ZERO], i.e. flush top.
+     * Vertical offset from the top edge of the parent: `10.percent` of its height, `10.px`, or a
+     * multiple of the font size. Defaults to [Length.ZERO], i.e. flush top.
      */
     var y: Length = Length.ZERO
 
-    /** Width of the component. `null` means "as wide as the content needs". */
+    /**
+     * Width of the component. `null` means "as wide as the content needs".
+     *
+     * An `em` width resolves against the font size of this very component, so a box one `em` wide is
+     * one line of the text it holds.
+     */
     var width: Length? = null
 
-    /** Height of the component. `null` means "as tall as the content needs". */
+    /**
+     * Height of the component. `null` means "as tall as the content needs".
+     *
+     * An `em` height resolves against the font size of this very component.
+     */
     var height: Length? = null
 
     /**
@@ -74,7 +85,8 @@ class Layout {
      * The inset is symmetric — the same amount is cut off on both sides — and it is a *content
      * inset*, not a shift: the room left over shrinks by the padding twice, so a child asking for
      * `100.percent` still ends one padding short of the edge instead of running over it. A
-     * percentage resolves against the width of the component itself.
+     * percentage resolves against the width of the component itself, an `em` against its font size —
+     * so `hPadding = 1.em` keeps exactly one line of text clear on each side.
      *
      * Defaults to [Length.ZERO], i.e. flush. Only a component that holds children is affected by
      * it — see [com.github.kusa233.ovatoxin.component.Container.contentBox]. It is an inset and

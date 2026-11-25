@@ -23,7 +23,7 @@ import javafx.scene.paint.Color
 fun main() {
     val frame = Frame()
     frame.title = "Ovatoxin – DSL demo"
-    testLabel(frame)
+    testButton(frame)
     frame.show()
 }
 
@@ -111,6 +111,7 @@ fun testButton(frame: Frame) {
                 }
                 corner = 35.percent
                 foreground = Color.web("#ffffff")
+                fontSize = 50.percent
             }
             button.text = "Button"
             button.onClick {
