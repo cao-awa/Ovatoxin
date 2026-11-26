@@ -90,7 +90,9 @@ frame.show()
 ```kotlin
 import com.github.kusa233.ovatoxin.dsl.layout
 import com.github.kusa233.ovatoxin.dsl.style
+```
 
+```kotlin
 // 五分之一宽、占满高度的按钮
 val fifth = layout {
     width = 20.percent
@@ -221,6 +223,7 @@ draw(Button()) { button ->
 ```kotlin
 import javafx.scene.text.FontWeight
 ```
+
 ```kotlin
 draw(Button()) { button ->
     style {
