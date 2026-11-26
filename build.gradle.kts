@@ -1,13 +1,28 @@
+import java.net.URI
+
 plugins {
     kotlin("jvm") version "2.4.0"
     `java-library`
+    `maven-publish`
 }
 
 group = "com.github.kusa233"
-version = "1.0-SNAPSHOT"
+version = project.property("version") as String
+
+val publicationGroupId = providers.gradleProperty("group_id").orElse(group.toString())
+val publicationArtifactId = providers.gradleProperty("artifact_id").orElse(project.property("artifact_id") as String)
+val publicationVersion = providers.gradleProperty("version_name").orElse(version.toString())
+
+base {
+    // Keep published file names in the form <artifactId>-<version>.<ext>.
+    archivesName.set(publicationArtifactId)
+}
 
 repositories {
     mavenCentral()
+    maven {
+        url = URI.create("https://jitpack.io")
+    }
 }
 
 val javafxVersion = "25.0.5"
@@ -37,12 +52,28 @@ kotlin {
     jvmToolchain(25)
 }
 
+java {
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("gpr") {
+            groupId = publicationGroupId.get()
+            artifactId = publicationArtifactId.get()
+            version = publicationVersion.get()
+
+            from(components["java"])
+        }
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
 }
 
 /**
- * Runs the example from `doc/DSL.md`.
+ * Runs the example.
  *
  * The demo lives in `src/test/kotlin`, so it never ends up in the published jar; this task
  * just puts the test runtime classpath on a JVM and starts it.
@@ -52,7 +83,7 @@ tasks.test {
  */
 tasks.register<JavaExec>("demo") {
     group = "application"
-    description = "Launches the DSL demo window."
+    description = "Launches the demo program."
     mainClass = providers.gradleProperty("demoMain")
         .orElse("com.github.kusa233.ovatoxin.example.DemoKt")
     classpath = sourceSets["test"].runtimeClasspath
