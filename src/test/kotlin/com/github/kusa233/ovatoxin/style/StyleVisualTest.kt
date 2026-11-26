@@ -30,6 +30,27 @@ class StyleVisualTest {
     }
 
     @Test
+    fun `an unset border leaves nothing to animate`() {
+        val visual = Style().resolveVisual(100.0, 40.0)
+        assertEquals(0.0, visual.borderSize)
+        assertNull(visual.borderColor)
+    }
+
+    @Test
+    fun `a snapshot freezes the resolved border`() {
+        val style = Style().configure {
+            border {
+                size = 2.px
+                color = Color.web("#102030")
+            }
+        }
+        val visual = style.resolveVisual(100.0, 40.0)
+
+        assertEquals(2.0, visual.borderSize)
+        assertEquals(Color.web("#102030"), visual.borderColor)
+    }
+
+    @Test
     fun `an image leaves no fill to animate`() {
         val style = Style().configure {
             background {
@@ -73,6 +94,16 @@ class StyleVisualTest {
 
         assertEquals(Color.color(0.5, 0.25, 0.0, 1.0), half.background)
         assertEquals(10.0, half.corner)
+    }
+
+    @Test
+    fun `a blend moves the border size and colour halfway`() {
+        val from = StyleVisual(null, 0.0, null, borderSize = 0.0, borderColor = Color.RED)
+        val to = StyleVisual(null, 0.0, null, borderSize = 4.0, borderColor = Color.BLUE)
+        val half = from.lerp(to, 0.5)
+
+        assertEquals(2.0, half.borderSize)
+        assertEquals(Color.color(0.5, 0.0, 0.5, 1.0), half.borderColor)
     }
 
     @Test

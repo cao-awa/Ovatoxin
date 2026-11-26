@@ -102,6 +102,11 @@ frame.layout {
                 // Set a background image; when set, the background colour is ignored
                 image = "file:/picture/bg.png"
             }
+            border {
+                // Set the outline thickness and colour
+                size = 1.px
+                color = Color.web("#1d4ed8")
+            }
             // Set the corner radius
             corner = 35.percent
             // Set the foreground colour
@@ -155,12 +160,30 @@ frame.layout {
 }
 ```
 
-A template is a **snapshot**: applying it copies all of its values into the component (for ``style``, the background is copied too), so:
+A template is a **snapshot**: applying it copies all of its values into the component (for ``style``, the background and border are copied too), so:
 
 * Changing the template later does not affect components that already used it;
 * Several components sharing one template remain independent — changing one component's background does not change another, and does not change the template itself.
 
 ``layout(...)``/``style(...)`` copy **all** slots of the template: slots the template leaves unset take the documented defaults, so applying a template also overwrites values the component already had. Put per-component differences in the block that follows.
+
+## Border (border)
+
+A ``border { }`` block draws an outline around the component:
+
+```kotlin
+style {
+    border {
+        size = 2.px
+        color = Color.web("#1d4ed8")
+    }
+}
+```
+
+* ``size`` is a length. ``px`` is absolute; ``percent`` is a percentage of the **shorter side** of the box, like ``corner``; ``em`` follows the component's font size. A negative size is treated as zero;
+* ``color`` is the outline colour. The default is black, but the outline is off while ``size`` is zero. Set ``color = null`` or ``size = 0.px`` to remove a border inherited from a template;
+* The outline follows ``corner`` and is drawn inside the box, so a rounded fill keeps a matching rounded border;
+* ``reset()`` removes the border again, and a style template copies the border together with the rest of the style.
 
 ## Length units (percent / px / em)
 
@@ -275,7 +298,7 @@ Rules:
 * Like ``foreground``, ``Div`` and ``Frame``, which have no text of their own, ignore it; font weight is not inherited by the subtree the way ``fontSize`` is;
 * ``fontWeight`` lives in the style and is cleared by ``reset()`` on a redraw; write it again in every ``style`` block run where you want it to apply.
 
-Font weight (like font size) is not interpolated by ``transition``: transitions only smooth background colour, foreground colour, and corner radius, so weight switches immediately when ``fontWeight`` changes.
+Font weight (like font size) is not interpolated by ``transition``: transitions only smooth background colour, foreground colour, corner radius, and border size and colour, so weight switches immediately when ``fontWeight`` changes.
 
 ## Animation transitions (transition)
 
@@ -298,7 +321,7 @@ The unit of ``transition`` is the Kotlin standard library's ``Duration``, so wri
 Rules:
 
 * The **first** style a component receives is applied immediately; ``transition`` is responsible only for **changes** after that;
-* The interpolated values are ``background`` (colour and ``opacity`` together), ``foreground``, and ``corner``, so colours, transparency, and corner radius all animate frame by frame;
+* The interpolated values are ``background`` (colour and ``opacity`` together), ``foreground``, ``corner``, and ``border`` (size and colour together), so colours, transparency, corner radius, and border thickness all animate frame by frame;
 * When ``background`` has an ``image``, the image is not interpolated; the image switches immediately while the colour layer fades in and out as usual;
 * ``Duration.ZERO`` behaves like the default ``transition = null``: instant, no animation; a negative duration or ``Duration.INFINITE`` raises an error;
 * ``transition`` lives in the style and, like other style values, is cleared by ``reset()`` on a redraw; to keep animating after a redraw, write it again in the ``style`` block that runs each time;

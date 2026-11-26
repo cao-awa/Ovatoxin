@@ -101,6 +101,11 @@ frame.layout {
                 // 设置背景图，设置后背景色调配置将不可用
                 image = "file:/picture/bg.png"
             }
+            border {
+                // 设置描边粗细和颜色
+                size = 1.px
+                color = Color.web("#1d4ed8")
+            }
             // 设置圆角
             corner = 35.percent
             // 设置前景色调
@@ -154,12 +159,30 @@ frame.layout {
 }
 ```
 
-模板是**快照**：应用时会把模板的值整份复制进组件（``style``连背景一起复制），因此
+模板是**快照**：应用时会把模板的值整份复制进组件（``style``连背景和边框一起复制），因此
 
 * 之后再改模板，不会影响已经用过它的组件；
 * 多个组件共用一个模板，彼此独立——改其中一个的背景，不会连带改到别的组件，也不会改到模板本身。
 
 ``layout(...)``/``style(...)``复制的是模板的**全部**槽位：模板里没写的槽位取文档默认值，所以应用模板会把组件原有的值一并覆盖。逐组件不同的地方，写在后跟的那个块里即可。
+
+## 边框（border）
+
+``border { }``块用来给组件画一圈描边：
+
+```kotlin
+style {
+    border {
+        size = 2.px
+        color = Color.web("#1d4ed8")
+    }
+}
+```
+
+* ``size``是长度。``px``是绝对像素；``percent``按盒子的**短边**计算，和``corner``一致；``em``跟随组件字号。负数按零处理；
+* ``color``是描边颜色，默认是黑色，但``size``为零时不会绘制。想去掉模板继承来的边框，可以写``color = null``或``size = 0.px``；
+* 描边会跟随``corner``，画在盒子内侧，所以圆角填充也能得到匹配的圆角边框；
+* ``reset()``会移除边框，样式模板也会连同边框一起复制。
 
 ## 长度单位（percent / px / em）
 
@@ -274,7 +297,7 @@ draw(Button()) { button ->
 * 和``foreground``一样，自身没有文字的``Div``、``Frame``会忽略它；字重不会像``fontSize``那样被子树继承；
 * ``fontWeight``存在``style``里，重绘时``reset()``会把它清掉，想每次都生效就在每次运行的``style``块里再写一次。
 
-字重（和字号一样）不参与``transition``的插值：过渡只平滑背景色、前景色和圆角，改``fontWeight``时字重立即切换。
+字重（和字号一样）不参与``transition``的插值：过渡只平滑背景色、前景色、圆角以及边框粗细和颜色，改``fontWeight``时字重立即切换。
 
 ## 动画过渡（transition）
 
@@ -297,7 +320,7 @@ draw(Button()) { button ->
 规则：
 
 * **第一次**拿到的样式立刻生效，``transition``只负责它之后的**变化**；
-* 被插值的是``background``（颜色和``opacity``一起）、``foreground``和``corner``，所以颜色、透明度和圆角都会随帧过渡；
+* 被插值的是``background``（颜色和``opacity``一起）、``foreground``、``corner``以及``border``（粗细和颜色一起），所以颜色、透明度、圆角和边框粗细都会随帧过渡；
 * ``background``设了``image``时图片不参与插值，图片本身直接切换，颜色层照常淡入淡出；
 * ``Duration.ZERO``和默认的``transition = null``一样，都是立即生效、不做动画；负数或``Duration.INFINITE``会直接报错；
 * ``transition``存在``style``里，和别的样式值一样会在重绘时被``reset()``清掉；想让重绘后继续有动画，就在每次都会运行的``style``块里再写一次；

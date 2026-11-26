@@ -96,12 +96,124 @@ class StyleTest {
     }
 
     @Test
-    fun `css always suppresses the border and the focus ring`() {
+    fun `css suppresses the border and the focus ring by default`() {
         val css = Style().toCss(100.0, 40.0)
         assertTrue(css.contains("-fx-border-width: 0"), css)
+        assertTrue(!css.contains("-fx-border-color"), css)
         assertTrue(css.contains("-fx-focus-color: transparent"), css)
         assertTrue(css.contains("-fx-faint-focus-color: transparent"), css)
         assertTrue(css.contains("-fx-background-insets: 0"), css)
+    }
+
+    @Test
+    fun `there is no border until one is configured`() {
+        val style = Style()
+        assertEquals(0.px, style.border.size)
+        assertEquals(Border.DEFAULT_COLOR, style.border.color)
+    }
+
+    @Test
+    fun `the documented border block sets the size and colour`() {
+        val style = Style().configure {
+            border {
+                size = 2.px
+                color = Color.web("#102030")
+            }
+        }
+        assertEquals(2.px, style.border.size)
+        assertEquals(Color.web("#102030"), style.border.color)
+
+        val css = style.toCss(100.0, 40.0)
+        assertTrue(css.contains("-fx-border-width: 2px;"), css)
+        assertTrue(css.contains("-fx-border-color: #102030;"), css)
+        assertTrue(css.contains("-fx-border-style: solid;"), css)
+        assertTrue(css.contains("-fx-border-radius: 0px;"), css)
+    }
+
+    @Test
+    fun `the border block configures the same border in place`() {
+        val style = Style()
+        val border = style.border
+        style.border { size = 1.px }
+        assertSame(border, style.border)
+        assertEquals(1.px, border.size)
+    }
+
+    @Test
+    fun `the border follows the corner radius`() {
+        val style = Style().configure {
+            corner = 50.percent
+            border {
+                size = 1.px
+                color = Color.BLACK
+            }
+        }
+        val css = style.toCss(200.0, 40.0)
+        assertTrue(css.contains("-fx-background-radius: 20px;"), css)
+        assertTrue(css.contains("-fx-border-radius: 20px;"), css)
+    }
+
+    @Test
+    fun `a percentage border size resolves against the shorter side`() {
+        val style = Style().configure {
+            border {
+                size = 10.percent
+                color = Color.BLACK
+            }
+        }
+        assertEquals(4.0, style.borderPixels(200.0, 40.0))
+        assertEquals(4.0, style.borderPixels(40.0, 200.0))
+    }
+
+    @Test
+    fun `an em border size follows the font size`() {
+        val style = Style().configure {
+            border {
+                size = 1.em
+                color = Color.BLACK
+            }
+        }
+        assertEquals(14.0, style.borderPixels(200.0, 100.0))
+        assertEquals(24.0, style.borderPixels(200.0, 100.0, fontSize = 24.0))
+    }
+
+    @Test
+    fun `a negative border size is clamped to zero`() {
+        val style = Style().configure {
+            border {
+                size = (-2).px
+                color = Color.BLACK
+            }
+        }
+        assertEquals(0.0, style.borderPixels(100.0, 40.0))
+        assertTrue(style.toCss(100.0, 40.0).contains("-fx-border-width: 0"), style.toCss(100.0, 40.0))
+    }
+
+    @Test
+    fun `a null border colour removes the outline`() {
+        val style = Style().configure {
+            border {
+                size = 2.px
+                color = null
+            }
+        }
+        val css = style.toCss(100.0, 40.0)
+        assertTrue(css.contains("-fx-border-width: 0"), css)
+        assertTrue(!css.contains("-fx-border-color"), css)
+    }
+
+    @Test
+    fun `a reset drops the border back to none`() {
+        val style = Style().configure {
+            border {
+                size = 2.px
+                color = Color.RED
+            }
+        }
+        style.reset()
+        assertEquals(0.px, style.border.size)
+        assertEquals(Border.DEFAULT_COLOR, style.border.color)
+        assertTrue(style.toCss(100.0, 40.0).contains("-fx-border-width: 0"))
     }
 
     @Test
@@ -284,6 +396,10 @@ class StyleTest {
                 color = Color.web("#102030")
                 image = "file:/tmp/bg.png"
             }
+            border {
+                size = 2.px
+                color = Color.web("#4c8bf5")
+            }
             corner = 4.px
             foreground = Color.web("#4c8bf5")
             fontSize = 20.px
@@ -294,6 +410,8 @@ class StyleTest {
 
         assertEquals(source.background.color, target.background.color)
         assertEquals(source.background.image, target.background.image)
+        assertEquals(source.border.size, target.border.size)
+        assertEquals(source.border.color, target.border.color)
         assertEquals(source.corner, target.corner)
         assertEquals(Color.web("#4c8bf5"), target.foreground)
         assertEquals(20.px, target.fontSize)

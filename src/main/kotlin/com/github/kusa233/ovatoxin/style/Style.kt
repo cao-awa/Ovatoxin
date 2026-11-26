@@ -13,8 +13,8 @@ import kotlin.time.Duration
 /**
  * The visual appearance of a component.
  *
- * The library draws every component the same flat way: **a fill and no border**. There is no
- * border support on purpose, so a component is a filled box, optionally with rounded corners.
+ * A component is drawn as a filled box, optionally with rounded corners and an outline. The fill
+ * and the outline are configured in their own blocks, [background] and [border].
  *
  * ```kotlin
  * draw(Button()) { button ->
@@ -26,6 +26,10 @@ import kotlin.time.Duration
  *         background {
  *             color = Color.web("#4c8bf5")
  *         }
+ *         border {
+ *             size = 2.px
+ *             color = Color.WHITE
+ *         }
  *         corner = 50.percent // A pill: half of the shorter side
  *     }
  * }
@@ -33,11 +37,12 @@ import kotlin.time.Duration
  *
  * A percentage [corner] resolves against the *shorter* side of the box, so `50.percent` is
  * always the roundest possible corner — a pill for a wide box, a circle for a square one — no
- * matter how the window is resized.
+ * matter how the window is resized. A percentage border [Border.size] resolves against the same
+ * shorter side.
  *
- * A `style { }` block is a marked DSL scope, and so is the [background][background] block inside
- * it: a `color`, which belongs to the background, cannot be written directly in the style block,
- * and an `x`, which belongs to the layout, cannot be written here at all.
+ * A `style { }` block is a marked DSL scope, and so are the [background][background] and
+ * [border][border] blocks inside it: a background `color` cannot be written directly in the style
+ * block, and an `x`, which belongs to the layout, cannot be written here at all.
  */
 @OvatoxinDsl
 class Style {
@@ -53,10 +58,26 @@ class Style {
      * }
      * ```
      *
-     * Defaults to the plain fill of [DEFAULT_COLOR]. Because the library renders no border, this
-     * fill is all that defines the shape of the component.
+     * Defaults to the plain fill of [DEFAULT_COLOR]. The fill defines the shape of the component;
+     * an optional outline is configured separately in [border].
      */
     val background: Background = Background()
+
+    /**
+     * The outline of the component, configured in a [Border] block.
+     *
+     * ```kotlin
+     * style {
+     *     border {
+     *         size = 1.px
+     *         color = Color.BLACK
+     *     }
+     * }
+     * ```
+     *
+     * Defaults to no border. The outline follows [corner], so it stays attached to a rounded fill.
+     */
+    val border: Border = Border()
 
     /**
      * The corner radius. Defaults to [DEFAULT_CORNER], i.e. square corners.
@@ -182,9 +203,9 @@ class Style {
      * ```
      *
      * The first style a component receives is applied immediately; from then on a change of the
-     * [background][Background], the [foreground] or the [corner] is blended from the old value to
-     * the new one over the given [Duration]. That is what turns a state-driven colour switch into a
-     * fade:
+     * [background][Background], the [foreground], the [corner] or the [border][Border] is blended
+     * from the old value to the new one over the given [Duration]. That is what turns a
+     * state-driven colour switch into a fade:
      *
      * ```kotlin
      * draw(Button()) { button ->
@@ -241,12 +262,34 @@ class Style {
     }
 
     /**
-     * Restores every property to the documented default: a plain white fill, square corners, no
-     * text colour, no font weight, no animation, and a font size inherited from the parent
-     * component.
+     * Configures the [border] in place:
+     *
+     * ```kotlin
+     * style {
+     *     border {
+     *         size = 1.px
+     *         color = Color.BLACK
+     *     }
+     * }
+     * ```
+     *
+     * The block mutates the existing [Border] rather than replacing it, so anything set before the
+     * block — an earlier `border { … }`, for instance — is kept unless the block overrides that
+     * same property.
+     */
+    fun border(block: Border.() -> Unit): Style {
+        this.border.configure(block)
+        return this
+    }
+
+    /**
+     * Restores every property to the documented default: a plain white fill, no border, square
+     * corners, no text colour, no font weight, no animation, and a font size inherited from the
+     * parent component.
      */
     internal fun reset() {
         this.background.reset()
+        this.border.reset()
         this.corner = DEFAULT_CORNER
         this.foreground = DEFAULT_FOREGROUND
         this.fontSize = DEFAULT_FONT_SIZE
@@ -257,6 +300,7 @@ class Style {
     /** Copies every property of [other] into this style. */
     fun copyFrom(other: Style) {
         this.background.copyFrom(other.background)
+        this.border.copyFrom(other.border)
         this.corner = other.corner
         this.foreground = other.foreground
         this.fontSize = other.fontSize
@@ -277,10 +321,23 @@ class Style {
     ): Double = this.corner.resolve(min(width, height), fontSize).coerceAtLeast(0.0)
 
     /**
+     * Resolves [Border.size] against the shorter side of a `width` x `height` box, in pixels.
+     *
+     * An `em` size resolves against [fontSize], the font size of the component the style belongs
+     * to. A negative size — and therefore a border that would be inside out — is treated as zero.
+     */
+    fun borderPixels(
+        width: Double,
+        height: Double,
+        fontSize: Double = Length.DEFAULT_FONT_SIZE,
+    ): Double = this.border.size.resolve(min(width, height), fontSize).coerceAtLeast(0.0)
+
+    /**
      * Renders this style as the inline CSS of a `width` x `height` box.
      *
-     * The border is always disabled and the focus ring is suppressed, so the computed appearance
-     * is exactly the fill with the requested radius. An `em` radius resolves against [fontSize].
+     * The focus ring is suppressed, and the border is either the configured outline or disabled
+     * when [Border.size] is zero, so the computed appearance is exactly the fill and optional
+     * outline with the requested radius. An `em` radius or border size resolves against [fontSize].
      */
     fun toCss(
         width: Double,
@@ -292,9 +349,10 @@ class Style {
      * Freezes this style into the concrete values of a `width` x `height` box.
      *
      * Unlike [toCss], which produces text, this keeps the parts of the appearance that can be
-     * animated — the fill with its opacity folded in, the corner radius in pixels and the text
-     * colour — as values. It is the starting point of a transition: two snapshots of the same
-     * component are blended by [StyleVisual.lerp] and rendered again with [renderCss].
+     * animated — the fill with its opacity folded in, the corner radius in pixels, the text
+     * colour, and the border size and colour — as values. It is the starting point of a transition:
+     * two snapshots of the same component are blended by [StyleVisual.lerp] and rendered again with
+     * [renderCss].
      *
      * The fill is `null` either when an image paints the box or when no colour is set, which is
      * exactly when [toCss] would write `transparent`.
@@ -312,10 +370,13 @@ class Style {
                 Background.MAX_OPACITY.toDouble()
             Color(backgroundColor.red, backgroundColor.green, backgroundColor.blue, alpha)
         }
+        val borderSize = borderPixels(width, height, fontSize)
         return StyleVisual(
             background = effectiveFill,
             corner = cornerPixels(width, height, fontSize),
             foreground = this.foreground,
+            borderSize = borderSize,
+            borderColor = if (borderSize > 0.0) this.border.color else null,
         )
     }
 
@@ -340,16 +401,24 @@ class Style {
             append("-fx-background-insets: 0; ")
             append("-fx-background-radius: ").append(radius).append("px; ")
             textFill?.let { append("-fx-text-fill: ").append(cssColor(it)).append("; ") }
-            append("-fx-border-width: 0; ")
+            val borderColor = visual.borderColor
+            if (visual.borderSize > 0.0 && borderColor != null) {
+                append("-fx-border-width: ").append(visual.borderSize.css()).append("px; ")
+                append("-fx-border-color: ").append(cssColor(borderColor)).append("; ")
+                append("-fx-border-style: solid; ")
+                append("-fx-border-radius: ").append(radius).append("px; ")
+            } else {
+                append("-fx-border-width: 0; ")
+            }
             append("-fx-focus-color: transparent; ")
             append("-fx-faint-focus-color: transparent;")
         }
     }
 
     override fun toString(): String =
-        "Style(background=${this.background}, corner=${this.corner}, foreground=${this.foreground}, " +
-            "fontSize=${this.fontSize}, fontWeight=${this.fontWeight ?: "none"}, " +
-            "transition=${this.transition ?: "none"})"
+        "Style(background=${this.background}, border=${this.border}, corner=${this.corner}, " +
+            "foreground=${this.foreground}, fontSize=${this.fontSize}, " +
+            "fontWeight=${this.fontWeight ?: "none"}, transition=${this.transition ?: "none"})"
 
     companion object {
         /** The fill every component uses until a style overrides it. */

@@ -176,7 +176,7 @@ Rules:
 * ``Button("Save")`` starts with that caption; ``text`` reads or replaces it, and the accessor form ``button.text("Save")`` is equivalent to the property;
 * ``enabled`` defaults to ``true``. A disabled button ignores clicks and does not run its handler;
 * ``onClick { ... }`` is the only click handler; registering it again replaces the previous one, and inside the block ``this`` is the button. The generic handler is shared with every other component;
-* the visual style is flat: the style layer removes JavaFX's border, gradient and focus ring, and paints the configured background and foreground. A button with no style is a white rectangle with dark text;
+* the visual style is mostly flat: the style layer removes JavaFX's native border, gradient and focus ring, then paints the configured background, optional border and foreground. A button with no style is a white rectangle with dark text;
 * ``reset()`` restores the constructor caption, re-enables the button and removes the click handler set by the previous draw pass. ``Button("Save")`` therefore resets to ``"Save"``.
 
 ## TextField
