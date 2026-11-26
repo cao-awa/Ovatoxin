@@ -10,6 +10,7 @@ import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.runtime.Fx
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.window.WindowDragger
 import javafx.application.Platform
 import javafx.scene.Node
 import javafx.scene.control.ScrollPane
@@ -45,6 +46,10 @@ import javafx.scene.paint.Color
  * while every other button keeps the style it was given. With no selection style set (the default)
  * the bar paints no selected/unselected difference at all. A [TabPane] also uses the selection to
  * show and hide the bound components.
+ *
+ * Setting [windowDragEnabled] turns the empty background of the bar into a window drag handle, which
+ * is useful when the bar doubles as the title bar of a frameless window. Tabs and scroll bars keep
+ * their own mouse behaviour.
  */
 class TabBar : FlexBox() {
 
@@ -86,6 +91,18 @@ class TabBar : FlexBox() {
             this.scrollContent?.requestLayout()
             this.parent?.relayout()
         }
+
+    /**
+     * Whether pressing and dragging the empty background of this bar moves its window.
+     *
+     * Defaults to `false`. When enabled, a primary-button drag on the part of the bar not covered by
+     * a tab or a scroll bar moves the [javafx.stage.Stage] that contains the bar; tab clicks and
+     * scroll-bar drags are untouched. This makes a [TabBar] usable as the title bar of a frameless
+     * window created with `Frame(titleBarEnabled = false)`.
+     *
+     * The property can be changed after the bar is shown: every press checks its current value.
+     */
+    var windowDragEnabled: Boolean = false
 
     /**
      * The background and text colour painted on the selected tab.
@@ -397,6 +414,7 @@ class TabBar : FlexBox() {
         }
         this.scrollPane = pane
         this.scrollContent = content
+        WindowDragger.install(content) { this.windowDragEnabled }
         return pane
     }
 
@@ -532,7 +550,8 @@ class TabBar : FlexBox() {
     }
 
     /**
-     * Restores the tab bar defaults: side [TabSide.UP] and the first tab selected.
+     * Restores the tab bar defaults: side [TabSide.UP], the first tab selected and window dragging
+     * off.
      *
      * The buttons themselves are children of the bar and survive a reset, as every container's
      * children do.
@@ -541,6 +560,7 @@ class TabBar : FlexBox() {
         super.reset()
         this.sideValue = TabSide.UP
         this.justify = Justify.CENTER
+        this.windowDragEnabled = false
         applyTabSizing()
         this.selectedValue = this.tabs.firstOrNull()
         this.selectionStyle.reset()

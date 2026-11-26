@@ -41,6 +41,17 @@ val frame = Frame("Ovatoxin - demo", titleBarEnabled = false)
 
 A window without a title bar has no system close button, so you must provide a way to close it yourself (for example, a custom close button).
 
+It also has no title bar to drag the window by. A tab strip can take that role: set ``windowDragEnabled = true`` on a ``TabPane`` (or on a standalone ``TabBar``), then pressing and dragging the empty background of the bar moves the window. Tab buttons and scroll bars keep their normal behaviour:
+
+```kotlin
+frame.layout {
+    draw(TabPane()) { pane ->
+        pane.windowDragEnabled = true
+        // ...
+    }
+}
+```
+
 # Layout and rendering
 
 We will introduce Button first as an example; the API is explained in the following sections.

@@ -41,6 +41,19 @@ class TabPaneTest {
     }
 
     @Test
+    fun `window dragging is shared with the tab bar`() {
+        val pane = TabPane()
+
+        assertFalse(pane.windowDragEnabled)
+
+        pane.windowDragEnabled = true
+        assertTrue(pane.tab.windowDragEnabled)
+
+        pane.tab.windowDragEnabled = false
+        assertFalse(pane.windowDragEnabled)
+    }
+
+    @Test
     fun `bar size is the height for top and bottom and the width for left and right`() {
         val pane = TabPane(30.px)
         val box = pane.contentBox(200.0, 100.0)

@@ -23,6 +23,7 @@ class TabBarTest {
         val bar = TabBar()
 
         assertEquals(TabSide.UP, bar.side)
+        assertFalse(bar.windowDragEnabled)
         assertTrue(bar.tabs.isEmpty())
         assertNull(bar.selected)
         assertNull(bar.selectedButton)
@@ -342,11 +343,13 @@ class TabBarTest {
         val first = bar.add(Button("One"))
         bar.add(Button("Two"))
         bar.side = TabSide.RIGHT
+        bar.windowDragEnabled = true
         bar.selected = bar.tabs.last()
 
         bar.reset()
 
         assertEquals(TabSide.UP, bar.side)
+        assertFalse(bar.windowDragEnabled)
         assertSame(first, bar.selected)
     }
 }

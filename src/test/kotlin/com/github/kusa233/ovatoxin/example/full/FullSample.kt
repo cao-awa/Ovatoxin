@@ -57,6 +57,7 @@ object FullSample {
                     background = Color.WHITE
                     foreground = Color.BLACK
                 }
+                pane.windowDragEnabled = true
                 pane.side = TabSide.LEFT
                 pane.barSize = 100.px
                 bindMain(pane, paneLayout, paneStyle)
@@ -179,11 +180,8 @@ object FullSample {
                         height = 5.em
                     }
                     style {
-                        background {
-                            color = Color.web("#6a9cf7")
-                        }
                         corner = 20.percent
-                        foreground = Color.WHITE
+                        foreground = Color.BLACK
                     }
                     area.align = TextAlignment.CENTER
                     area.wrap = true
@@ -220,11 +218,8 @@ object FullSample {
                         height = 10.percent
                     }
                     style {
-                        background {
-                            color = Color.web("#6a9cf7")
-                        }
                         corner = 20.percent
-                        foreground = Color.WHITE
+                        foreground = Color.BLACK
                     }
                     area.align = TextAlignment.CENTER
                     area.wrap = true

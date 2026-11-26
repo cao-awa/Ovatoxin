@@ -534,5 +534,6 @@ pane.bind(two, TextArea()) {
 * ``barSize``设置标签条在所占据方向上的尺寸：``UP``/``BOTTOM``时是高度，``LEFT``/``RIGHT``时是宽度。默认``36.px``，也可以通过``TabPane(barSize = ...)``构造参数传入；``tabBarThickness``保留为它的别名；
 * 标签按钮会填满标签条的厚度方向：``UP``/``BOTTOM``时每个按钮的``height = 100.percent``，``LEFT``/``RIGHT``时每个按钮的``width = 100.percent``；另一方向保留按钮自身设置的尺寸。水平的标签条默认``justify = Justify.CENTER``，需要时可以由调用方自行设置``justify``覆盖；
 * 标签超出标签条可见范围时会出现滚动条：横条显示横向滚动条，竖条显示竖向滚动条，只在需要时出现。滚动时标签保持一行或一列，不会换行；通过代码选中某个标签后，它会被滚动到可见区域内。标签放得下时，标签条仍会铺满整个区域；
+* ``windowDragEnabled = true``会让标签条的空白背景成为窗口拖拽手柄：在那里按下并拖动即可移动窗口，标签按钮和滚动条仍保持原本的点击与拖拽行为。无边框窗口（``Frame(titleBarEnabled = false)``）可用它把标签条当作标题栏来拖动窗口；该属性默认关闭，也可以通过``pane.windowDragEnabled``设置；
 * 设置``TabPane``的样式时，底层``TabBar``也会应用同样的样式：每次布局都会把背景、圆角、文字颜色和``transition``复制到``tab``，所以标签条与整个窗格外观一致。标签按钮在没有自行设置背景时不会涂自己的颜色，未选中的标签会透出窗格背景，而不是被控件默认的白色盖住。``selectColor { background = Color.WHITE; foreground = Color.BLACK }``只给选中的标签按钮涂上所选背景和文字颜色；未设置的``background``或``foreground``保留按钮自身或从窗格继承的外观。旧写法``pane.selectColor = Color.WHITE``仍然可用，但已标记为弃用且只能设置背景。``pane.selectionStyle``与``pane.tab.selectionStyle``是同一个对象，``pane.selectColor { }``与``pane.tab.selectColor { }``作用相同；
 * 写在``TabPane``样式里的``transition``也会传给标签按钮，所以切换标签时``selectColor``的变化会有过渡动画。若某个标签按钮自己设置了``transition``，则以按钮自己的为准。

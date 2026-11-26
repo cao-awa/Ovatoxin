@@ -63,6 +63,7 @@ fun testTabPane(frame: Frame) {
                 background = Color.WHITE
                 foreground = Color.BLACK
             }
+            pane.windowDragEnabled = true
             pane.side = TabSide.LEFT
             pane.barSize = 100.px
             val first = pane.add(Button("1"))

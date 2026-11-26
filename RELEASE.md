@@ -24,6 +24,7 @@ This release adds tabbed panes and completes the component reference in English 
 * `add` selects the new tab and `remove` removes it, selecting the first remaining tab when the removed one was selected. `bind` is also available on a standalone bar for content rendered elsewhere.
 * The bar owns button positions and stretches each button across the bar thickness; a horizontal bar centres its tabs by default.
 * `selectColor { ... }`, `selectionStyle`, `selected`, `selectedButton` and `tabs` expose selection state and the selected-tab style. With no selection style set, no selected/unselected background difference is painted.
+* `windowDragEnabled` lets the empty background of the bar drag its window, so a frameless window can use the bar as a title bar. It is off by default, exposed as `pane.windowDragEnabled` on `TabPane`, and leaves tab clicks and scroll bars untouched.
 
 ## Tab scrolling
 

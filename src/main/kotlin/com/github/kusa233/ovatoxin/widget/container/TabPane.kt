@@ -41,6 +41,9 @@ import javafx.scene.paint.Color
  * [TabBar.remove]; [add] and [remove] here are the same operations spelled on the pane. The side is
  * available both as [TabPane.side] and as [TabBar.side].
  *
+ * [windowDragEnabled] forwards to the bar and lets the empty part of the bar drag the window, which
+ * is useful when the pane fills a frameless window.
+ *
  * `x` and `y` of bound components are ignored. Binding draws the component immediately and fills
  * the content area that remains after the tab bar: a component without a width or height gets
  * `100.percent` of that remaining area, while a width or height given by the caller is kept. The
@@ -98,6 +101,19 @@ class TabPane(
         get() = this.tab.side
         set(value) {
             this.tab.side = value
+        }
+
+    /**
+     * Whether dragging the empty part of the tab bar moves its window.
+     *
+     * This forwards to [TabBar.windowDragEnabled]. Enable it when the pane fills a frameless window
+     * and the bar should also serve as its title bar; tab buttons and scroll bars keep working as
+     * usual.
+     */
+    var windowDragEnabled: Boolean
+        get() = this.tab.windowDragEnabled
+        set(value) {
+            this.tab.windowDragEnabled = value
         }
 
     /**

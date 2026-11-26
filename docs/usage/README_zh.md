@@ -40,6 +40,17 @@ val frame = Frame("Ovatoxin - demo", titleBarEnabled = false)
 
 无标题栏的窗口没有系统关闭按钮，需要自己提供关闭方式（例如自定义的关闭按钮）。
 
+它也没有可以拖动窗口的标题栏。可以让标签条承担这个角色：在``TabPane``（或独立的``TabBar``）上设置``windowDragEnabled = true``，之后在标签条的空白背景上按下并拖动即可移动窗口，标签按钮和滚动条仍保持原本的行为：
+
+```kotlin
+frame.layout {
+    draw(TabPane()) { pane ->
+        pane.windowDragEnabled = true
+        // ...
+    }
+}
+```
+
 # 布局和渲染
 
 在此先引入按钮作为示例，API请在后续内容了解。
