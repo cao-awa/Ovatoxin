@@ -1,4 +1,4 @@
-# Ovatoxin v1.0.0-rc4
+# Ovatoxin v1.0.0-rc5
 
 **Release date:** 2026-11-27  (UTC+9)
 
@@ -6,54 +6,36 @@
 
 **License:** MIT
 
-This release adds cards and a full-featured toast overlay, rounds out the style system with borders, and makes state-driven redraws safe from background threads. It also brings layout helpers, window sizing and dragging improvements, and a recolourable progress bar.
+This release adds a new collapsible panel, makes `Div` and `FlexBox` scroll vertically, and turns the full sample application into a complete 14-page component gallery with a runnable example on every page.
 
 ## New components
 
-### Card
+### CollapsePane
 
-* `Card` is a rounded, padded, vertically spaced `FlexBox` for grouping related content. Its defaults are a white fill, a 1 px `#e4e9f2` outline, `18` px padding, an `8` px gap and a `16.px` corner.
-* Constructor values for fill, border, padding, gap and corner survive `reset()`, so a state-driven redraw keeps the card's own look instead of turning it back into a plain white `FlexBox`.
-* `Card.text(...)` and `Card.button(...)` draw the two kinds of content a card almost always holds; `card(...)` is a shorter factory for writing the body as a block and returns the same `Card`, so it can still be clicked, bound to a state or inspected.
-* Text helpers default to dark `#162033` text on a transparent background; buttons default to a `#4c8bf5` fill with white text. The card body remains a real drawing surface, so rows, dividers and any other component can still be drawn directly.
+* `CollapsePane` is a panel with a clickable header that shows or hides its body. Collapsed, it keeps only the header and takes `collapsedHeight`, which defaults to `headerHeight`; expanded, it takes `expandedHeight` and the body receives the remaining space below the header.
+* Clicking the header toggles the panel directly; no extra button is required. The header shows `▾` when expanded and `▸` when collapsed, and the arrow colour follows `headerForeground`.
+* The body is declared with `content(...)`, which opens a normal `FlexBox` surface: `draw(...)`, `text(...)`, `button(...)` and the usual layout DSL work exactly as in any other container. `contentArea` exposes the internal `FlexBox` for inspection.
+* The body scrolls vertically when its content is taller than the space left below the header. The header and body surfaces are transparent, so the panel fill, border and corner radius stay consistent behind the content.
+* Constructor values for title, expanded/collapsed height, header height, fill, border, corner, padding and header text colour survive `reset()`, so state-driven redraws keep the panel's own appearance.
+* `expanded` reads or sets the state, `toggle()` flips it, and `title` can be changed at any time. `CollapsePane.contentArea` gives access to the body surface, and `collapsePane(...)` is the shorthand factory for declaring a panel and its body in one call.
 
-### Toast
+## Scrolling containers
 
-* `Toast` is a full-surface overlay: after `show`, a rounded card fades in, stays for a configurable duration and fades out. It is transparent and mouse-transparent by default, so a normal message does not block the page.
-* `show("text")` displays a message card; `show { ... }` hands the card body to a `FlexBox` drawing surface, where `text(...)`, `button(...)`, `draw(...)` and the usual DSL can place arbitrary components.
-* `ToastTone` provides `INFO`, `SUCCESS`, `WARNING` and `ERROR`; custom tones can be constructed from a background and foreground colour. `ToastPosition` supports `TOP_START`, `TOP_CENTER`, `TOP_END`, `BOTTOM_START`, `BOTTOM_CENTER`, `BOTTOM_END` and `CENTER`.
-* Custom-content cards have a fixed `420px` content area and grow in height with their children. Buttons inside a card remain clickable even without the scrim, and the card body is transparent so the tone-coloured background is not covered by a white sheet; each child keeps control of its own text colour.
-* `dimOutside = true` dims the page behind the card and blocks clicks outside it while leaving the card interactive. The latest `show` replaces the current card and restarts the timer; `dismiss()` fades it out early, and an infinite duration keeps it visible until replaced or dismissed.
-* `show` and `dismiss` may be called from any thread: before the toolkit starts the request is only recorded, and the node, drawing block and animation are created on the JavaFX application thread. `reset()` restores the transparent overlay but keeps the currently displayed message.
-* Draw the `Toast` after the content it should cover, normally as the last child of the frame. The `toast()` factory is available inside a `SurfaceScope` and sets the overlay to `100.percent` width and height.
+* `Div.scrollY` and `FlexBox.scrollY` turn the component's own height into a vertical viewport. Content that exceeds that height scrolls up and down, while horizontal scrolling is disabled and the width still fits the container.
+* Percentages inside a scrolling container resolve against the visible viewport height, not the full scroll extent. For a scrolling `FlexBox`, `gap`, `justify`, `align` and percentage sizing continue to use the visible content area.
+* A single-line `FlexBox` line is allowed to grow taller than the viewport when `scrollY` is enabled, so tall padded leaves are not squeezed into the visible area.
+* `scrollY` is off by default and must be set before the component is rendered. Changing it afterwards throws `IllegalStateException`, because a scrolling component needs a `ScrollPane` node that cannot be swapped after creation.
+* Scrolling is implemented by an internal `ScrollSurface` around a `ScrollContentPane`; the viewport is fitted to the content width, vertical bars appear only when needed, and the stylesheet keeps the scroll pane frame transparent with a narrow flat grey bar.
+* `Container.afterGeometry` was added as a post-placement hook so a scrolling surface can measure how far its placed children reach and size the inner content pane correctly.
 
-## Layout helpers
+## Fixes
 
-* `flexFlow(...)` draws a full-width `FlexBox` row with a fixed height, configurable gap, padding, alignment, optional fill and optional border, while its body is declared with the normal layout DSL.
-* `progressBar(...)` draws a horizontal `ProgressBar` with an explicit height and value; the filled part uses `tone` and the optional `track` colour paints the empty part.
-* `bareTextArea(...)` draws a `TextArea` with a transparent background, so text sits directly on the surrounding surface instead of on a white rectangle. The transparent fill is part of the draw block and survives state-driven redraws.
-
-## Style borders
-
-* The style DSL now has a `border { size = …; color = … }` block. `size` is a `Length`, so it accepts `px`, `percent` (of the shorter side, like `corner`) and `em`; a negative size is treated as zero.
-* The border follows the corner radius and is animated together with the rest of the style through `transition`. It is disabled while `size` is zero and can be removed with `color = null` or `size = 0.px`.
-
-## Progress bar colour
-
-* `ProgressBar` now paints its filled portion with the style's `foreground` colour, while `background` keeps painting the empty track. A bar with no foreground keeps the widget's default blue band, and an animated foreground is applied on every style frame.
-
-## Window and tabs
-
-* `Frame` now exposes `minWidth`, `minHeight`, `maxWidth` and `maxHeight` (also accepted by the constructor) to constrain user resizing. Minimums default to `0` and maximums to `Double.MAX_VALUE`.
-* The limits apply to ordinary decorated windows through the JavaFX stage and are also enforced by the custom resize handles of a borderless window.
-* `TabBar.windowDragEnabled` turns the empty background of the bar into a window drag handle, so a frameless window can use the bar as a title bar. Tabs, scroll bars and other children keep their normal click and drag behaviour; the option can also be set through `TabPane.windowDragEnabled`.
-* `selectColor { background = …; foreground = … }` paints the selected tab's background and text colour independently. An unset part keeps the tab's own or inherited appearance, and unselected tabs are restored to their base style.
-
-## Thread safety and fixes
-
-* `State.update` may now be called from any thread. Once a bound component has a JavaFX node, its redraw is marshalled onto the JavaFX application thread instead of touching scene graph properties from the producer's thread; before a node exists the redraw runs in place so components remain usable without a toolkit.
-* Repainting a single state-bound child inside a `FlexBox` no longer moves that child to the top of the box: the whole child list is measured on every pass, so the flow knows where earlier lines end.
+* Fixed `CollapsePane` rendering white even when given a dark `fill`: its header and body `FlexBox` surfaces were reset to the default white fill on every draw. Their transparent backgrounds and header text colour are now applied inside their own draw blocks, so they survive `reset()` and follow the configured `headerForeground`.
+* Fixed the header click handler being cleared by the same reset. The panel now installs `onClick` after the child surface has been reset, so clicking the title row reliably calls `toggle()`.
+* Fixed scrolling `Div`/`FlexBox` measurement so a content pane never shrinks below the viewport and long content still produces a scrollable extent.
 
 ## Compatibility
 
-* No breaking API changes from `v1.0.0-rc3`; all additions are additive.
+* No breaking API changes from `v1.0.0-rc4`; all additions are additive.
+* `scrollY` defaults to `false`, so existing `Div` and `FlexBox` layouts keep their existing non-scrolling behaviour.
+* `CollapsePane` is new and does not affect existing component code.

@@ -8,7 +8,7 @@
 * Actions and input: [Button](#button), [TextField](#textfield), [CheckBox](#checkbox), [ComboBox](#combobox)
 * Collections and progress: [ListView](#listview), [ProgressBar](#progressbar)
 * Feedback and overlays: [Toast](#toast)
-* Layout: [Div](#div), [FlexBox](#flexbox), [Card](#card), [TabBar and TabPane](#tabbar-and-tabpane)
+* Layout: [Div](#div), [FlexBox](#flexbox), [Card](#card), [CollapsePane](#collapsepane), [TabBar and TabPane](#tabbar-and-tabpane)
 
 ## Common component behaviour
 
@@ -458,6 +458,8 @@ Rules:
 * a ``Div`` starts fully transparent. Give it ``style { background { color = ... } }`` when it should paint a card or panel;
 * it places its children at absolute positions. To flow children instead, draw a [FlexBox](#flexbox) into the panel and let it arrange them;
 * a ``Div`` can contain another ``Div`` or any other component, and its percentages nest naturally;
+* ``scrollY`` defaults to ``false``. When ``true``, the panel's own height becomes the visible viewport, and content taller than it scrolls vertically; child percentages and font sizes resolve against the visible height, and the panel does not scroll horizontally. It can be combined with ``clip``, but ``scrollY`` only handles vertical overflow and never widens the panel;
+* ``scrollY`` must be set before the component is rendered; changing it afterwards throws ``IllegalStateException``. The scrollbar appears only when content overflows, and is a narrow light-grey bar;
 * ``reset()`` restores the two defaults of a bare area: clipping on and a transparent fill.
 
 ## FlexBox
@@ -527,7 +529,9 @@ Rules:
 * ``align`` compares children within one line only: the line is still as tall as its tallest child, ``CENTER`` gives each child half the remaining height above and below, and ``END`` sits against the bottom of the line;
   Lines still stack downward one after another, independently of ``align``;
 * Percentage widths resolve against the inset width, so a child at ``100.percent`` takes a whole line by itself;
-* When a child's ``width``/``height`` is written in ``em``, it resolves against **the child's own** font size (usually the inherited one), because it measures the child's own size, not the ``FlexBox``'s.
+* When a child's ``width``/``height`` is written in ``em``, it resolves against **the child's own** font size (usually the inherited one), because it measures the child's own size, not the ``FlexBox``'s;
+* ``scrollY`` defaults to ``false``. When ``true``, the ``FlexBox``'s own height becomes the visible viewport, so lines that wrap below it can be scrolled vertically; ``gap``, ``justify``, ``align`` and percentages still resolve against the visible content box, and there is no horizontal scrolling;
+* ``scrollY`` must be set before the component is rendered; changing it afterwards throws ``IllegalStateException``.
 
 The top-level ``flexFlow`` helper draws a flow row with a fixed row height, padding and spacing in one call:
 
@@ -606,6 +610,72 @@ Rules:
 * the constructor's ``fill``, ``borderColor``, ``pad``, ``gap`` and ``corner`` are restored by ``reset()``, so a state-driven redraw cannot turn the card back into a plain white ``FlexBox``;
 * the defaults of ``text`` and ``button`` are card-oriented: text is dark on a transparent background, and a button is blue with white text; both accept parameters to override them;
 * ``text(...)``/``button(...)`` inside ``card(...)`` share the same defaults as the ``Card`` member methods.
+
+## CollapsePane
+
+``CollapsePane`` is a panel that can collapse and expand: a clickable title bar sits on top of a body. Collapsed, the body is hidden completely and the panel occupies only the title bar's height; expanded, the body appears and the panel grows to the ``expandedHeight`` given at construction. The body scrolls vertically when its content is taller than the space left below the header.
+
+Imports:
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.container.CollapsePane
+import com.github.kusa233.ovatoxin.widget.container.collapsePane
+import com.github.kusa233.ovatoxin.widget.text.TextArea
+```
+
+```kotlin
+frame.layout {
+    draw(CollapsePane("Sample code", expandedHeight = 280.px)) { pane ->
+        layout { width = 100.percent }
+        pane.content {
+            draw(TextArea("val answer = 42")) { code ->
+                layout {
+                    width = 100.percent
+                    height = 120.px
+                }
+                style { foreground = Color.web("#e8f1ff") }
+                code.wrap = true
+            }
+        }
+    }
+}
+```
+
+The ``collapsePane(...)`` factory writes the same thing more briefly; its block is the body:
+
+```kotlin
+frame.layout {
+    collapsePane(
+        title = "Sample code",
+        expandedHeight = 280.px,
+        fill = Color.web("#101b33"),
+        headerForeground = Color.web("#e8f1ff"),
+    ) {
+        draw(TextArea("val answer = 42")) { code ->
+            layout { width = 100.percent; height = 120.px }
+        }
+    }
+}
+```
+
+Constructor parameters:
+
+* ``title`` — the title-bar text; a ``▾`` or ``▸`` prefix is added automatically to show the current state;
+* ``expandedHeight`` — the height of the whole panel when expanded;
+* ``collapsedHeight`` — the height of the whole panel when collapsed; defaults to ``headerHeight``;
+* ``headerHeight`` — the height of the clickable title bar, ``40.px`` by default;
+* ``initiallyExpanded`` — whether it starts expanded, ``false`` by default;
+* ``fill``, ``borderColor``, ``corner`` — background, 1-pixel border, and corner radius;
+* ``headerPadding``, ``bodyPadding``, ``bodyGap`` — title-bar horizontal padding, body padding, and body spacing;
+* ``headerForeground`` — the colour of the title text and the expand arrow.
+
+Rules:
+
+* When collapsed, the body takes no height at all, so the panel leaves no blank space on the page; when expanded, the body receives only the room left below the title bar, and anything taller scrolls vertically;
+* ``expanded`` reads or sets the state and ``toggle()`` flips it; clicking the title bar also toggles it;
+* the body is declared through ``content { ... }``, which accepts ``draw(...)`` and other containers just like a plain [FlexBox](#flexbox); ``contentArea`` exposes that inner ``FlexBox``;
+* ``title`` can be changed at any time; ``reset()`` restores the title, expanded state, geometry and style given at construction;
+* the body is a [FlexBox](#flexbox) with ``scrollY = true``, so long sample code or lists remain reachable.
 
 ## TabBar and TabPane
 

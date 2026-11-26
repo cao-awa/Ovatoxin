@@ -136,7 +136,71 @@ open class FlexBox : ComponentDrawable<FlexBox>() {
         get() = this.alignValue
         set(value) = align(value)
 
-    override fun buildNode(): Node = FlowPane()
+    private var scrollYValue: Boolean = false
+
+    private var scrollSurface: ScrollSurface? = null
+
+    /** The height of the last flow, used by a scrolling box to size its content pane. */
+    private var scrollExtent: Double = 0.0
+
+    /**
+     * Whether the lines of this box scroll up and down inside its declared height.
+     *
+     * It is off by default, so a [FlexBox] grows to fit its content as before. Turn it on before the
+     * component is rendered: a scrolling box uses a different JavaFX node, which cannot be swapped
+     * once it exists.
+     *
+     * When enabled, the box keeps its declared height as the visible viewport and drops the "as tall
+     * as one line" preferred height; percentages resolve against the viewport, and the flow can run
+     * past the bottom edge where it becomes scrollable.
+     */
+    var scrollY: Boolean
+        get() = this.scrollYValue
+        set(value) {
+            check(this.builtNode == null) {
+                "scrollY must be set before the FlexBox is rendered"
+            }
+            this.scrollYValue = value
+        }
+
+    override fun buildNode(): Node {
+        if (this.scrollYValue) {
+            val content = ScrollContentPane(
+                preferredWidth = { contentWidth() },
+                preferredHeight = { contentHeight() },
+            )
+            val surface = ScrollSurface(this, content)
+            this.scrollSurface = surface
+            return surface.build()
+        }
+        return FlowPane()
+    }
+
+    override fun onNodeCreated(node: Node) {
+        val surface = this.scrollSurface
+        if (surface != null) {
+            // The scroll pane is only the frame; the children still belong to the content pane.
+            attachContent(surface.content)
+        } else {
+            super.onNodeCreated(node)
+        }
+    }
+
+    /** The visible viewport height while scrolling, or [height] otherwise. */
+    private fun visibleHeight(height: Double): Double {
+        val surface = this.scrollSurface ?: return height
+        return if (this.scrollYValue && surface.viewportHeight > 0.0) surface.viewportHeight else height
+    }
+
+    internal override fun contentBox(width: Double, height: Double, fontSize: Double): ContentBox =
+        super.contentBox(width, visibleHeight(height), fontSize)
+
+    internal override fun fontSizeForHeight(height: Double?, inherited: Double): Double =
+        super.fontSizeForHeight(height?.let { visibleHeight(it) }, inherited)
+
+    internal override fun applyStyle(width: Double, height: Double) {
+        super.applyStyle(width, visibleHeight(height))
+    }
 
     /**
      * Restores the flow of a fresh box: no gap, children packed at the start of their line, and every
@@ -164,6 +228,7 @@ open class FlexBox : ComponentDrawable<FlexBox>() {
         // to know where the lines before it end. Measuring only that child would put it at the
         // top of the box, which is exactly the jump a state-bound child used to take.
         this.slots = arrange(box, this.children)
+        this.scrollSurface?.setExtent(this.scrollExtent)
     }
 
     /** The slot the last [beginPass] computed, so a child stays where the flow put it. */
@@ -188,6 +253,7 @@ open class FlexBox : ComponentDrawable<FlexBox>() {
         var cursor = box.offsetX
         var lineY = box.offsetY
         var wrapped = false
+        var bottom = box.offsetY
 
         for (child in children) {
             val size = measure(child, box)
@@ -195,14 +261,19 @@ open class FlexBox : ComponentDrawable<FlexBox>() {
             val fits = line.isEmpty() || cursor + size.width <= right
             if (!fits) {
                 wrapped = true
-                lineY += placeLine(line, box, gapX, lineY, result, onlyLine = false) + gapY
+                val lineHeight = placeLine(line, box, gapX, lineY, result, onlyLine = false)
+                bottom = maxOf(bottom, lineY + lineHeight)
+                lineY += lineHeight + gapY
                 line.clear()
                 cursor = box.offsetX
             }
             line.add(Placed(child, size))
             cursor += size.width + gapX
         }
-        placeLine(line, box, gapX, lineY, result, onlyLine = !wrapped)
+        val lastHeight = placeLine(line, box, gapX, lineY, result, onlyLine = !wrapped)
+        bottom = maxOf(bottom, lineY + lastHeight)
+        // The content pane reaches to the bottom line plus the symmetric bottom inset.
+        this.scrollExtent = bottom + box.offsetY
         return result
     }
 
@@ -234,7 +305,13 @@ open class FlexBox : ComponentDrawable<FlexBox>() {
         var x = box.offsetX + leadingRoom(free, line.size)
         val between = gap + sharedRoom(free, line.size)
         val bandTop = if (onlyLine) box.offsetY else lineY
-        val bandHeight = if (onlyLine) box.height else lineHeight
+        // A single line normally stretches to the container; when the content scrolls it must be
+        // allowed to be taller than the viewport, or a tall padded leaf would be squeezed instead.
+        val bandHeight = if (onlyLine) {
+            if (this.scrollYValue) maxOf(box.height, lineHeight) else box.height
+        } else {
+            lineHeight
+        }
 
         for (placed in line) {
             val child = placed.child

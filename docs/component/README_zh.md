@@ -7,7 +7,7 @@
 * 操作与输入：[Button](#button)、[TextField](#textfield)、[CheckBox](#checkbox)、[ComboBox](#combobox)
 * 列表与进度：[ListView](#listview)、[ProgressBar](#progressbar)
 * 反馈与浮层：[Toast](#toast)
-* 布局：[Div](#div)、[FlexBox](#flexbox)、[Card](#card)、[TabBar 与 TabPane](#tabbar-与-tabpane)
+* 布局：[Div](#div)、[FlexBox](#flexbox)、[Card](#card)、[CollapsePane](#collapsepane)、[TabBar 与 TabPane](#tabbar-与-tabpane)
 
 ## 组件通用行为
 
@@ -457,6 +457,8 @@ frame.layout {
 * ``Div``起始完全透明。需要画卡片或面板时，用``style { background { color = ... } }``给它填充；
 * 它按绝对位置摆放子组件。要让子组件流动排列，就在面板里画一个[FlexBox](#flexbox)交给它排；
 * ``Div``里可以再放``Div``或任何组件，百分比会自然嵌套；
+* ``scrollY``默认``false``。设为``true``后，面板自身的高度成为可视窗口，内部内容超过这个高度时可以上下滚动；子组件的百分比和字号都按可视高度解析，横向不滚动。它和``clip``可以同时使用，但``scrollY``只负责纵向内容，不会把面板变宽；
+* ``scrollY``必须在组件渲染前设置；渲染之后再改会抛``IllegalStateException``。滚动条只在内容超出时出现，样式是窄的浅灰色；
 * ``reset()``恢复空白区域的两个默认值：开启裁剪、透明填充。
 
 ## FlexBox
@@ -528,7 +530,9 @@ frame.layout {
   行与行之间照旧依次向下排，与``align``无关；
 * 百分比宽度按内缩后的宽度解析，比例为``100.percent``的子组件会独占一行；
 * 子组件的``width``/``height``写``em``时，按**子组件自己**的字号解析（通常是继承来的那个），
-  因为它量的是自己的大小，不是``FlexBox``的。
+  因为它量的是自己的大小，不是``FlexBox``的；
+* ``scrollY``默认``false``。设为``true``后，``FlexBox``自身的高度成为可视窗口，换行后超出的行可以上下滚动；``gap``、``justify``、``align``和百分比仍按可视内容区计算，横向不滚动；
+* ``scrollY``必须在组件渲染前设置，渲染之后再改会抛``IllegalStateException``。
 
 用顶层函数``flexFlow``可以直接画一段固定行高、带内边距和间距的流式行：
 
@@ -607,6 +611,72 @@ frame.layout {
 * 构造时给出的``fill``、``borderColor``、``pad``、``gap``、``corner``会被``reset()``恢复，所以状态驱动的重绘不会把卡片变回普通的白色``FlexBox``；
 * ``text``和``button``的默认值面向卡片：文字默认深色且背景透明，按钮默认蓝底白字；都可以按参数覆盖；
 * ``card(...)``里的``text(...)``/``button(...)``与``Card``的成员方法使用同一套默认值。
+
+## CollapsePane
+
+``CollapsePane``是一个可以收起和展开的面板：顶部是一条可点击的标题栏，下面是内容区。收起时内容区完全隐藏，面板只占标题栏的高度；展开时内容区出现，面板升到构造时给出的``expandedHeight``。内容区自带纵向滚动，超过剩余高度时可以上下翻看。
+
+导入：
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.container.CollapsePane
+import com.github.kusa233.ovatoxin.widget.container.collapsePane
+import com.github.kusa233.ovatoxin.widget.text.TextArea
+```
+
+```kotlin
+frame.layout {
+    draw(CollapsePane("示例代码", expandedHeight = 280.px)) { pane ->
+        layout { width = 100.percent }
+        pane.content {
+            draw(TextArea("val answer = 42")) { code ->
+                layout {
+                    width = 100.percent
+                    height = 120.px
+                }
+                style { foreground = Color.web("#e8f1ff") }
+                code.wrap = true
+            }
+        }
+    }
+}
+```
+
+用``collapsePane(...)``工厂可以更短地写同一件事，块里就是内容区：
+
+```kotlin
+frame.layout {
+    collapsePane(
+        title = "示例代码",
+        expandedHeight = 280.px,
+        fill = Color.web("#101b33"),
+        headerForeground = Color.web("#e8f1ff"),
+    ) {
+        draw(TextArea("val answer = 42")) { code ->
+            layout { width = 100.percent; height = 120.px }
+        }
+    }
+}
+```
+
+构造参数：
+
+* ``title``——标题栏文字，默认前缀会自动加``▾``或``▸``表示当前状态；
+* ``expandedHeight``——展开后整个面板的高度；
+* ``collapsedHeight``——收起后整个面板的高度，默认等于``headerHeight``；
+* ``headerHeight``——可点击标题栏的高度，默认``40.px``；
+* ``initiallyExpanded``——初始是否展开，默认``false``；
+* ``fill``、``borderColor``、``corner``——背景、1 像素描边和圆角；
+* ``headerPadding``、``bodyPadding``、``bodyGap``——标题栏左右内边距、内容区内边距、内容区间距；
+* ``headerForeground``——标题文字与展开箭头的颜色。
+
+规则：
+
+* 收起时内容区不占任何高度，面板不会在页面上留下空白；展开时内容区只拿到标题栏以下的剩余空间，超出部分纵向滚动；
+* ``expanded``读取或设置展开状态，``toggle()``在两者之间切换；点击标题栏也会切换；
+* 内容区通过``content { ... }``声明，它和普通[FlexBox](#flexbox)一样接受``draw(...)``和其它容器；``contentArea``可以读出这个内部``FlexBox``；
+* ``title``可以随时修改；``reset()``恢复构造时的标题、展开状态、几何和样式；
+* 内容区内部使用``scrollY = true``的[FlexBox](#flexbox)，所以很长的示例代码或列表也能完整查看。
 
 ## TabBar 与 TabPane
 

@@ -287,6 +287,7 @@ abstract class Container<T : Container<T>> : Component<T>() {
             )
             child.applyStyle(childBoxWidth(node), childBoxHeight(node))
         }
+        afterGeometry(host, box)
     }
 
     /**
@@ -312,6 +313,14 @@ abstract class Container<T : Container<T>> : Component<T>() {
      * time. A plain container has nothing to prepare, since every slot is the origin of the box.
      */
     internal open fun beginPass(box: ContentBox, targets: List<Component<*>>) = Unit
+
+    /**
+     * Called after every child of [host] has been placed in this pass.
+     *
+     * A plain container has nothing to do here. A scrolling surface uses it to measure how far its
+     * content reaches below the visible viewport, which only the placed nodes can answer.
+     */
+    internal open fun afterGeometry(host: Pane, box: ContentBox) = Unit
 
     /** The width a child actually occupies after [place], used to resolve its corner radius. */
     private fun childBoxWidth(node: Node): Double =

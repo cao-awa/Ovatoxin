@@ -1,0 +1,67 @@
+/*
+ * A scroll bar for a scrolling Div or FlexBox: a flat grey thumb on nothing.
+ *
+ * The scroll pane itself stays transparent so the component's own style layer paints the fill and
+ * the rounded outline. Modena's frame, track and arrow buttons are removed, leaving a thin vertical
+ * bar along the trailing edge.
+ */
+
+.ovatoxin-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.ovatoxin-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.ovatoxin-scroll > .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-pref-width: 8px;
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+}
+
+.ovatoxin-scroll > .scroll-bar:vertical > .thumb {
+    -fx-background-color: #c0c0c0;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+.ovatoxin-scroll > .scroll-bar:vertical > .thumb:hover {
+    -fx-background-color: #ababab;
+}
+
+.ovatoxin-scroll > .scroll-bar:vertical > .thumb:pressed {
+    -fx-background-color: #969696;
+}
+
+.ovatoxin-scroll > .scroll-bar > .increment-button,
+.ovatoxin-scroll > .scroll-bar > .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    -fx-opacity: 0;
+}
+
+.ovatoxin-scroll > .scroll-bar > .increment-button > .increment-arrow,
+.ovatoxin-scroll > .scroll-bar > .decrement-button > .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-opacity: 0;
+}
+
+.ovatoxin-scroll > .corner {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
