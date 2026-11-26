@@ -44,8 +44,6 @@ import com.github.kusa233.ovatoxin.component.Component
  */
 class State<T>(initialValue: T) {
 
-    private val boundComponents = mutableListOf<Component<*>>()
-
     private var current: T = initialValue
 
     /**
@@ -60,13 +58,14 @@ class State<T>(initialValue: T) {
         set(newValue) {
             if (this.current == newValue) return
             this.current = newValue
-            for (component in this.boundComponents.toList()) {
+            for (component in components.toList()) {
                 component.redraw()
             }
         }
 
     /** Every component bound to this state, in the order they were bound. */
-    val components: List<Component<*>> get() = this.boundComponents
+    val components: List<Component<*>>
+        field = mutableListOf<Component<*>>()
 
     /**
      * Hands [newValue] to this state.
@@ -83,9 +82,9 @@ class State<T>(initialValue: T) {
 
     /** Binds [component] to this state. Called by [Component.withState]. */
     internal fun bind(component: Component<*>) {
-        if (!this.boundComponents.contains(component)) this.boundComponents += component
+        if (!components.contains(component)) components += component
     }
 
     override fun toString(): String =
-        "State(value=${this.value}, components=${this.boundComponents.size})"
+        "State(value=${this.value}, components=${components.size})"
 }

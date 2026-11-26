@@ -214,6 +214,33 @@ draw(Button()) { button ->
 * 改动``fontSize``会重新摆放子树，已经写好的``em``立刻按新字号解析；
 * 一次重绘（``reset()``）会丢掉这一轮没再设的``fontSize``，回到继承。
 
+## 动画过渡（transition）
+
+``style``块里可以写一个``transition``，让样式**变化**时平滑过渡，而不是一下子跳过去：
+
+```kotlin
+val selected = State(true)
+draw(Button()) { button ->
+    style {
+        background { color = if (selected.value) Color.WHITE else Color.web("#4c8bf5") }
+        foreground = if (selected.value) Color.web("#4c8bf5") else Color.WHITE
+        transition = 200.milliseconds
+    }
+    button.onClick { selected.update(!selected.value) }
+}.withState(selected)
+```
+
+``transition``的单位是 Kotlin 标准库的``Duration``，所以直接写``200.milliseconds``；想用别的单位也可以写成``1.seconds``、``500.microseconds``等，取的是``kotlin.time.Duration``里的写法。
+
+规则：
+
+* **第一次**拿到的样式立刻生效，``transition``只负责它之后的**变化**；
+* 被插值的是``background``（颜色和``opacity``一起）、``foreground``和``corner``，所以颜色、透明度和圆角都会随帧过渡；
+* ``background``设了``image``时图片不参与插值，图片本身直接切换，颜色层照常淡入淡出；
+* ``Duration.ZERO``和默认的``transition = null``一样，都是立即生效、不做动画；负数或``Duration.INFINITE``会直接报错；
+* ``transition``存在``style``里，和别的样式值一样会在重绘时被``reset()``清掉；想让重绘后继续有动画，就在每次都会运行的``style``块里再写一次；
+* 动画需要 JavaFX 的线程，组件已经显示出来后由布局过程自动驱动，不需要手动调用。
+
 ## 内边距（padding）
 
 内边距是``layout``块里的两个值：``hPadding``（左右）和``vPadding``（上下）。它和``x``、``width``写在同一个地方，即组件自己的``layout``块里：

@@ -23,6 +23,8 @@ import com.github.kusa233.ovatoxin.widget.text.TextArea
 import com.github.kusa233.ovatoxin.widget.input.TextField
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.scene.paint.Color
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 fun main() {
     val frame = Frame("Ovatoxin - DSL demo", titleBarEnabled = false)
@@ -41,6 +43,7 @@ fun testTemplate(frame: Frame) {
     }
     val style = style {
         corner = 55.percent
+        transition = 200.milliseconds
     }
     val selected = State(0)
     frame.layout {

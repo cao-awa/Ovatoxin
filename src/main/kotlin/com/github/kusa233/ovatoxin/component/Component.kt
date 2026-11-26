@@ -5,8 +5,17 @@ import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.runtime.Fx
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
+import com.github.kusa233.ovatoxin.style.StyleVisual
+import javafx.animation.Interpolator
+import javafx.animation.KeyFrame
+import javafx.animation.KeyValue
+import javafx.animation.Timeline
+import javafx.application.Platform
+import javafx.beans.property.SimpleDoubleProperty
 import javafx.scene.Node
 import javafx.scene.input.MouseButton
+import javafx.util.Duration as FxDuration
+import kotlin.time.DurationUnit
 
 /**
  * Base class of everything that can be drawn into a
@@ -179,6 +188,9 @@ abstract class Component<T : Component<T>> {
 
     /** Drops the backing node, e.g. when the component is removed from its container. */
     internal fun detachNode() {
+        stopStyleAnimation()
+        this.displayedVisual = null
+        this.appliedStyle = null
         this.nodeRef = null
     }
 
@@ -409,10 +421,113 @@ abstract class Component<T : Component<T>> {
      */
     internal open fun applyStyle(width: Double, height: Double) {
         val font = this.resolveFontFor(height)
-        val css = this.styleSpec.toCss(width, height, font) + this.fontCss(font)
-        if (css == this.appliedStyle) return
+        val target = this.styleSpec.resolveVisual(width, height, font)
+        val image = this.styleSpec.background.image
+        val fontSuffix = this.fontCss(font)
+        val targetCss = this.styleSpec.renderCss(image, target) + fontSuffix
+
+        // While a transition runs, its destination is `animatedTargetCss`. A layout pass that still
+        // describes exactly that destination must not restart it.
+        if (this.animatedTargetCss != null) {
+            if (this.animatedTargetCss == targetCss) return
+            // A new destination arrived mid-flight: fall through and animate towards it from the
+            // frame currently on screen.
+        } else if (targetCss == this.appliedStyle) {
+            return
+        }
+
+        val transition = this.styleSpec.transition
+        val from = this.displayedVisual
+        if (from == null || transition == null || !transition.isPositive() ||
+            !Platform.isFxApplicationThread()
+        ) {
+            // Nothing to blend from (first paint), no positive transition asked for, or not on the
+            // FX thread where a Timeline must live: apply the target as it is.
+            stopStyleAnimation()
+            this.displayedVisual = target
+            applyCss(targetCss)
+            onStyleFrame(target)
+            return
+        }
+
+        startStyleAnimation(
+            from,
+            target,
+            image,
+            fontSuffix,
+            transition.toDouble(DurationUnit.MILLISECONDS),
+            targetCss,
+        )
+    }
+
+    /**
+     * Called with the appearance currently painted on the node: once when a style is applied at
+     * once, and on every frame while a [transition][kotlin.time.Duration] runs.
+     *
+     * Subclasses that derive something else from the style — a clip outline from the corner radius,
+     * for instance — override this to keep that part in step with the animated values. The default
+     * does nothing.
+     */
+    internal open fun onStyleFrame(visual: StyleVisual) {}
+
+    private var styleAnimation: Timeline? = null
+
+    /** The appearance currently painted on the node, i.e. the source of the next transition. */
+    private var displayedVisual: StyleVisual? = null
+
+    /** The destination CSS of the running transition, or `null` when none runs. */
+    private var animatedTargetCss: String? = null
+
+    /** Paints [css] on the node and remembers it, so an unchanged style is not re-applied. */
+    private fun applyCss(css: String) {
         this.appliedStyle = css
         this.node.style = css
+    }
+
+    /**
+     * Blends the node from [from] to [to] over [milliseconds], re-rendering every frame.
+     *
+     * The image (if any) is taken from the style as it stands: an image is not interpolated. On
+     * completion the exact final CSS is painted, so rounding in intermediate frames never leaves
+     * the node a hair off.
+     */
+    private fun startStyleAnimation(
+        from: StyleVisual,
+        to: StyleVisual,
+        image: String?,
+        fontSuffix: String,
+        milliseconds: Double,
+        targetCss: String,
+    ) {
+        stopStyleAnimation()
+        val progress = SimpleDoubleProperty(0.0)
+        val timeline = Timeline(
+            KeyFrame(FxDuration.ZERO, KeyValue(progress, 0.0)),
+            KeyFrame(FxDuration.millis(milliseconds), KeyValue(progress, 1.0, Interpolator.EASE_BOTH)),
+        )
+        progress.addListener { _, _, value ->
+            val visual = from.lerp(to, value.toDouble())
+            this.displayedVisual = visual
+            applyCss(this.styleSpec.renderCss(image, visual) + fontSuffix)
+            onStyleFrame(visual)
+        }
+        timeline.setOnFinished {
+            this.displayedVisual = to
+            this.animatedTargetCss = null
+            this.styleAnimation = null
+            applyCss(targetCss)
+            onStyleFrame(to)
+        }
+        this.animatedTargetCss = targetCss
+        this.styleAnimation = timeline
+        timeline.play()
+    }
+
+    /** Stops a running transition, keeping whatever frame is currently painted. */
+    private fun stopStyleAnimation() {
+        this.styleAnimation?.stop()
+        this.styleAnimation = null
+        this.animatedTargetCss = null
     }
 
     /**

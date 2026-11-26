@@ -118,12 +118,6 @@ class Frame(
         return pane
     }
 
-    /** A frame cannot be styled as a box: it is the window, so its style is its background. */
-    override fun applyStyle(width: Double, height: Double) {
-        val pane = this.root ?: return
-        pane.style = this.styleSpec.toCss(width, height, this.resolvedFontSize)
-    }
-
     /**
      * Shows the window, starting the JavaFX runtime if necessary.
      *

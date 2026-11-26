@@ -1,6 +1,7 @@
 package com.github.kusa233.ovatoxin.widget.container
 
 import com.github.kusa233.ovatoxin.component.ComponentDrawable
+import com.github.kusa233.ovatoxin.style.StyleVisual
 import javafx.scene.Node
 import javafx.scene.layout.Pane
 import javafx.scene.shape.Rectangle
@@ -88,6 +89,12 @@ class Div : ComponentDrawable<Div>() {
         applyClip()
     }
 
+    /** Keeps the clip outline in step with an animated corner radius. */
+    internal override fun onStyleFrame(visual: StyleVisual) {
+        super.onStyleFrame(visual)
+        applyClip(visual.corner)
+    }
+
     /**
      * Restores the default of a bare area: clipping on, and a fully transparent fill.
      *
@@ -104,6 +111,12 @@ class Div : ComponentDrawable<Div>() {
     /** Keeps the clip rectangle exactly as large as the box itself. */
     private fun applyClip() {
         val pane = this.builtNode as? Pane ?: return
+        applyClip(this.styleSpec.cornerPixels(pane.width, pane.height, this.resolvedFontSize))
+    }
+
+    /** Applies a clip with the given (already resolved) corner radius. */
+    private fun applyClip(corner: Double) {
+        val pane = this.builtNode as? Pane ?: return
         if (!this.clipValue) {
             pane.clip = null
             return
@@ -117,7 +130,7 @@ class Div : ComponentDrawable<Div>() {
         }
 
         // `arcWidth` is a diameter, hence the doubling of the pixel radius.
-        val radius = this.styleSpec.cornerPixels(pane.width, pane.height, this.resolvedFontSize) * 2.0
+        val radius = corner * 2.0
         bounds.arcWidth = radius
         bounds.arcHeight = radius
         pane.clip = bounds

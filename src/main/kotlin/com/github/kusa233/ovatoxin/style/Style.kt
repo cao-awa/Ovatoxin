@@ -7,6 +7,7 @@ import com.github.kusa233.ovatoxin.layout.px
 import javafx.scene.paint.Color
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.time.Duration
 
 /**
  * The visual appearance of a component.
@@ -145,6 +146,53 @@ class Style {
             field = value
         }
 
+    /**
+     * How long a change of this style is animated, or `null` for no animation.
+     *
+     * The unit is Kotlin's [Duration], so a duration is written the way Kotlin reads it:
+     *
+     * ```kotlin
+     * import kotlin.time.Duration.Companion.milliseconds
+     *
+     * style {
+     *     background { color = Color.web("#4c8bf5") }
+     *     transition = 200.milliseconds
+     * }
+     * ```
+     *
+     * The first style a component receives is applied immediately; from then on a change of the
+     * [background][Background], the [foreground] or the [corner] is blended from the old value to
+     * the new one over the given [Duration]. That is what turns a state-driven colour switch into a
+     * fade:
+     *
+     * ```kotlin
+     * draw(Button()) { button ->
+     *     style {
+     *         background { color = if (selected.value) Color.WHITE else Color.web("#4c8bf5") }
+     *         transition = 200.milliseconds
+     *     }
+     *     button.onClick { selected.update(!selected.value) }
+     * }.withState(selected)
+     * ```
+     *
+     * `Duration.ZERO` — or leaving this `null`, the default — applies changes at once. A negative
+     * or infinite duration is refused. Because the value lives in the style, a redraw drops it
+     * together with the rest of the style, so a block that wants the animation re-states it each
+     * time it runs.
+     */
+    var transition: Duration? = null
+        set(value) {
+            if (value != null) {
+                require(value.isFinite()) {
+                    "a transition duration must be finite, was $value"
+                }
+                require(value >= Duration.ZERO) {
+                    "a transition duration cannot be negative, was $value"
+                }
+            }
+            field = value
+        }
+
     /** Replaces every property with the values configured in [block]. */
     fun configure(block: Style.() -> Unit): Style {
         block()
@@ -172,14 +220,15 @@ class Style {
     }
 
     /**
-     * Restores every property to the documented default: a plain white fill, square, no text
-     * colour, and a font size inherited from the parent component.
+     * Restores every property to the documented default: a plain white fill, square corners, no
+     * text colour, no animation, and a font size inherited from the parent component.
      */
     internal fun reset() {
         this.background.reset()
         this.corner = DEFAULT_CORNER
         this.foreground = DEFAULT_FOREGROUND
         this.fontSize = DEFAULT_FONT_SIZE
+        this.transition = null
     }
 
     /** Copies every property of [other] into this style. */
@@ -188,6 +237,7 @@ class Style {
         this.corner = other.corner
         this.foreground = other.foreground
         this.fontSize = other.fontSize
+        this.transition = other.transition
     }
 
     /**
@@ -212,11 +262,49 @@ class Style {
         width: Double,
         height: Double,
         fontSize: Double = Length.DEFAULT_FONT_SIZE,
-    ): String {
-        val radius = cornerPixels(width, height, fontSize).css()
-        val fill = this.background.cssColor()
-        val image = this.background.image
-        val textFill = this.foreground
+    ): String = renderCss(this.background.image, resolveVisual(width, height, fontSize))
+
+    /**
+     * Freezes this style into the concrete values of a `width` x `height` box.
+     *
+     * Unlike [toCss], which produces text, this keeps the parts of the appearance that can be
+     * animated — the fill with its opacity folded in, the corner radius in pixels and the text
+     * colour — as values. It is the starting point of a transition: two snapshots of the same
+     * component are blended by [StyleVisual.lerp] and rendered again with [renderCss].
+     *
+     * The fill is `null` either when an image paints the box or when no colour is set, which is
+     * exactly when [toCss] would write `transparent`.
+     */
+    internal fun resolveVisual(
+        width: Double,
+        height: Double,
+        fontSize: Double = Length.DEFAULT_FONT_SIZE,
+    ): StyleVisual {
+        val backgroundColor = this.background.color
+        val effectiveFill = if (this.background.image != null || backgroundColor == null) {
+            null
+        } else {
+            val alpha = backgroundColor.opacity * this.background.opacity /
+                Background.MAX_OPACITY.toDouble()
+            Color(backgroundColor.red, backgroundColor.green, backgroundColor.blue, alpha)
+        }
+        return StyleVisual(
+            background = effectiveFill,
+            corner = cornerPixels(width, height, fontSize),
+            foreground = this.foreground,
+        )
+    }
+
+    /**
+     * Renders a resolved [visual] as inline CSS, exactly as [toCss] would for the same values.
+     *
+     * [image] is the background image the style currently names — an image is not interpolated, it
+     * simply stays on the node while the colour layers around it animate.
+     */
+    internal fun renderCss(image: String?, visual: StyleVisual): String {
+        val radius = visual.corner.css()
+        val fill = visual.background?.let { cssColor(it) } ?: "transparent"
+        val textFill = visual.foreground
         return buildString {
             append("-fx-background-color: ").append(fill).append("; ")
             if (image != null) {
@@ -236,7 +324,7 @@ class Style {
 
     override fun toString(): String =
         "Style(background=${this.background}, corner=${this.corner}, foreground=${this.foreground}, " +
-            "fontSize=${this.fontSize})"
+            "fontSize=${this.fontSize}, transition=${this.transition ?: "none"})"
 
     companion object {
         /** The fill every component uses until a style overrides it. */
@@ -262,14 +350,6 @@ class Style {
         val DEFAULT_FONT_SIZE: Length? = null
     }
 }
-
-/** Formats the colour layer, or `transparent` when there is nothing to paint. */
-private fun Background.cssColor(): String =
-    if (this.image != null) {
-        "transparent"
-    } else {
-        this.color?.let { cssColor(it, this.opacity) } ?: "transparent"
-    }
 
 /**
  * Formats a color as `rgba()` so a partially transparent fill stays expressible in CSS.

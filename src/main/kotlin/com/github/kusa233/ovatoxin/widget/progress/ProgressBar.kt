@@ -3,6 +3,7 @@ package com.github.kusa233.ovatoxin.widget.progress
 import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.percent
+import com.github.kusa233.ovatoxin.style.StyleVisual
 import javafx.scene.Node
 import javafx.scene.layout.Region
 import javafx.scene.shape.Rectangle
@@ -161,8 +162,19 @@ class ProgressBar(progress: Double = 0.0) : Component<ProgressBar>() {
      */
     override fun applyStyle(width: Double, height: Double) {
         super.applyStyle(width, height)
+        applyOutline(this.styleSpec.cornerPixels(width, height, this.resolvedFontSize), width, height)
+    }
+
+    /** Keeps the rounded outline in step with an animated corner radius. */
+    internal override fun onStyleFrame(visual: StyleVisual) {
+        super.onStyleFrame(visual)
         val bar = this.builtNode as? Region ?: return
-        val radius = this.styleSpec.cornerPixels(width, height, this.resolvedFontSize)
+        applyOutline(visual.corner, bar.width, bar.height)
+    }
+
+    /** Clips the bar to a rounded outline of [radius] pixels. */
+    private fun applyOutline(radius: Double, width: Double, height: Double) {
+        val bar = this.builtNode as? Region ?: return
         if (radius <= 0.0 || width <= 0.0 || height <= 0.0) {
             bar.clip = null
             return
