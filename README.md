@@ -1,6 +1,6 @@
 # Ovatoxin
 
-[English](README.md) | [Chinese](README_zh.md)
+[English](README.md) | [中文](README_zh.md)
 
 **Ovatoxin** is a modern Kotlin desktop UI framework built on JavaFX, designed around a DSL and rife with sugars.
 
