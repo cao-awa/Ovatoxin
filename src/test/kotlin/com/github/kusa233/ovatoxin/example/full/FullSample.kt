@@ -3,18 +3,22 @@ package com.github.kusa233.ovatoxin.example.full
 import com.github.kusa233.ovatoxin.dsl.layout
 import com.github.kusa233.ovatoxin.dsl.style
 import com.github.kusa233.ovatoxin.layout.Layout
+import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.widget.container.Align
 import com.github.kusa233.ovatoxin.widget.container.Div
 import com.github.kusa233.ovatoxin.widget.container.FlexBox
 import com.github.kusa233.ovatoxin.widget.container.TabPane
 import com.github.kusa233.ovatoxin.widget.container.TabSide
+import com.github.kusa233.ovatoxin.widget.input.TextField
 import com.github.kusa233.ovatoxin.widget.text.TextArea
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.application.Platform
 import javafx.scene.paint.Color
+import javafx.scene.text.TextAlignment
 import kotlin.time.Duration.Companion.milliseconds
 
 object FullSample {
@@ -95,6 +99,7 @@ object FullSample {
                         width = 100.percent
                         height = 15.percent
                     }
+                    summary.align = TextAlignment.CENTER
                     summary.wrap = true
                 }
                 // Padding manually
@@ -165,15 +170,118 @@ object FullSample {
         pane.bind(button, Div()) { div ->
             layout(layout)
             style(style)
+            div.layout {
+                draw(TextArea()) { area ->
+                    layout {
+                        x = 10.percent
+                        y = 10.percent
+                        width = 80.percent
+                        height = 5.em
+                    }
+                    style {
+                        background {
+                            color = Color.web("#6a9cf7")
+                        }
+                        corner = 20.percent
+                        foreground = Color.WHITE
+                    }
+                    area.align = TextAlignment.CENTER
+                    area.wrap = true
+                    area.text = """
+                        TextArea是一个不可编辑内容的文本块
+                        来自 com.github.kusa233.ovatoxin.widget.text.TextArea
+                    """.trimIndent()
+                }
+            }
         }
     }
 
 
     fun bindTextField(pane: TabPane, layout: Layout, style: Style) {
+        val buttonStyle = style {
+            background {
+                color = Color.web("#6a9cf7")
+            }
+            corner = 45.percent
+            foreground = Color.WHITE
+        }
         val button = pane.add(Button("TextField"))
-        pane.bind(button, Div()) { div ->
-            layout(layout)
+        pane.bind(button, FlexBox()) { box ->
+            layout(layout) {
+                hPadding = 10.percent
+                vPadding = 10.percent
+            }
             style(style)
+            box.gap = 5.percent
+            box.layout {
+                draw(TextArea()) { area ->
+                    layout {
+                        width = 90.percent
+                        height = 10.percent
+                    }
+                    style {
+                        background {
+                            color = Color.web("#6a9cf7")
+                        }
+                        corner = 20.percent
+                        foreground = Color.WHITE
+                    }
+                    area.align = TextAlignment.CENTER
+                    area.wrap = true
+                    area.text = """
+                        TextField是一个可编辑内容的文本块
+                        来自 com.github.kusa233.ovatoxin.widget.input.TextField
+                    """.trimIndent()
+                }
+                val firstText = draw(TextField()) { field ->
+                    layout {
+                        width = 60.percent
+                        height = 10.percent
+                    }
+                    style {
+                        background {
+                            color = Color.LIGHTGRAY
+                        }
+                        corner = 20.percent
+                        foreground = Color.BLACK
+                    }
+                    field.hint = "在此键入..."
+                }
+                draw(Button("清空")) { button ->
+                    layout {
+                        width = 20.percent
+                        height = 10.percent
+                    }
+                    style(buttonStyle)
+                    button.onClick {
+                        firstText.text = ""
+                    }
+                }
+                val secondText = draw(TextField()) { field ->
+                    layout {
+                        width = 60.percent
+                        height = 10.percent
+                    }
+                    style {
+                        background {
+                            color = Color.LIGHTGRAY
+                        }
+                        corner = 20.percent
+                        foreground = Color.BLACK
+                    }
+                    field.hint = "在此键入..."
+                }
+                draw(Button("清空")) { button ->
+                    layout {
+                        width = 20.percent
+                        height = 10.percent
+                    }
+                    style(buttonStyle)
+                    button.onClick {
+                        secondText.text = ""
+                    }
+                }
+            }
         }
     }
 
