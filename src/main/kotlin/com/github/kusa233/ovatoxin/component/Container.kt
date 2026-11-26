@@ -207,6 +207,12 @@ abstract class Container<T : Container<T>> : Component<T>() {
         val resolvedY = offsetY + spec.y.resolve(height, fontSize)
         val resolvedWidth = spec.width?.resolve(width, fontSize)
         val resolvedHeight = spec.height?.resolve(height, fontSize)
+        if (node is Region && node.scene != null && (resolvedWidth == null || resolvedHeight == null)) {
+            // A control measures its text through its skin, which only exists after CSS has run.
+            // A child is laid out while it is entering the scene, so ask for that pass before
+            // reading its preferred size; otherwise a tab button would measure as 0 by 0.
+            node.applyCss()
+        }
         node.autosize()
 
         if (node is Region) {

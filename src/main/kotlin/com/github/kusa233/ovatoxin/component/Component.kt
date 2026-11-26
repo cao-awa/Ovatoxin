@@ -264,6 +264,21 @@ abstract class Component<T : Component<T>> {
     }
 
     /**
+     * Adds [handler] after any handler already registered with [onClick], without replacing it.
+     *
+     * The widget layer uses this for bookkeeping that must not take the caller's own click handler
+     * away: a [com.github.kusa233.ovatoxin.widget.container.TabBar] has to observe a tab click, but
+     * the button may also have a handler of its own.
+     */
+    internal fun appendClickHandler(handler: T.() -> Unit) {
+        val previous = this.clickHandler
+        this.clickHandler = {
+            previous?.invoke(this)
+            handler(this)
+        }
+    }
+
+    /**
      * Runs the click handler as if the user had clicked this component.
      *
      * The backing node calls this on a primary mouse click, tests call it directly.

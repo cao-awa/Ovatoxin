@@ -15,6 +15,8 @@ import com.github.kusa233.ovatoxin.widget.input.ComboBox
 import com.github.kusa233.ovatoxin.widget.container.Div
 import com.github.kusa233.ovatoxin.widget.container.FlexBox
 import com.github.kusa233.ovatoxin.widget.container.Justify
+import com.github.kusa233.ovatoxin.widget.container.TabPane
+import com.github.kusa233.ovatoxin.widget.container.TabSide
 import com.github.kusa233.ovatoxin.widget.text.Label
 import com.github.kusa233.ovatoxin.widget.text.Link
 import com.github.kusa233.ovatoxin.widget.list.ListView
@@ -28,11 +30,63 @@ import kotlin.time.Duration.Companion.seconds
 
 fun main() {
     val frame = Frame("Ovatoxin - DSL demo", titleBarEnabled = false)
-    testTemplate(frame)
+    testTabPane(frame)
     frame.onClose {
         println("Closing '${this.title}'")
     }
     frame.show()
+}
+
+fun testTabPane(frame: Frame) {
+    val paneLayout = layout {
+        width = 100.percent
+        height = 100.percent
+    }
+    val paneStyle = style {
+        background {
+            color = Color.WHITE
+        }
+    }
+    frame.layout {
+        draw(TabPane()) { pane ->
+            layout {
+                width = 100.percent
+                height = 100.percent
+            }
+            style {
+                background {
+                    color = Color.web("#6a9cf7")
+                }
+                transition = 100.milliseconds
+            }
+            pane.selectColor = Color.WHITE
+            pane.side = TabSide.LEFT
+            pane.barSize = 100.px
+            val first = pane.add(Button("1"))
+            pane.bind(first, Div()) {
+                layout(paneLayout)
+                style(paneStyle)
+            }
+            val second = pane.add(Button("2"))
+            pane.bind(second, Div()) {
+                layout(paneLayout)
+                style(paneStyle) {
+                    background {
+                        color = Color.CYAN
+                    }
+                }
+            }
+            val third = pane.add(Button("3"))
+            pane.bind(third, Div()) {
+                layout(paneLayout)
+                style(paneStyle) {
+                    background {
+                        color = Color.LIGHTGREEN
+                    }
+                }
+            }
+        }
+    }
 }
 
 fun testTemplate(frame: Frame) {

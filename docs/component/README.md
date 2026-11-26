@@ -121,3 +121,40 @@ Rules:
   Lines still stack downward one after another, independently of ``align``;
 * Percentage widths resolve against the inset width, so a child at ``100.percent`` takes a whole line by itself;
 * When a child's ``width``/``height`` is written in ``em``, it resolves against **the child's own** font size (usually the inherited one), because it measures the child's own size, not the ``FlexBox``'s.
+
+## TabBar and TabPane
+
+``TabBar`` is a ``FlexBox`` filled with tab buttons. ``TabPane`` holds one ``TabBar`` on one of its four sides and shows the content bound to the selected tab; content bound to every other tab is hidden.
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.widget.container.LEFT
+import com.github.kusa233.ovatoxin.widget.container.TabPane
+import com.github.kusa233.ovatoxin.widget.text.TextArea
+
+val pane = TabPane()
+pane.side = LEFT
+
+val one = pane.add(Button("One"))
+pane.bind(one, TextArea("first page"))
+
+val two = pane.add(Button("Two"))
+pane.bind(two, TextArea()) {
+    // The block runs in a DrawScope; its parameter is the bound component.
+    // A page fills the content area; x and y are ignored.
+    it.text = "second page"
+}
+```
+
+Rules:
+
+* ``side`` is ``UP``, ``BOTTOM``, ``LEFT``, or ``RIGHT``; both ``pane.side`` and ``pane.tab.side`` set it. ``UP`` and ``BOTTOM`` make a horizontal bar, ``LEFT`` and ``RIGHT`` a vertical one;
+* ``tab.add(button) { ... }`` appends a button and selects it; ``tab.remove(button)`` removes it. The same calls are available directly on the pane;
+* A tab button's ``x`` and ``y`` are ignored — the bar places its buttons. Its ``width``/``height`` are kept;
+* ``bind(button, component) { ... }`` attaches content to the tab named by ``button`` and returns the component. The block has the type ``DrawScope<T>.(T) -> Unit``: use ``layout { }``/``style { }`` from the receiver and the component parameter for its own API. The button must already belong to the bar. Several components may be bound to one tab; all of them are visible together;
+* A bound component is drawn as soon as it is bound, and its block is replayed on a state-driven redraw. It fills its page by default (``100.percent`` width and height); those percentages resolve against the content area left over after the tab bar, not against the whole pane. Its ``x``/``y`` are ignored, and a width or height written by the caller is kept;
+* ``remove(button)`` also removes the components bound to that tab. Removing the selected tab selects the first remaining tab;
+* ``barSize`` sets the bar's size across the side it occupies: its height for ``UP``/``BOTTOM`` and its width for ``LEFT``/``RIGHT``. It defaults to ``36.px``, can also be passed to the ``TabPane(barSize = ...)`` constructor, and ``tabBarThickness`` remains as an alias for it;
+* Tabs fill the bar across its thickness: on ``UP``/``BOTTOM`` every button is given ``height = 100.percent``, on ``LEFT``/``RIGHT`` every button is given ``width = 100.percent``. The other axis keeps the size the button named. A horizontal bar also centres its tabs by default (``justify = Justify.CENTER``); set ``justify`` yourself to override it;
+* A style set on the pane is applied to its bar too: the pane copies its background, corner radius, text colour and transition onto ``tab`` on every layout pass, so the strip shares the pane's appearance. A tab button has no fill of its own unless it sets one, so an unselected tab lets the pane's background show through instead of covering it with the control's default white. ``selectColor`` paints the background of the selected tab only; ``null`` (the default) paints no difference. ``pane.selectColor`` and ``pane.tab.selectColor`` are the same property;
+* A ``transition`` written in the pane style reaches its tab buttons as well, so the ``selectColor`` switch animates when tabs change. A transition set on an individual tab button takes precedence over the pane's.

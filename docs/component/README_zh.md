@@ -122,3 +122,42 @@ frame.layout {
 * 百分比宽度按内缩后的宽度解析，比例为``100.percent``的子组件会独占一行；
 * 子组件的``width``/``height``写``em``时，按**子组件自己**的字号解析（通常是继承来的那个），
   因为它量的是自己的大小，不是``FlexBox``的。
+
+## TabBar 与 TabPane
+
+``TabBar``是一个装满标签按钮的``FlexBox``。``TabPane``把``TabBar``放在自己的四条边之一，并显示当前选中标签所绑定的组件；绑定在其他标签上的组件全部隐藏。
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.action.Button
+import com.github.kusa233.ovatoxin.widget.container.LEFT
+import com.github.kusa233.ovatoxin.widget.container.TabPane
+import com.github.kusa233.ovatoxin.widget.text.TextArea
+```
+
+```kotlin
+val pane = TabPane()
+pane.side = LEFT
+
+val one = pane.add(Button("第一页"))
+pane.bind(one, TextArea("第一页内容"))
+
+val two = pane.add(Button("第二页"))
+pane.bind(two, TextArea()) {
+    // 代码块在 DrawScope 中运行，参数就是绑定的组件。
+    // 页面自动填满内容区；x 和 y 不起作用。
+    it.text = "第二页内容"
+}
+```
+
+规则：
+
+* ``side``取``UP``、``BOTTOM``、``LEFT``或``RIGHT``；``pane.side``和``pane.tab.side``都能设置。``UP``/``BOTTOM``是横条，``LEFT``/``RIGHT``是竖条；
+* ``tab.add(button) { ... }``追加一个按钮并选中它，``tab.remove(button)``删除它；在``TabPane``上直接调用``add``/``remove``效果相同；
+* 标签按钮的``x``和``y``不起作用——位置由``TabBar``决定；``width``/``height``仍会保留；
+* ``bind(button, component) { ... }``把内容绑定到``button``指定的标签并返回该组件。代码块类型是``DrawScope<T>.(T) -> Unit``：可以从接收者使用``layout { }``/``style { }``，组件的自身 API 则通过其参数访问。该按钮必须已经属于这个标签条。同一个标签可以绑定多个组件，它们会一起显示；
+* 绑定组件在``bind``时立即绘制，并会在状态驱动的重绘中重放它的代码块。它默认填满自己的页面（宽高都是``100.percent``），这里的百分比按减去``TabBar``后剩下的内容区域解析，而不是整个``TabPane``；其``x``/``y``不起作用，调用者写出的宽或高会保留；
+* ``remove(button)``会一并删除绑定在该标签上的组件。删除当前选中的标签后，会选中剩下的第一个标签；
+* ``barSize``设置标签条在所占据方向上的尺寸：``UP``/``BOTTOM``时是高度，``LEFT``/``RIGHT``时是宽度。默认``36.px``，也可以通过``TabPane(barSize = ...)``构造参数传入；``tabBarThickness``保留为它的别名；
+* 标签按钮会填满标签条的厚度方向：``UP``/``BOTTOM``时每个按钮的``height = 100.percent``，``LEFT``/``RIGHT``时每个按钮的``width = 100.percent``；另一方向保留按钮自身设置的尺寸。水平的标签条默认``justify = Justify.CENTER``，需要时可以由调用方自行设置``justify``覆盖；
+* 设置``TabPane``的样式时，底层``TabBar``也会应用同样的样式：每次布局都会把背景、圆角、文字颜色和``transition``复制到``tab``，所以标签条与整个窗格外观一致。标签按钮在没有自行设置背景时不会涂自己的颜色，未选中的标签会透出窗格背景，而不是被控件默认的白色盖住。``selectColor``只给选中的标签按钮涂上该背景色；``null``（默认值）表示不绘制选中差异。``pane.selectColor``与``pane.tab.selectColor``是同一个属性；
+* 写在``TabPane``样式里的``transition``也会传给标签按钮，所以切换标签时``selectColor``的变化会有过渡动画。若某个标签按钮自己设置了``transition``，则以按钮自己的为准。

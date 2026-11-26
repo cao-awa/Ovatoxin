@@ -77,7 +77,7 @@ import javafx.scene.layout.Region
  * into a [Div] without arithmetic. A percentage child cannot be measured before the box has a width
  * of its own, so such a child contributes its preferred width to that content size.
  */
-class FlexBox : ComponentDrawable<FlexBox>() {
+open class FlexBox : ComponentDrawable<FlexBox>() {
 
     /** The slot the flow handed out to each child in the last pass. */
     private var slots: Map<Component<*>, Slot> = emptyMap()
