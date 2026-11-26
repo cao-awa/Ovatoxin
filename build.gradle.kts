@@ -85,6 +85,6 @@ tasks.register<JavaExec>("demo") {
     group = "application"
     description = "Launches the demo program."
     mainClass = providers.gradleProperty("demoMain")
-        .orElse("com.github.kusa233.ovatoxin.example.DemoKt")
+        .orElse("com.github.kusa233.ovatoxin.example.full.FullSample")
     classpath = sourceSets["test"].runtimeClasspath
 }

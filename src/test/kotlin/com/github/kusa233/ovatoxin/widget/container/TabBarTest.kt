@@ -262,7 +262,9 @@ class TabBarTest {
     @Test
     fun `selectColor paints only the selected tab`() {
         val bar = TabBar()
-        bar.selectColor = Color.RED
+        bar.selectColor {
+            background = Color.RED
+        }
         val first = bar.add(Button("One"))
         val second = bar.add(Button("Two"))
 
@@ -272,6 +274,37 @@ class TabBarTest {
         bar.select(first)
         assertEquals(Color.RED, first.styleSpec.background.color)
         assertNull(second.styleSpec.background.color)
+    }
+
+    @Test
+    fun `selectColor paints the selected tab foreground too`() {
+        val bar = TabBar()
+        bar.selectColor {
+            background = Color.WHITE
+            foreground = Color.BLACK
+        }
+        val first = bar.add(Button("One"))
+        val second = bar.add(Button("Two"))
+
+        assertNull(first.styleSpec.foreground)
+        assertEquals(Color.BLACK, second.styleSpec.foreground)
+        assertEquals(Color.WHITE, second.styleSpec.background.color)
+
+        bar.select(first)
+        assertEquals(Color.BLACK, first.styleSpec.foreground)
+        assertNull(second.styleSpec.foreground)
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `the legacy single colour property still paints the selected background`() {
+        val bar = TabBar()
+        bar.selectColor = Color.RED
+        val first = bar.add(Button("One"))
+        val second = bar.add(Button("Two"))
+
+        assertNull(first.styleSpec.background.color)
+        assertEquals(Color.RED, second.styleSpec.background.color)
     }
 
     @Test
@@ -289,7 +322,9 @@ class TabBarTest {
             styleSpec.background { color = Color.BLUE }
         }
         val second = bar.add(Button("Two"))
-        bar.selectColor = Color.RED
+        bar.selectColor {
+            background = Color.RED
+        }
         assertEquals(Color.RED, second.styleSpec.background.color)
 
         bar.select(first)

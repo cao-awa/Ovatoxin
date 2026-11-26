@@ -59,7 +59,10 @@ fun testTabPane(frame: Frame) {
                 }
                 transition = 100.milliseconds
             }
-            pane.selectColor = Color.WHITE
+            pane.selectColor {
+                background = Color.WHITE
+                foreground = Color.BLACK
+            }
             pane.side = TabSide.LEFT
             pane.barSize = 100.px
             val first = pane.add(Button("1"))

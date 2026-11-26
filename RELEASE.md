@@ -16,14 +16,14 @@ This release adds tabbed panes and completes the component reference in English 
 * `add(button)` adds a tab and selects it; `bind(tab, component)` attaches one or more components to a tab. Selecting a tab shows its bound components and hides the others without rebuilding them.
 * Bound components fill the content area that remains after the bar: a missing width or height becomes `100.percent` of that area, while an explicit size is kept. `x` and `y` of tab buttons and bound content are controlled by the pane.
 * `barSize` sets the strip thickness across the side it occupies (default `36.px`); `tabBarThickness` remains as a source-compatible alias.
-* `selectColor` paints the background of the selected tab and defaults to `null`, which leaves every tab as it was styled.
+* `selectColor { background = ...; foreground = ... }` paints the selected tab's background and text color; an unset part keeps the tab's own or inherited appearance. The single-colour `selectColor = ...` property remains as a deprecated alias that sets only the background.
 
 ### TabBar
 
 * A `FlexBox` subclass that arranges its buttons in one row for `UP`/`BOTTOM` or one column for `LEFT`/`RIGHT`.
 * `add` selects the new tab and `remove` removes it, selecting the first remaining tab when the removed one was selected. `bind` is also available on a standalone bar for content rendered elsewhere.
 * The bar owns button positions and stretches each button across the bar thickness; a horizontal bar centres its tabs by default.
-* `selectColor`, `selected`, `selectedButton` and `tabs` expose selection state. With `selectColor = null` no selected/unselected background difference is painted.
+* `selectColor { ... }`, `selectionStyle`, `selected`, `selectedButton` and `tabs` expose selection state and the selected-tab style. With no selection style set, no selected/unselected background difference is painted.
 
 ## Tab scrolling
 

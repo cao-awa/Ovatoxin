@@ -101,14 +101,36 @@ class TabPane(
         }
 
     /**
-     * The colour painted on the selected tab, or `null` to leave every tab as it was given.
+     * The background and text colour painted on the selected tab.
      *
-     * This is the same property as [TabBar.selectColor]; the pane simply forwards it to [tab].
+     * This is the same style as [TabBar.selectionStyle]; the pane simply forwards it to [tab].
+     *
+     * ```kotlin
+     * pane.selectColor {
+     *     background = Color.WHITE
+     *     foreground = Color.BLACK
+     * }
+     * ```
      */
+    val selectionStyle: TabSelectionStyle
+        get() = this.tab.selectionStyle
+
+    /** Configures [selectionStyle], painting the result on the selected tab. */
+    fun selectColor(block: TabSelectionStyle.() -> Unit) {
+        this.tab.selectColor(block)
+    }
+
+    /**
+     * The selected tab's background colour, kept for source compatibility.
+     *
+     * Use [selectColor] with a [TabSelectionStyle] block instead, which can also set the selected
+     * tab's text colour.
+     */
+    @Deprecated("Use selectColor { background = ... } so the selected text colour can be set too")
     var selectColor: Color?
-        get() = this.tab.selectColor
+        get() = this.tab.selectionStyle.background
         set(value) {
-            this.tab.selectColor = value
+            this.tab.selectionStyle.background = value
         }
 
     /** The tab buttons in the order they were added. */
@@ -218,7 +240,7 @@ class TabPane(
     internal override fun applyStyle(width: Double, height: Double) {
         super.applyStyle(width, height)
         this.tab.styleSpec.copyFrom(this.styleSpec)
-        this.tab.syncInheritedTransition()
+        this.tab.syncInheritedStyle()
     }
 
     /**
@@ -231,7 +253,7 @@ class TabPane(
     override fun beginPass(box: ContentBox, targets: List<Component<*>>) {
         // A caller can drive a geometry pass directly; keep the bar in step even then.
         this.tab.styleSpec.copyFrom(this.styleSpec)
-        this.tab.syncInheritedTransition()
+        this.tab.syncInheritedStyle()
         val vertical = this.side.isVertical
         val available = if (vertical) box.width else box.height
         val thickness = this.barSize.resolve(available, this.resolvedFontSize)

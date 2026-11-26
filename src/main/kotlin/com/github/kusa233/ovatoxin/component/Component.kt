@@ -166,6 +166,12 @@ abstract class Component<T : Component<T>> {
     private fun createNode(): Node {
         val created = buildNode()
         this.nodeRef = created
+
+        // A fresh JavaFX node starts out visible. A component hidden before its lazy node existed
+        // must not reappear the moment it is built — that is how a tab page that was bound while
+        // unselected used to cover the selected page until the tab was switched once.
+        created.isVisible = this.visibleValue
+
         if (!this.reportsClicksAsAction) {
             created.setOnMouseClicked { event ->
                 if (event.button == MouseButton.PRIMARY) performClick()

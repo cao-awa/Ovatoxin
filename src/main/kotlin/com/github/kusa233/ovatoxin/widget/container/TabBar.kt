@@ -41,10 +41,10 @@ import javafx.scene.paint.Color
  * explicitly. [remove] removes the button together with its tab position, selecting the first
  * remaining tab when the removed one was selected.
  *
- * A [selectColor] paints the background of the selected button with that colour, while every other
- * button keeps the style it was given. When it is `null` (the default) the bar paints no
- * selected/unselected difference at all. A [TabPane] also uses the selection to show and hide the
- * bound components.
+ * A `selectColor { ... }` block paints the background and text colour of the selected button,
+ * while every other button keeps the style it was given. With no selection style set (the default)
+ * the bar paints no selected/unselected difference at all. A [TabPane] also uses the selection to
+ * show and hide the bound components.
  */
 class TabBar : FlexBox() {
 
@@ -88,17 +88,41 @@ class TabBar : FlexBox() {
         }
 
     /**
-     * The colour painted on the selected tab, or `null` to leave every tab exactly as it was given.
+     * The background and text colour painted on the selected tab.
      *
-     * Defaults to `null`. Only the background of the selected button changes. An unselected tab
-     * with no background of its own stays transparent, so the bar's fill — usually the pane's
-     * background — shows through instead of the button control's default white.
+     * Neither value is set by default, so every tab keeps the appearance it was given. Setting
+     * [TabSelectionStyle.background] fills only the selected button, while an unselected tab with
+     * no background of its own stays transparent and lets the bar's fill — usually the pane's
+     * background — show through. [TabSelectionStyle.foreground] overrides the bar's inherited text
+     * colour on the selected button only.
+     *
+     * ```kotlin
+     * bar.selectColor {
+     *     background = Color.WHITE
+     *     foreground = Color.BLACK
+     * }
+     * ```
      */
-    var selectColor: Color? = null
+    val selectionStyle: TabSelectionStyle = TabSelectionStyle().also {
+        it.onChange = { applySelectionStyle() }
+    }
+
+    /** Configures [selectionStyle], painting the result on the currently selected tab. */
+    fun selectColor(block: TabSelectionStyle.() -> Unit) {
+        this.selectionStyle.configure(block)
+    }
+
+    /**
+     * The selected tab's background colour, kept for source compatibility.
+     *
+     * Use [selectColor] with a [TabSelectionStyle] block instead, which can also set the selected
+     * tab's text colour.
+     */
+    @Deprecated("Use selectColor { background = ... } so the selected text colour can be set too")
+    var selectColor: Color?
+        get() = this.selectionStyle.background
         set(value) {
-            if (field == value) return
-            field = value
-            applySelectionStyle()
+            this.selectionStyle.background = value
         }
 
     /** The currently selected tab button, or `null` when the bar has no tabs. */
@@ -239,40 +263,61 @@ class TabBar : FlexBox() {
     }
 
     /**
-     * Paints [selectColor] on the selected button and restores every other button to its base style.
+     * Paints the selection style on the selected button and restores every other button to its
+     * base style.
      *
      * The base style is captured when the button is added, so a selected colour is never folded
      * back into it and switching tabs restores the caller's original appearance.
      */
     private fun applySelectionStyle() {
-        val color = this.selectColor
         for (button in this.tabs) {
             val base = this.baseStyles[button] ?: continue
             button.styleSpec.copyFrom(base)
             applyInheritedTransition(button, base)
-            if (button === this.selectedValue && color != null) {
-                button.styleSpec.background.color = color
-            }
+            applyInheritedForeground(button, base)
+            applySelectionOverride(button)
         }
         relayout()
     }
 
     /**
-     * Gives every tab the bar's transition unless the button named one itself.
+     * Applies the selected-tab colours to [button] when it is the selected one.
      *
-     * The bar copies the owning pane's style, so a `transition` written on a [TabPane] reaches its
-     * tabs and animates the [selectColor] change. An explicit transition on the button wins.
+     * The override runs after the inherited style, so a selected foreground can deliberately differ
+     * from the pane's text colour — for instance black text on a white selected tab.
      */
-    internal fun syncInheritedTransition() {
+    private fun applySelectionOverride(button: Button) {
+        if (button !== this.selectedValue) return
+        this.selectionStyle.background?.let { button.styleSpec.background.color = it }
+        this.selectionStyle.foreground?.let { button.styleSpec.foreground = it }
+    }
+
+    /**
+     * Keeps the inherited style values in step for every tab that did not name them itself.
+     *
+     * The bar copies the owning pane's style, so a `transition` and a `foreground` written on a
+     * [TabPane] have to reach the buttons that paint the text. Without the colour copy it would
+     * stay on the bar's own `ScrollPane`, where no text is painted, and the buttons would keep
+     * JavaFX's default dark caption. Explicit values on a button are its own choice and win.
+     */
+    internal fun syncInheritedStyle() {
         for (button in this.tabs) {
             val base = this.baseStyles[button] ?: continue
             applyInheritedTransition(button, base)
+            applyInheritedForeground(button, base)
+            applySelectionOverride(button)
         }
     }
 
     private fun applyInheritedTransition(button: Button, base: Style) {
         if (base.transition == null) {
             button.styleSpec.transition = this.styleSpec.transition
+        }
+    }
+
+    private fun applyInheritedForeground(button: Button, base: Style) {
+        if (base.foreground == null) {
+            button.styleSpec.foreground = this.styleSpec.foreground
         }
     }
 
@@ -317,7 +362,7 @@ class TabBar : FlexBox() {
      */
     internal override fun applyStyle(width: Double, height: Double) {
         super.applyStyle(width, height)
-        syncInheritedTransition()
+        syncInheritedStyle()
     }
 
     /**
@@ -498,7 +543,7 @@ class TabBar : FlexBox() {
         this.justify = Justify.CENTER
         applyTabSizing()
         this.selectedValue = this.tabs.firstOrNull()
-        this.selectColor = null
+        this.selectionStyle.reset()
         applySelectionStyle()
         updateDetachedVisibility()
         this.selectionListener?.invoke(this.selectedValue)

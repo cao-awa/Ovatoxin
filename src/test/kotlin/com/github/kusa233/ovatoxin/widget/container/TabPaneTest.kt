@@ -71,6 +71,30 @@ class TabPaneTest {
     }
 
     @Test
+    fun `the pane foreground reaches its tab buttons and survives selection`() {
+        val pane = TabPane()
+        pane.applyStyle { foreground = Color.RED }
+        val first = pane.add(Button("One"))
+        val second = pane.add(Button("Two")) {
+            styleSpec.foreground = Color.BLUE
+        }
+
+        pane.beginPass(pane.contentBox(200.0, 100.0), pane.children)
+
+        assertEquals(Color.RED, first.styleSpec.foreground)
+        assertEquals(Color.BLUE, second.styleSpec.foreground)
+
+        // Selection rewrites a button from its base style; the inherited colour must be reapplied.
+        pane.select(first)
+        assertEquals(Color.RED, first.styleSpec.foreground)
+        assertEquals(Color.BLUE, second.styleSpec.foreground)
+
+        pane.select(second)
+        assertEquals(Color.RED, first.styleSpec.foreground)
+        assertEquals(Color.BLUE, second.styleSpec.foreground)
+    }
+
+    @Test
     fun `a pane transition reaches its tab buttons`() {
         val pane = TabPane()
         pane.applyStyle { transition = 200.milliseconds }
@@ -89,15 +113,39 @@ class TabPaneTest {
     @Test
     fun `selectColor is shared with the tab bar`() {
         val pane = TabPane()
-        pane.selectColor = Color.RED
+        pane.selectColor {
+            background = Color.RED
+        }
 
-        assertEquals(Color.RED, pane.tab.selectColor)
-        assertEquals(Color.RED, pane.selectColor)
+        assertEquals(Color.RED, pane.tab.selectionStyle.background)
+        assertEquals(Color.RED, pane.selectionStyle.background)
 
         val first = pane.add(Button("One"))
         val second = pane.add(Button("Two"))
         assertNull(first.styleSpec.background.color)
         assertEquals(Color.RED, second.styleSpec.background.color)
+    }
+
+    @Test
+    fun `a selected tab foreground overrides the pane foreground`() {
+        val pane = TabPane()
+        pane.applyStyle { foreground = Color.WHITE }
+        pane.selectColor {
+            background = Color.WHITE
+            foreground = Color.BLACK
+        }
+        val first = pane.add(Button("One"))
+        val second = pane.add(Button("Two"))
+
+        pane.beginPass(pane.contentBox(200.0, 100.0), pane.children)
+
+        assertEquals(Color.WHITE, first.styleSpec.foreground)
+        assertEquals(Color.BLACK, second.styleSpec.foreground)
+        assertEquals(Color.WHITE, second.styleSpec.background.color)
+
+        pane.select(first)
+        assertEquals(Color.BLACK, first.styleSpec.foreground)
+        assertEquals(Color.WHITE, second.styleSpec.foreground)
     }
 
     @Test
