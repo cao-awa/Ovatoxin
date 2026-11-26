@@ -1,0 +1,85 @@
+/*
+ * The scroll bars of a tab bar: flat grey thumbs on nothing.
+ *
+ * The bar is a styled surface of its own; the scroll pane wrapped around its tabs only has to clip
+ * them and show a thumb when the row or column outgrows the space. Modena's frame, raised track,
+ * arrow buttons and focus ring would all paint around the bar's own fill, so they are removed here
+ * and only the thumb is kept. The fill itself still comes from the style layer as inline CSS on the
+ * scroll pane, which outranks anything said in this file.
+ */
+
+/* No frame and no padding: the bar's own fill is the whole surface. */
+.ovatoxin-tabbar {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.ovatoxin-tabbar > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* The track paints nothing at all, so only the thumb is visible. */
+.ovatoxin-tabbar > .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-pref-width: 8px;
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+}
+
+.ovatoxin-tabbar > .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-pref-height: 8px;
+    -fx-min-height: 8px;
+    -fx-max-height: 8px;
+}
+
+.ovatoxin-tabbar > .scroll-bar > .thumb {
+    -fx-background-color: #c0c0c0;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+/* Still grey, only darker, so hovering and dragging cannot bring a colour back in. */
+.ovatoxin-tabbar > .scroll-bar > .thumb:hover {
+    -fx-background-color: #ababab;
+}
+
+.ovatoxin-tabbar > .scroll-bar > .thumb:pressed {
+    -fx-background-color: #969696;
+}
+
+/* No arrow buttons: the bar is the thumb and nothing else. */
+.ovatoxin-tabbar > .scroll-bar > .increment-button,
+.ovatoxin-tabbar > .scroll-bar > .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-min-height: 0;
+    -fx-min-width: 0;
+    -fx-pref-height: 0;
+    -fx-pref-width: 0;
+    -fx-opacity: 0;
+}
+
+.ovatoxin-tabbar > .scroll-bar > .increment-button > .increment-arrow,
+.ovatoxin-tabbar > .scroll-bar > .decrement-button > .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-opacity: 0;
+}
+
+/* The corner between the two bars; a bar that scrolls one way rarely shows one. */
+.ovatoxin-tabbar > .corner {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}

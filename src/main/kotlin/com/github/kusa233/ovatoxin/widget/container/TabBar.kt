@@ -5,19 +5,26 @@ import com.github.kusa233.ovatoxin.component.ContentBox
 import com.github.kusa233.ovatoxin.component.DrawScope
 import com.github.kusa233.ovatoxin.component.Slot
 import com.github.kusa233.ovatoxin.layout.Length
+import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.percent
+import com.github.kusa233.ovatoxin.runtime.Fx
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.action.Button
+import javafx.application.Platform
+import javafx.scene.Node
+import javafx.scene.control.ScrollPane
+import javafx.scene.layout.Pane
 import javafx.scene.layout.Region
 import javafx.scene.paint.Color
 
 /**
  * The strip of tab buttons belonging to a [TabPane].
  *
- * A tab bar is a [FlexBox]: it flows its buttons either horizontally (side [TabSide.UP] or
- * [TabSide.BOTTOM]) or vertically (side [TabSide.LEFT] or [TabSide.RIGHT]). The `x` and `y` of a
- * tab button are ignored, because the bar decides where the buttons go. The bar stretches every
- * button across its thickness — `width = 100.percent` on the vertical sides and
+ * A tab bar is a [FlexBox]: it lays its buttons in one row (side [TabSide.UP] or [TabSide.BOTTOM])
+ * or one column (side [TabSide.LEFT] or [TabSide.RIGHT]). When the tabs outgrow the space the bar
+ * is given, it scrolls instead of wrapping, showing a horizontal or vertical scroll bar as needed.
+ * The `x` and `y` of a tab button are ignored, because the bar decides where the buttons go. The bar
+ * stretches every button across its thickness — `width = 100.percent` on the vertical sides and
  * `height = 100.percent` on the horizontal ones — while the other axis keeps the size the button
  * named. A horizontal bar also centres its tabs by default (`justify = Justify.CENTER`).
  *
@@ -52,6 +59,12 @@ class TabBar : FlexBox() {
     /** The width and height each button named before the bar took over its cross-axis size. */
     private val baseLayouts: MutableMap<Button, BaseLayout> = LinkedHashMap()
 
+    /** The scroll pane that wraps the tab row or column, or `null` before the bar is rendered. */
+    private var scrollPane: ScrollPane? = null
+
+    /** The pane the buttons are actually placed into, inside [scrollPane]. */
+    private var scrollContent: Pane? = null
+
     init {
         // A horizontal strip leaves its leftover room on both sides rather than after the last tab.
         this.justify = Justify.CENTER
@@ -70,6 +83,7 @@ class TabBar : FlexBox() {
             if (this.sideValue == value) return
             this.sideValue = value
             applyTabSizing()
+            this.scrollContent?.requestLayout()
             this.parent?.relayout()
         }
 
@@ -98,6 +112,7 @@ class TabBar : FlexBox() {
             this.selectedValue = value
             applySelectionStyle()
             updateDetachedVisibility()
+            scheduleSelectedVisible()
             this.selectionListener?.invoke(value)
         }
 
@@ -141,6 +156,7 @@ class TabBar : FlexBox() {
         applyTabSizing(button)
         button.appendClickHandler { select(this) }
         select(button)
+        this.scrollContent?.requestLayout()
         relayout()
         return button
     }
@@ -201,6 +217,7 @@ class TabBar : FlexBox() {
         this.baseLayouts.remove(button)
         super.remove(button)
         if (wasSelected) this.selected = this.tabs.firstOrNull()
+        this.scrollContent?.requestLayout()
         relayout()
         return true
     }
@@ -304,6 +321,172 @@ class TabBar : FlexBox() {
     }
 
     /**
+     * Wraps the tabs in a scroll pane.
+     *
+     * The bar itself is still the styled surface; the scroll pane only clips the tab row or column
+     * and supplies the bars when the tabs outgrow the space the pane gives the bar. The inner pane
+     * is at least as large as the viewport, so a short row still fills the bar rather than leaving a
+     * bare strip beside it.
+     */
+    override fun buildNode(): Node {
+        val content = ScrollContentPane()
+        val pane = ScrollPane(content)
+        pane.hbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
+        pane.vbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
+        // The content controls its own extent; forcing it to fit would remove the overflow the
+        // scroll bars exist for.
+        pane.isFitToWidth = false
+        pane.isFitToHeight = false
+        pane.isPannable = true
+        pane.styleClass += STYLE_CLASS
+        TabBar::class.java.getResource(STYLESHEET)?.let { pane.stylesheets += it.toExternalForm() }
+        pane.viewportBoundsProperty().addListener { _, _, bounds ->
+            // Keep the content at least as large as the viewport in both directions. Overflow on
+            // either axis then becomes a scroll bar, while a small row still paints the whole bar.
+            content.minWidth = bounds.width
+            content.minHeight = bounds.height
+            content.requestLayout()
+            // The first viewport arrives as part of the layout that creates the tabs, so the
+            // selected one can only be brought into view once that pass has finished.
+            Platform.runLater { ensureSelectedVisible() }
+        }
+        this.scrollPane = pane
+        this.scrollContent = content
+        return pane
+    }
+
+    /** The scroll pane owns the JavaFX node, so attach the inner content pane as the host. */
+    override fun onNodeCreated(node: Node) {
+        if (node is ScrollPane) {
+            this.scrollContent?.let { attachContent(it) }
+            scheduleSelectedVisible()
+        }
+    }
+
+    /**
+     * The width the whole tab row needs, before clipping.
+     *
+     * A vertical bar stacks one tab per line and stretches the tabs to its own width, so only an
+     * explicitly wider tab can make it scroll sideways. A horizontal bar needs the sum of every tab
+     * width plus the gaps; that is what the horizontal scroll bar measures.
+     */
+    internal fun scrollContentWidth(): Double {
+        val inset = this.layoutSpec.hPadding.resolve(0.0, this.resolvedFontSize)
+        if (this.children.isEmpty()) return inset * 2.0
+        if (this.sideValue.isVertical) {
+            val widest = this.children.maxOfOrNull { child ->
+                val width = child.layoutSpec.width
+                if (width == null || width is Percent) 0.0
+                else width.resolve(0.0, child.resolvedFontSize)
+            } ?: 0.0
+            return inset * 2.0 + widest
+        }
+        val gap = this.gap.resolve(0.0, this.resolvedFontSize)
+        var total = inset * 2.0 + gap * (this.children.size - 1)
+        for (child in this.children) {
+            val width = child.layoutSpec.width
+            total += if (width == null || width is Percent) preferredWidth(child)
+            else width.resolve(0.0, child.resolvedFontSize)
+        }
+        return total
+    }
+
+    /**
+     * The height the whole tab column needs, before clipping.
+     *
+     * The mirror image of [scrollContentWidth]: a horizontal bar is one row high, while a vertical
+     * bar adds the heights of its tabs and the gaps between them.
+     */
+    internal fun scrollContentHeight(width: Double): Double {
+        val inset = this.layoutSpec.vPadding.resolve(0.0, this.resolvedFontSize)
+        if (this.children.isEmpty()) return inset * 2.0
+        if (this.sideValue.isVertical) {
+            val gap = this.gap.resolve(0.0, this.resolvedFontSize)
+            var total = inset * 2.0 + gap * (this.children.size - 1)
+            for (child in this.children) {
+                val height = child.layoutSpec.height
+                total += if (height == null || height is Percent) {
+                    preferredHeight(
+                        child,
+                        child.layoutSpec.width?.resolve(width, child.resolvedFontSize) ?: width,
+                    )
+                } else {
+                    height.resolve(0.0, child.resolvedFontSize)
+                }
+            }
+            return total
+        }
+        val tallest = this.children.maxOfOrNull { child ->
+            val height = child.layoutSpec.height
+            if (height == null || height is Percent) 0.0
+            else height.resolve(0.0, child.resolvedFontSize)
+        } ?: 0.0
+        return inset * 2.0 + tallest
+    }
+
+    /**
+     * Scrolls a newly selected tab into view after the next layout pulse.
+     *
+     * Selection can move without a click — [add] selects the tab it adds — so without this a
+     * programmatically selected tab could sit past the clipped edge and look as if nothing had been
+     * selected. The delay lets the scroll pane learn its new content extent first.
+     */
+    private fun scheduleSelectedVisible() {
+        if (this.scrollPane == null) return
+        Fx.runOnFxThread {
+            Platform.runLater { ensureSelectedVisible() }
+        }
+    }
+
+    /** Moves [selected] just inside the viewport when it currently lies outside it. */
+    private fun ensureSelectedVisible() {
+        val pane = this.scrollPane ?: return
+        val button = this.selectedValue ?: return
+        val node = button.builtNode ?: return
+        val content = this.scrollContent ?: return
+        val viewport = pane.viewportBounds
+        if (viewport.width <= 0.0 || viewport.height <= 0.0) return
+        val bounds = node.boundsInParent
+
+        val overflowX = (content.width - viewport.width).coerceAtLeast(0.0)
+        if (overflowX > 0.0) {
+            val current = pane.hvalue * overflowX
+            val target = when {
+                bounds.minX < current -> bounds.minX
+                bounds.maxX > current + viewport.width -> bounds.maxX - viewport.width
+                else -> current
+            }
+            pane.hvalue = (target / overflowX).coerceIn(0.0, 1.0)
+        }
+
+        val overflowY = (content.height - viewport.height).coerceAtLeast(0.0)
+        if (overflowY > 0.0) {
+            val current = pane.vvalue * overflowY
+            val target = when {
+                bounds.minY < current -> bounds.minY
+                bounds.maxY > current + viewport.height -> bounds.maxY - viewport.height
+                else -> current
+            }
+            pane.vvalue = (target / overflowY).coerceIn(0.0, 1.0)
+        }
+    }
+
+    /** The content pane of the scroll pane, sized from the tabs' own dimensions. */
+    private inner class ScrollContentPane : Pane() {
+        init {
+            this.isPickOnBounds = true
+        }
+
+        override fun computePrefWidth(height: Double): Double = this@TabBar.scrollContentWidth()
+
+        override fun computePrefHeight(width: Double): Double = this@TabBar.scrollContentHeight(width)
+
+        override fun computeMinWidth(height: Double): Double = computePrefWidth(height)
+
+        override fun computeMinHeight(width: Double): Double = computePrefHeight(width)
+    }
+
+    /**
      * Restores the tab bar defaults: side [TabSide.UP] and the first tab selected.
      *
      * The buttons themselves are children of the bar and survive a reset, as every container's
@@ -362,9 +545,31 @@ class TabBar : FlexBox() {
             super.slotFor(child, box)
         }
 
+    /** The natural width of [child], used for a tab whose width is not a pixel count. */
+    private fun preferredWidth(child: Component<*>): Double {
+        val node = child.node
+        if (node is Region) {
+            if (node.scene != null) node.applyCss()
+            return node.prefWidth(-1.0)
+        }
+        return node.boundsInLocal.width
+    }
+
     /** The natural height of [child] at [width], used for a tab without an explicit height. */
     private fun preferredHeight(child: Component<*>, width: Double): Double {
         val node = child.node
-        return if (node is Region) node.prefHeight(width) else node.boundsInLocal.height
+        if (node is Region) {
+            if (node.scene != null) node.applyCss()
+            return node.prefHeight(width)
+        }
+        return node.boundsInLocal.height
+    }
+
+    private companion object {
+        /** Style class every tab bar carries; the scroll-bar styling hangs off it. */
+        const val STYLE_CLASS: String = "ovatoxin-tabbar"
+
+        /** The stylesheet of the scroll bars, next to this class in `resources`. */
+        const val STYLESHEET: String = "tabbar.css"
     }
 }

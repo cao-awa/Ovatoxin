@@ -148,6 +148,50 @@ class TabBarTest {
     }
 
     @Test
+    fun `the scroll content of a horizontal bar is as wide as all its tabs`() {
+        val bar = TabBar()
+        bar.gap = 6.px
+        bar.layoutSpec.hPadding = 4.px
+        bar.add(Button("One")) { layoutSpec.width = 30.px }
+        bar.add(Button("Two")) { layoutSpec.width = 40.px }
+
+        assertEquals(84.0, bar.scrollContentWidth())
+    }
+
+    @Test
+    fun `the scroll content of a vertical bar is as tall as all its tabs`() {
+        val bar = TabBar()
+        bar.side = TabSide.LEFT
+        bar.gap = 4.px
+        bar.layoutSpec.vPadding = 5.px
+        bar.add(Button("One")) { layoutSpec.height = 20.px }
+        bar.add(Button("Two")) { layoutSpec.height = 30.px }
+
+        assertEquals(64.0, bar.scrollContentHeight(90.0))
+    }
+
+    @Test
+    fun `a horizontal bar scrolls tall enough for the tallest tab`() {
+        val bar = TabBar()
+        bar.layoutSpec.vPadding = 5.px
+        bar.add(Button("One")).layoutSpec.height = 20.px
+        bar.add(Button("Two")).layoutSpec.height = 30.px
+
+        assertEquals(40.0, bar.scrollContentHeight(200.0))
+    }
+
+    @Test
+    fun `a vertical bar scrolls wide enough for the widest tab`() {
+        val bar = TabBar()
+        bar.side = TabSide.LEFT
+        bar.layoutSpec.hPadding = 4.px
+        bar.add(Button("One")).layoutSpec.width = 30.px
+        bar.add(Button("Two")).layoutSpec.width = 50.px
+
+        assertEquals(58.0, bar.scrollContentWidth())
+    }
+
+    @Test
     fun `a horizontal bar stretches tabs to its height and centres them`() {
         val bar = TabBar()
         val first = bar.add(Button("One"))
