@@ -41,9 +41,9 @@ val javafxPlatform: String = run {
 }
 
 dependencies {
-    api("org.openjfx:javafx-base:$javafxVersion:$javafxPlatform")
-    api("org.openjfx:javafx-graphics:$javafxVersion:$javafxPlatform")
-    api("org.openjfx:javafx-controls:$javafxVersion:$javafxPlatform")
+    implementation("org.openjfx:javafx-base:$javafxVersion:$javafxPlatform")
+    implementation("org.openjfx:javafx-graphics:$javafxVersion:$javafxPlatform")
+    implementation("org.openjfx:javafx-controls:$javafxVersion:$javafxPlatform")
 
     testImplementation(kotlin("test"))
 }
