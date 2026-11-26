@@ -16,26 +16,25 @@ repositories {
 }
 
 def javafxVersion = '25.0.5'
-def javafxPlatform
-def os = System.getProperty("os.name").toLowerCase()
-def arch = System.getProperty("os.arch").toLowerCase()
-def aarch64 = arch.contains("aarch64") || arch.contains("arm64")
-if (os.contains("win")) {
-    javafxPlatform = "win"
-} else if (os.contains("mac")) {
-    javafxPlatform = aarch64 ? "mac-aarch64" : "mac"
-} else if (os.contains("linux")) {
-    javafxPlatform = aarch64 ? "linux-aarch64" : "linux"
-} else {
-    throw new GradleException("Unsupported platform for JavaFX: ${os}/${arch}")
-}
 
 dependencies {
     implementation 'com.github.cao-awa:Ovatoxin:{ovatoxin_version}'
 
-    api "org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}"
-    api "org.openjfx:javafx-graphics:${javafxVersion}:${javafxPlatform}"
-    api "org.openjfx:javafx-controls:${javafxVersion}:${javafxPlatform}"
+    api "org.openjfx:javafx-base:${javafxVersion}:win"
+    api "org.openjfx:javafx-graphics:${javafxVersion}:win"
+    api "org.openjfx:javafx-controls:${javafxVersion}:win"
+    api "org.openjfx:javafx-base:${javafxVersion}:mac"
+    api "org.openjfx:javafx-graphics:${javafxVersion}:mac"
+    api "org.openjfx:javafx-controls:${javafxVersion}:mac"
+    api "org.openjfx:javafx-base:${javafxVersion}:mac-aarch64"
+    api "org.openjfx:javafx-graphics:${javafxVersion}:mac-aarch64"
+    api "org.openjfx:javafx-controls:${javafxVersion}:mac-aarch64"
+    api "org.openjfx:javafx-base:${javafxVersion}:linux"
+    api "org.openjfx:javafx-graphics:${javafxVersion}:linux"
+    api "org.openjfx:javafx-controls:${javafxVersion}:linux"
+    api "org.openjfx:javafx-base:${javafxVersion}:linux-aarch64"
+    api "org.openjfx:javafx-graphics:${javafxVersion}:linux-aarch64"
+    api "org.openjfx:javafx-controls:${javafxVersion}:linux-aarch64"
 }
 ```
 
