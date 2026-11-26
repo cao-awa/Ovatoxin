@@ -3,9 +3,11 @@ package com.github.kusa233.ovatoxin.example.full
 import com.github.kusa233.ovatoxin.dsl.layout
 import com.github.kusa233.ovatoxin.dsl.style
 import com.github.kusa233.ovatoxin.layout.Layout
+import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
+import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.style.Style
 import com.github.kusa233.ovatoxin.widget.action.Button
 import com.github.kusa233.ovatoxin.widget.container.Align
@@ -14,6 +16,7 @@ import com.github.kusa233.ovatoxin.widget.container.FlexBox
 import com.github.kusa233.ovatoxin.widget.container.TabPane
 import com.github.kusa233.ovatoxin.widget.container.TabSide
 import com.github.kusa233.ovatoxin.widget.input.TextField
+import com.github.kusa233.ovatoxin.widget.progress.ProgressBar
 import com.github.kusa233.ovatoxin.widget.text.TextArea
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.application.Platform
@@ -65,8 +68,8 @@ object FullSample {
                 bindMain(pane, paneLayout, paneStyle)
                 bindTextArea(pane, paneLayout, paneStyle)
                 bindTextField(pane, paneLayout, paneStyle)
-                bindLabel(pane, paneLayout, paneStyle)
                 bindButton(pane, paneLayout, paneStyle)
+                bindProgressBar(pane, paneLayout, paneStyle)
                 pane.select(0)
             }
         }
@@ -134,7 +137,7 @@ object FullSample {
                         pane.select(2)
                     }
                 }
-                draw(Button("Label")) { label ->
+                draw(Button("Button")) { label ->
                     layout {
                         width = 20.percent
                         height = 8.percent
@@ -144,7 +147,7 @@ object FullSample {
                         pane.select(3)
                     }
                 }
-                draw(Button("Button")) { button ->
+                draw(Button("ProgressBar")) { button ->
                     layout {
                         width = 20.percent
                         height = 8.percent
@@ -282,16 +285,77 @@ object FullSample {
         }
     }
 
-    fun bindLabel(pane: TabPane, layout: Layout, style: Style) {
-        val button = pane.add(Button("Label"))
+    fun bindButton(pane: TabPane, layout: Layout, style: Style) {
+        val button = pane.add(Button("Button"))
         pane.bind(button, Div()) { div ->
             layout(layout)
             style(style)
         }
     }
 
-    fun bindButton(pane: TabPane, layout: Layout, style: Style) {
-        val button = pane.add(Button("Button"))
+    fun bindProgressBar(pane: TabPane, layout: Layout, style: Style) {
+        val progress = State(Percent.ZERO)
+        val button = pane.add(Button("ProgressBar"))
+        pane.bind(button, FlexBox()) { box ->
+            layout(layout) {
+                hPadding = 5.percent
+            }
+            style(style)
+            box.layout {
+                draw(TextArea()) { area ->
+                    layout {
+                        width = 90.percent
+                        height = 15.percent
+                    }
+                    style {
+                        corner = 20.percent
+                        foreground = Color.BLACK
+                    }
+                    area.align = TextAlignment.CENTER
+                    area.wrap = true
+                    area.text = """
+                        ProgressBar是一个进度条组件
+                        用在加载等需要进度的地方
+                        来自 com.github.kusa233.ovatoxin.widget.progress.ProgressBar
+                    """.trimIndent()
+                }
+                draw(ProgressBar()) { bar ->
+                    layout {
+                        width = 80.percent
+                        height = 5.percent
+                    }
+                    style {
+                        background {
+                            color = Color.LIGHTGRAY
+                        }
+                        corner = 35.percent
+                        foreground = Color.web("#6a9cf7")
+                    }
+                    bar.progress(progress.value)
+                }
+            }
+        }.withState(progress)
+
+        Thread.startVirtualThread {
+            while (true) {
+                progress.update(
+                    if (progress.value >= 100.percent) 0.percent else progress.value + 1.percent
+                )
+                Thread.sleep(100)
+            }
+        }
+    }
+
+    fun bindListView(pane: TabPane, layout: Layout, style: Style) {
+        val button = pane.add(Button("ListView"))
+        pane.bind(button, Div()) { div ->
+            layout(layout)
+            style(style)
+        }
+    }
+
+    fun bindCheckBox(pane: TabPane, layout: Layout, style: Style) {
+        val button = pane.add(Button("CheckBox"))
         pane.bind(button, Div()) { div ->
             layout(layout)
             style(style)

@@ -54,4 +54,25 @@ internal object Fx {
         done.await()
         failure.get()?.let { throw it }
     }
+
+    /**
+     * Runs [block] on the JavaFX application thread when the toolkit is already running, and
+     * directly on the calling thread otherwise.
+     *
+     * Unlike [runOnFxThread], this never starts the toolkit and never waits. It is meant for work
+     * produced from other threads — a clock, a network reply, a background computation — that must
+     * touch a live scene but must not block its producer. Before the toolkit exists there is no
+     * scene to touch, so running in place is safe and keeps the component unit-testable.
+     */
+    fun dispatchToFxThread(block: () -> Unit) {
+        if (!this.started || Platform.isFxApplicationThread()) {
+            block()
+            return
+        }
+        try {
+            Platform.runLater(block)
+        } catch (_: IllegalStateException) {
+            // The runtime stopped between the check and the post: there is no scene left to touch.
+        }
+    }
 }

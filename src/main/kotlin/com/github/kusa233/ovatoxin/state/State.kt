@@ -37,6 +37,10 @@ import com.github.kusa233.ovatoxin.component.Component
  * state.value = "en-us"
  * ```
  *
+ * [update] may be called from any thread — a clock or a network reply can drive the UI directly.
+ * Once a bound component has a JavaFX node, its redraw is marshalled onto the JavaFX application
+ * thread, so the producer never touches scene graph properties from its own thread.
+ *
  * A value equal to the current one is ignored, so a component that feeds the state it is bound
  * to cannot loop back into itself.
  *
@@ -44,6 +48,7 @@ import com.github.kusa233.ovatoxin.component.Component
  */
 class State<T>(initialValue: T) {
 
+    @Volatile
     private var current: T = initialValue
 
     /**

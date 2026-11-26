@@ -338,8 +338,22 @@ abstract class Component<T : Component<T>> {
      *
      * The component is [reset] first, so the block starts from the defaults again even when it
      * is run for the second, tenth or hundredth time.
+     *
+     * A state may be updated by a producer on any thread — a clock, a network reply, a background
+     * computation. Once this component has a node, the redraw is handed to the JavaFX application
+     * thread instead of running on the producer's thread, because a draw block and [reset] write
+     * JavaFX properties that may only change there. Before a node exists there is nothing to touch,
+     * so the redraw runs in place and components stay usable without a toolkit.
      */
     internal fun redraw() {
+        if (this.builtNode == null) {
+            redrawNow()
+            return
+        }
+        Fx.dispatchToFxThread { redrawNow() }
+    }
+
+    private fun redrawNow() {
         reset()
         replayDrawBlock()
         renderSelf()
