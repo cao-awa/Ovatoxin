@@ -63,6 +63,26 @@ class FlexBoxTest {
     }
 
     @Test
+    fun `a partial flow pass keeps a child below the siblings before it`() {
+        val box = FlexBox()
+        val first = TextArea("first")
+        val second = TextArea("second")
+        box.layout {
+            draw(first) { layout { width = 100.percent; height = 20.px } }
+            draw(second) { layout { width = 100.percent; height = 24.px } }
+        }
+        val content = this.boxOf(box, 200.0, 100.0)
+
+        // A state-bound child is repainted on its own, but the flow still needs the whole child
+        // list: the first child occupies the first line, so the second one starts below it.
+        box.beginPass(content, listOf(second))
+        val slot = box.slotFor(second, content)
+
+        assertEquals(0.0, slot.x)
+        assertEquals(20.0, slot.y)
+    }
+
+    @Test
     fun `padding insets the content on all four sides`() {
         val box = padded(FlexBox(), 10.px, 6.px)
 

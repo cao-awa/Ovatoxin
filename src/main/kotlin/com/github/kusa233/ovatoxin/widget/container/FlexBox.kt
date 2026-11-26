@@ -156,7 +156,10 @@ open class FlexBox : ComponentDrawable<FlexBox>() {
      * into a line without knowing where the lines before it ended.
      */
     override fun beginPass(box: ContentBox, targets: List<Component<*>>) {
-        this.slots = arrange(box, targets)
+        // A flow is a property of the whole child list: even a pass that repaints one child has
+        // to know where the lines before it end. Measuring only that child would put it at the
+        // top of the box, which is exactly the jump a state-bound child used to take.
+        this.slots = arrange(box, this.children)
     }
 
     /** The slot the last [beginPass] computed, so a child stays where the flow put it. */

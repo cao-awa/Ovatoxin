@@ -263,8 +263,11 @@ abstract class Container<T : Container<T>> : Component<T>() {
         // The container styles itself against its own box; a percentage corner needs that size.
         applyStyle(host.width, host.height)
 
-        val targets = if (only == null) this.mutableChildren.toList() else listOf(only)
-        beginPass(box, targets)
+        val allChildren = this.mutableChildren.toList()
+        val targets = if (only == null) allChildren else listOf(only)
+        // A flow needs every child to compute its slots, even when only one child is being
+        // repainted: the lines before the target decide where its line starts.
+        beginPass(box, allChildren)
         for (child in targets) {
             val node = child.node
             if (node.parent == null) host.children += node
