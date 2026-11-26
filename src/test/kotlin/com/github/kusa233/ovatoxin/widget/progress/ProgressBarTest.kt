@@ -5,6 +5,7 @@ import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.state.State
 import com.github.kusa233.ovatoxin.window.Frame
+import javafx.scene.paint.Color
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -126,6 +127,31 @@ class ProgressBarTest {
     fun `withState returns the same bar so calls chain`() {
         val bar = ProgressBar()
         assertSame(bar, bar.withState(State(50.percent)))
+    }
+
+    @Test
+    fun `the progress bar helper places a styled bar`() {
+        val frame = Frame()
+        var built: ProgressBar? = null
+
+        frame.layout {
+            built = progressBar(
+                h = 14.px,
+                value = 40.percent,
+                tone = Color.web("#10b981"),
+                w = 80.percent,
+                track = Color.web("#e8edf7"),
+            )
+        }
+
+        val bar = built!!
+        assertSame(bar, frame.children.single())
+        assertEquals(80.percent, bar.layoutSpec.width)
+        assertEquals(14.px, bar.layoutSpec.height)
+        assertEquals(40.percent, bar.progress)
+        assertEquals(Color.web("#e8edf7"), bar.styleSpec.background.color)
+        assertEquals(Color.web("#10b981"), bar.styleSpec.foreground)
+        assertEquals(50.percent, bar.styleSpec.corner)
     }
 
     @Test

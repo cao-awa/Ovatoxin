@@ -1,6 +1,8 @@
 package com.github.kusa233.ovatoxin.widget.progress
 
 import com.github.kusa233.ovatoxin.component.Component
+import com.github.kusa233.ovatoxin.component.SurfaceScope
+import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.style.StyleVisual
@@ -214,4 +216,48 @@ class ProgressBar(progress: Double = 0.0) : Component<ProgressBar>() {
         private fun clampProgress(value: Double): Double =
             if (value.isNaN()) DEFAULT_PROGRESS else value.coerceIn(0.0, 1.0)
     }
+}
+
+/**
+ * Draws a horizontal [ProgressBar] with an explicit height and fill level.
+ *
+ * The helper is a convenient way to place a bar inside a card or a row without repeating the same
+ * `layout` and `style` blocks. Its track colour is optional: when [track] is `null` the bar keeps
+ * the background the surrounding style gives it.
+ *
+ * ```kotlin
+ * frame.layout {
+ *     progressBar(h = 14.px, value = 35.percent, tone = Color.web("#10b981"))
+ * }
+ * ```
+ *
+ * @param h the height of the bar.
+ * @param value how full the bar starts.
+ * @param tone the colour of the filled part.
+ * @param w the width of the bar, the full content width by default.
+ * @param track the colour of the empty part, or `null` to inherit the surrounding background.
+ * @param radius the corner radius of both the track and the filled band.
+ */
+fun SurfaceScope<*>.progressBar(
+    h: Length,
+    value: Percent,
+    tone: Color,
+    w: Length = 100.percent,
+    track: Color? = null,
+    radius: Length = 50.percent,
+): ProgressBar = draw(ProgressBar()) { bar ->
+    layout {
+        width = w
+        height = h
+    }
+    style {
+        if (track != null) {
+            background {
+                color = track
+            }
+        }
+        corner = radius
+        foreground = tone
+    }
+    bar.progress(value)
 }

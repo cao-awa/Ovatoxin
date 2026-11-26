@@ -10,6 +10,7 @@ import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.widget.action.Button
 import com.github.kusa233.ovatoxin.widget.text.TextArea
 import com.github.kusa233.ovatoxin.window.Frame
+import javafx.scene.paint.Color
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -672,6 +673,45 @@ class FlexBoxTest {
 
         val failure = runCatching { Frame().layout { draw(box) } }.exceptionOrNull()
         assertTrue(failure is IllegalArgumentException)
+    }
+
+    @Test
+    fun `flexFlow draws a configured flow row`() {
+        val frame = Frame()
+        var built: FlexBox? = null
+
+        frame.layout {
+            built = flexFlow(
+                rowHeight = 80.px,
+                justify = Justify.SPACE_BETWEEN,
+                align = Align.CENTER,
+                gap = 6.0,
+                pad = 10.0,
+                fill = Color.web("#f8fafc"),
+                borderColor = Color.web("#e4e9f2"),
+            ) {
+                draw(TextArea("one")) {
+                    layout {
+                        width = 40.px
+                        height = 20.px
+                    }
+                }
+            }
+        }
+
+        val flow = built!!
+        assertSame(flow, frame.children.single())
+        assertEquals(80.px, flow.layoutSpec.height)
+        assertEquals(10.px, flow.layoutSpec.hPadding)
+        assertEquals(10.px, flow.layoutSpec.vPadding)
+        assertEquals(6.px, flow.gap)
+        assertEquals(Justify.SPACE_BETWEEN, flow.justify)
+        assertEquals(Align.CENTER, flow.align)
+        assertEquals(Color.web("#f8fafc"), flow.styleSpec.background.color)
+        assertEquals(1.px, flow.styleSpec.border.size)
+        assertEquals(Color.web("#e4e9f2"), flow.styleSpec.border.color)
+        assertEquals(12.px, flow.styleSpec.corner)
+        assertEquals(1, flow.children.size)
     }
 
     @Test

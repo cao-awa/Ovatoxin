@@ -6,7 +6,7 @@
 * 文字与展示：[Label](#label)、[TextArea](#textarea)、[Link](#link)
 * 操作与输入：[Button](#button)、[TextField](#textfield)、[CheckBox](#checkbox)、[ComboBox](#combobox)
 * 列表与进度：[ListView](#listview)、[ProgressBar](#progressbar)
-* 布局：[Div](#div)、[FlexBox](#flexbox)、[TabBar 与 TabPane](#tabbar-与-tabpane)
+* 布局：[Div](#div)、[FlexBox](#flexbox)、[Card](#card)、[TabBar 与 TabPane](#tabbar-与-tabpane)
 
 ## 组件通用行为
 
@@ -110,6 +110,22 @@ frame.layout {
 * ``align``是 JavaFX 的``TextAlignment``（``LEFT``、``CENTER``、``RIGHT``或``JUSTIFY``），默认``LEFT``；``wrap``默认``false``，不开启时长行会直接超出盒子；
 * 文字颜色和其它文字组件一样来自``style { foreground = ... }``；
 * ``reset()``恢复构造时的文字、``14``点、默认字体、``LEFT``对齐和``wrap = false``，并丢掉上一轮设置的样式/处理器。所以``TextArea("hello")``重置回``"hello"``，不是空文字。
+
+需要透明底、直接叠在背景上的文字时，可以改用顶层函数``bareTextArea``：
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.text.bareTextArea
+
+frame.layout {
+    bareTextArea("说明文字") { area ->
+        layout { height = 24.px }
+        style { foreground = Color.web("#162033") }
+        area.bold = true
+    }
+}
+```
+
+它只把``TextArea``自身的背景设为透明，然后执行``config``块；文字、字号、对齐等仍由``TextArea``的属性和样式控制。
 
 ## Link
 
@@ -381,6 +397,23 @@ frame.layout {
 * 填充带由组件样式表画成单一纯色，颜色来自``style { foreground = ... }``；没有设置``foreground``时使用组件默认的蓝色（``#0096c9``）。样式里的``background``画的是空白轨道，不是填充带；
 * ``reset()``恢复创建时的进度。
 
+不想重复写``layout``和``style``时，可以用顶层函数``progressBar``：
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.progress.progressBar
+
+frame.layout {
+    progressBar(
+        h = 14.px,
+        value = 40.percent,
+        tone = Color.web("#10b981"),
+        track = Color.web("#e8edf7"),
+    )
+}
+```
+
+``track``传``null``（默认）时不改写背景，让进度条继承所在表面的底色；``radius``默认``50.percent``，也可传入别的圆角。
+
 ## Div
 
 ``Div``是给窗口划出一块区域的普通盒子。它是绘制面而不是控件：除非样式给它填充，否则自己没有背景；但它会为内容**重定百分比基准**，并**裁剪**超出边界的内容。
@@ -495,6 +528,84 @@ frame.layout {
 * 百分比宽度按内缩后的宽度解析，比例为``100.percent``的子组件会独占一行；
 * 子组件的``width``/``height``写``em``时，按**子组件自己**的字号解析（通常是继承来的那个），
   因为它量的是自己的大小，不是``FlexBox``的。
+
+用顶层函数``flexFlow``可以直接画一段固定行高、带内边距和间距的流式行：
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.container.flexFlow
+
+frame.layout {
+    flexFlow(
+        rowHeight = 132.px,
+        justify = Justify.START,
+        align = Align.CENTER,
+        gap = 10.0,
+        fill = Color.web("#f8fafc"),
+        borderColor = Color.web("#e4e9f2"),
+    ) {
+        repeat(4) { index ->
+            draw(Button("Item ${index + 1}")) {
+                layout {
+                    width = 110.px
+                    height = 42.px
+                }
+            }
+        }
+    }
+}
+```
+
+``fill``和``borderColor``传``null``（默认）时不填充、不描边；``pad``默认``12.0``，``radius``默认``12.px``。
+
+## Card
+
+``Card``是一个带圆角、内边距和纵向间距的面板，用来把一组相关内容框在一起。它本身是一个[FlexBox](#flexbox)，所以``gap``、``justify``、``align``以及所有``FlexBox``的布局规则都照常可用；在此基础上，它把卡片常用的外观预先设置好，并提供``text``和``button``两个成员方法：
+
+* ``fill``——背景色，默认白色；
+* ``borderColor``——1像素描边颜色，传``null``则不描边；默认``#e4e9f2``；
+* ``pad``——四边内边距，默认``18.0``像素；
+* ``gap``——子组件之间的间距，默认``8.0``像素；
+* ``corner``——圆角，默认``16.px``。
+
+导入：
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.container.Card
+import com.github.kusa233.ovatoxin.widget.container.card
+```
+
+直接使用组件时，``text``和``button``画到当前这张卡片里：
+
+```kotlin
+frame.layout {
+    draw(Card(h = 180.px)) { card ->
+        card.text("今日概览", h = 28.px, size = 19.0, bold = true)
+        card.text("这段说明会自动换行。", h = 36.px, size = 13.0, wrap = true)
+        card.button("开始探索") {
+            println("clicked")
+        }
+    }
+}
+```
+
+当卡片内容直接写成一个块时，用``card(...)``工厂更短；它返回的仍然是``Card``，所以之后仍可绑定状态或设置``onClick``：
+
+```kotlin
+frame.layout {
+    card(h = 180.px) {
+        text("今日概览", h = 28.px, size = 19.0, bold = true)
+        button("开始探索")
+    }
+}
+```
+
+规则：
+
+* ``Card``是``FlexBox``，``layout { ... }``照常决定它自己的位置和大小，卡片内百分比相对卡片解析；
+* ``text``和``button``只是往卡片里``draw``子组件的便捷写法；需要分割线、行布局时，仍可在卡片体内直接``draw(FlexBox())``、``draw(Div())``等；
+* 构造时给出的``fill``、``borderColor``、``pad``、``gap``、``corner``会被``reset()``恢复，所以状态驱动的重绘不会把卡片变回普通的白色``FlexBox``；
+* ``text``和``button``的默认值面向卡片：文字默认深色且背景透明，按钮默认蓝底白字；都可以按参数覆盖；
+* ``card(...)``里的``text(...)``/``button(...)``与``Card``的成员方法使用同一套默认值。
 
 ## TabBar 与 TabPane
 

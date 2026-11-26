@@ -1,10 +1,13 @@
 package com.github.kusa233.ovatoxin.widget.text
 
 import com.github.kusa233.ovatoxin.component.Component
+import com.github.kusa233.ovatoxin.component.DrawScope
+import com.github.kusa233.ovatoxin.component.SurfaceScope
 import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.layout.px
 import javafx.scene.Node
 import javafx.scene.control.Label
+import javafx.scene.paint.Color
 import javafx.scene.text.Font
 import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
@@ -206,4 +209,37 @@ class TextArea(text: String = "") : Component<TextArea>() {
          */
         const val DEFAULT_FONT_SIZE: Double = Length.DEFAULT_FONT_SIZE
     }
+}
+
+/**
+ * Draws a [TextArea] whose own box is transparent, so the text sits directly on whatever surface it
+ * is drawn into instead of on a white rectangle.
+ *
+ * The transparent fill is part of the draw block itself, not an afterthought, so a state-bound
+ * [TextArea] keeps it on every redraw as well.
+ *
+ * ```kotlin
+ * frame.layout {
+ *     bareTextArea("Caption") { label ->
+ *         layout { width = 100.percent; height = 24.px }
+ *         style { foreground = Color.web("#162033") }
+ *         label.bold = true
+ *     }
+ * }
+ * ```
+ *
+ * @param content the initial text; empty by default.
+ * @param config an optional block that receives the created area, for layout, style and text
+ *   settings that the surrounding page needs.
+ */
+fun SurfaceScope<*>.bareTextArea(
+    content: String = "",
+    config: DrawScope<TextArea>.(TextArea) -> Unit = {},
+): TextArea = draw(TextArea(content)) { area ->
+    style {
+        background {
+            color = Color.TRANSPARENT
+        }
+    }
+    config(area)
 }

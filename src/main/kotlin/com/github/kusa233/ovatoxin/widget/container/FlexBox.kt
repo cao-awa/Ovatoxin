@@ -6,10 +6,14 @@ import com.github.kusa233.ovatoxin.component.Container
 import com.github.kusa233.ovatoxin.component.ContentBox
 import com.github.kusa233.ovatoxin.component.Size
 import com.github.kusa233.ovatoxin.component.Slot
+import com.github.kusa233.ovatoxin.component.SurfaceScope
 import com.github.kusa233.ovatoxin.layout.Length
+import com.github.kusa233.ovatoxin.layout.percent
+import com.github.kusa233.ovatoxin.layout.px
 import javafx.scene.Node
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Region
+import javafx.scene.paint.Color
 
 /**
  * A drawing surface that lays its children out in lines instead of at absolute positions.
@@ -361,5 +365,72 @@ open class FlexBox : ComponentDrawable<FlexBox>() {
         override fun computeMinWidth(height: Double): Double = computePrefWidth(height)
 
         override fun computeMinHeight(width: Double): Double = computePrefHeight(width)
+    }
+}
+
+/**
+ * Draws a [FlexBox] that fills the content width, has a fixed [rowHeight] and keeps [gap] between
+ * its children — the usual shape of a wrapping row inside a page.
+ *
+ * The helper only supplies the frame: the children are still declared in the [body] with the normal
+ * [FlexBox.layout], so a `flexFlow` can hold cards, buttons or anything else. [fill] and
+ * [borderColor] are optional, which leaves the surface transparent when they are `null`.
+ *
+ * ```kotlin
+ * frame.layout {
+ *     flexFlow(rowHeight = 132.px, justify = Justify.START, align = Align.CENTER) {
+ *         repeat(4) { index ->
+ *             draw(Button("Item $index")) { layout { width = 120.px; height = 48.px } }
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * @param rowHeight the height of the row.
+ * @param justify how leftover room on a line is shared; [Justify.START] by default.
+ * @param align where a child sits inside its line; [Align.START] by default.
+ * @param gap the space between children and lines, in pixels.
+ * @param pad the inset on all four sides, in pixels.
+ * @param fill the background colour, or `null` for a transparent row.
+ * @param borderColor the one-pixel outline colour, or `null` for no outline.
+ * @param radius the corner radius of the row.
+ * @param body declares the children of the row.
+ */
+fun SurfaceScope<*>.flexFlow(
+    rowHeight: Length,
+    justify: Justify = Justify.START,
+    align: Align = Align.START,
+    gap: Double = 10.0,
+    pad: Double = 12.0,
+    fill: Color? = null,
+    borderColor: Color? = null,
+    radius: Length = 12.px,
+    body: SurfaceScope<FlexBox>.() -> Unit,
+): FlexBox = draw(FlexBox()) { flow ->
+    layout {
+        width = 100.percent
+        height = rowHeight
+        hPadding = pad.px
+        vPadding = pad.px
+    }
+    style {
+        if (fill != null) {
+            background {
+                color = fill
+            }
+        }
+        if (borderColor != null) {
+            border {
+                size = 1.px
+                color = borderColor
+            }
+        }
+        corner = radius
+    }
+    flow.gap = gap.px
+    flow.justify = justify
+    flow.align = align
+    flow.layout {
+        body()
     }
 }

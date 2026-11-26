@@ -7,7 +7,7 @@
 * Text and display: [Label](#label), [TextArea](#textarea), [Link](#link)
 * Actions and input: [Button](#button), [TextField](#textfield), [CheckBox](#checkbox), [ComboBox](#combobox)
 * Collections and progress: [ListView](#listview), [ProgressBar](#progressbar)
-* Layout: [Div](#div), [FlexBox](#flexbox), [TabBar and TabPane](#tabbar-and-tabpane)
+* Layout: [Div](#div), [FlexBox](#flexbox), [Card](#card), [TabBar and TabPane](#tabbar-and-tabpane)
 
 ## Common component behaviour
 
@@ -111,6 +111,22 @@ Rules:
 * ``align`` is a JavaFX ``TextAlignment`` (``LEFT``, ``CENTER``, ``RIGHT`` or ``JUSTIFY``) and defaults to ``LEFT``; ``wrap`` defaults to ``false``, so long lines run past the box unless it is enabled;
 * the text colour comes from ``style { foreground = ... }`` like every other text component;
 * ``reset()`` restores the constructor text, ``14`` points, the default family, ``LEFT`` alignment, ``wrap = false`` and drops the style/handlers set in the previous pass. ``TextArea("hello")`` therefore resets to ``"hello"``, not to empty text.
+
+When the text should sit directly on the surrounding surface, use the top-level ``bareTextArea`` helper:
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.text.bareTextArea
+
+frame.layout {
+    bareTextArea("A caption") { area ->
+        layout { height = 24.px }
+        style { foreground = Color.web("#162033") }
+        area.bold = true
+    }
+}
+```
+
+It only makes the ``TextArea``'s own box transparent and then runs the ``config`` block; the text, size, alignment and so on still come from the area's properties and style.
 
 ## Link
 
@@ -382,6 +398,23 @@ Rules:
 * the filled band is drawn by the component stylesheet in a single flat colour, using ``style { foreground = ... }``; when no foreground is set it uses the widget's default blue (``#0096c9``). The ``background`` of the style paints the empty part of the track, not the filled part;
 * ``reset()`` restores the progress the bar was created with.
 
+To avoid repeating the ``layout`` and ``style`` blocks, use the top-level ``progressBar`` helper:
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.progress.progressBar
+
+frame.layout {
+    progressBar(
+        h = 14.px,
+        value = 40.percent,
+        tone = Color.web("#10b981"),
+        track = Color.web("#e8edf7"),
+    )
+}
+```
+
+A ``track`` of ``null`` (the default) leaves the background untouched, so the bar inherits the surface it is drawn on; ``radius`` defaults to ``50.percent``.
+
 ## Div
 
 ``Div`` is a plain box that frames a region of the window. It is a drawing surface, not a widget: it has no fill of its own unless a style gives it one, but it **rescopes percentages** for its content and **clips** anything that leaves its bounds.
@@ -494,6 +527,84 @@ Rules:
   Lines still stack downward one after another, independently of ``align``;
 * Percentage widths resolve against the inset width, so a child at ``100.percent`` takes a whole line by itself;
 * When a child's ``width``/``height`` is written in ``em``, it resolves against **the child's own** font size (usually the inherited one), because it measures the child's own size, not the ``FlexBox``'s.
+
+The top-level ``flexFlow`` helper draws a flow row with a fixed row height, padding and spacing in one call:
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.container.flexFlow
+
+frame.layout {
+    flexFlow(
+        rowHeight = 132.px,
+        justify = Justify.START,
+        align = Align.CENTER,
+        gap = 10.0,
+        fill = Color.web("#f8fafc"),
+        borderColor = Color.web("#e4e9f2"),
+    ) {
+        repeat(4) { index ->
+            draw(Button("Item ${index + 1}")) {
+                layout {
+                    width = 110.px
+                    height = 42.px
+                }
+            }
+        }
+    }
+}
+```
+
+A ``fill`` or ``borderColor`` of ``null`` (the default) leaves that part undrawn; ``pad`` defaults to ``12.0`` and ``radius`` to ``12.px``.
+
+## Card
+
+``Card`` is a rounded panel with padding and a vertical gap, used to group related content. It is a [FlexBox](#flexbox), so ``gap``, ``justify``, ``align`` and every FlexBox layout rule still apply; on top of that it seeds the look a card usually needs and offers two member methods, ``text`` and ``button``:
+
+* ``fill`` — the background colour, white by default;
+* ``borderColor`` — the one-pixel outline colour, or ``null`` for no outline; defaults to ``#e4e9f2``;
+* ``pad`` — the inset on all four sides, ``18.0`` pixels by default;
+* ``gap`` — the space between two children, ``8.0`` pixels by default;
+* ``corner`` — the corner radius, ``16.px`` by default.
+
+Imports:
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.container.Card
+import com.github.kusa233.ovatoxin.widget.container.card
+```
+
+Used directly, ``text`` and ``button`` draw their children into that card:
+
+```kotlin
+frame.layout {
+    draw(Card(h = 180.px)) { card ->
+        card.text("Overview", h = 28.px, size = 19.0, bold = true)
+        card.text("This sentence wraps onto more than one line.", h = 36.px, size = 13.0, wrap = true)
+        card.button("Explore") {
+            println("clicked")
+        }
+    }
+}
+```
+
+When the body is written as a block, the ``card(...)`` factory is shorter; it still returns a real ``Card``, so the result can be bound to a state or given an ``onClick`` later:
+
+```kotlin
+frame.layout {
+    card(h = 180.px) {
+        text("Overview", h = 28.px, size = 19.0, bold = true)
+        button("Explore")
+    }
+}
+```
+
+Rules:
+
+* ``Card`` is a ``FlexBox``: ``layout { ... }`` still decides its own position and size, and percentages inside it resolve against the card;
+* ``text`` and ``button`` are only convenient ways to ``draw`` children into the card; when a divider or a row is needed, ``draw(FlexBox())``, ``draw(Div())`` and the rest of the DSL still work inside the body;
+* the constructor's ``fill``, ``borderColor``, ``pad``, ``gap`` and ``corner`` are restored by ``reset()``, so a state-driven redraw cannot turn the card back into a plain white ``FlexBox``;
+* the defaults of ``text`` and ``button`` are card-oriented: text is dark on a transparent background, and a button is blue with white text; both accept parameters to override them;
+* ``text(...)``/``button(...)`` inside ``card(...)`` share the same defaults as the ``Card`` member methods.
 
 ## TabBar and TabPane
 
