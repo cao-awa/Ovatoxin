@@ -6,6 +6,7 @@
 * 文字与展示：[Label](#label)、[TextArea](#textarea)、[Link](#link)
 * 操作与输入：[Button](#button)、[TextField](#textfield)、[CheckBox](#checkbox)、[ComboBox](#combobox)
 * 列表与进度：[ListView](#listview)、[ProgressBar](#progressbar)
+* 反馈与浮层：[Toast](#toast)
 * 布局：[Div](#div)、[FlexBox](#flexbox)、[Card](#card)、[TabBar 与 TabPane](#tabbar-与-tabpane)
 
 ## 组件通用行为
@@ -17,7 +18,7 @@
 * ``visible = false``会隐藏已经建好的组件，默认是``true``；
 * ``withState(state)``把组件绑定到一个[State](../usage/README_zh.md)：状态变化时重绘该组件，并且只重绘该组件；
 * 每次绘制块重新执行之前，``reset()``会把组件恢复到**创建时**的值——标题、URL、勾选状态、几何、样式以及上一轮设置过的处理器都会被还原；它不会改变组件的身份、节点或子组件，也会刻意保留``ListView.items``、``ComboBox.items``这类实时集合；
-* 没有自己样式的组件起始为白色填充（``Style.DEFAULT_COLOR``），在``style { foreground = ... }``设置之前文字使用工具包默认的深色；[Div](#div)按设计透明，[Link](#link)默认是蓝色。
+* 没有自己样式的组件起始为白色填充（``Style.DEFAULT_COLOR``），在``style { foreground = ... }``设置之前文字使用工具包默认的深色；[Div](#div)按设计透明，[Toast](#toast)的浮层也是透明的，[Link](#link)默认是蓝色。
 
 ## Label
 
@@ -649,3 +650,85 @@ pane.bind(two, TextArea()) {
 * ``windowDragEnabled = true``会让标签条的空白背景成为窗口拖拽手柄：在那里按下并拖动即可移动窗口，标签按钮和滚动条仍保持原本的点击与拖拽行为。无边框窗口（``Frame(titleBarEnabled = false)``）可用它把标签条当作标题栏来拖动窗口；该属性默认关闭，也可以通过``pane.windowDragEnabled``设置；
 * 设置``TabPane``的样式时，底层``TabBar``也会应用同样的样式：每次布局都会把背景、圆角、文字颜色和``transition``复制到``tab``，所以标签条与整个窗格外观一致。标签按钮在没有自行设置背景时不会涂自己的颜色，未选中的标签会透出窗格背景，而不是被控件默认的白色盖住。``selectColor { background = Color.WHITE; foreground = Color.BLACK }``只给选中的标签按钮涂上所选背景和文字颜色；未设置的``background``或``foreground``保留按钮自身或从窗格继承的外观。旧写法``pane.selectColor = Color.WHITE``仍然可用，但已标记为弃用且只能设置背景。``pane.selectionStyle``与``pane.tab.selectionStyle``是同一个对象，``pane.selectColor { }``与``pane.tab.selectColor { }``作用相同；
 * 写在``TabPane``样式里的``transition``也会传给标签按钮，所以切换标签时``selectColor``的变化会有过渡动画。若某个标签按钮自己设置了``transition``，则以按钮自己的为准。
+
+## Toast
+
+``Toast``是一层铺满所在表面的浮层：调用``show``后，一张圆角卡片淡入，停留指定的时间，再自动淡出。默认情况下这层浮层是透明且鼠标穿透的，适合提示“保存成功”“请求失败”这类不需要打断操作、也不该占据页面布局的消息。卡片可以只放一句话，也可以用``show { }``绘制任意组件；需要打断当前页面时，可用``dimOutside = true``把 Toast 外的区域压暗。
+
+``Toast``是一个**浮层**，不是参与页面排版的控件。把它画在需要覆盖的表面的最后一个子组件，通常就是整个窗口：
+
+```kotlin
+val toast = Toast()
+
+frame.layout {
+    draw(TabPane()) { /* 页面内容 */ }
+
+    // 最后绘制，浮在所有内容之上
+    draw(toast) {
+        layout {
+            width = 100.percent
+            height = 100.percent
+        }
+    }
+}
+
+toast.show("设置已保存")
+```
+
+在``SurfaceScope``里也可以用``toast()``工厂，它会自动把宽高设为``100.percent``：
+
+```kotlin
+val toast = toast(duration = 3.seconds)
+
+toast.show("普通消息")
+toast.show("保存成功：设置已更新。", tone = ToastTone.SUCCESS)
+toast.show(
+    message = "请求失败：请检查网络连接。",
+    tone = ToastTone.ERROR,
+    position = ToastPosition.TOP_CENTER,
+)
+toast.show("居中提示", position = ToastPosition.CENTER)
+
+// 卡片内容也可以是一个绘制块，组件用普通的 draw DSL 创建。
+toast.show(
+    duration = 5.seconds,
+    position = ToastPosition.CENTER,
+    tone = ToastTone.SUCCESS,
+    dimOutside = true,
+) {
+    text("组件内容 Toast", height = 24.px, size = 17.0, color = Color.WHITE, bold = true)
+    text("Toast 外会压暗，卡片里的按钮仍可点击。", height = 36.px, size = 12.5, color = Color.WHITE, wrap = true)
+    button(label = "知道了", width = 112.px, height = 34.px, fill = Color.WHITE) {
+        toast.dismiss()
+    }
+}
+```
+
+导入：
+
+```kotlin
+import com.github.kusa233.ovatoxin.layout.px
+import com.github.kusa233.ovatoxin.widget.container.button
+import com.github.kusa233.ovatoxin.widget.container.text
+import com.github.kusa233.ovatoxin.widget.feedback.Toast
+import com.github.kusa233.ovatoxin.widget.feedback.ToastPosition
+import com.github.kusa233.ovatoxin.widget.feedback.ToastTone
+import com.github.kusa233.ovatoxin.widget.feedback.toast
+import javafx.scene.paint.Color
+import kotlin.time.Duration.Companion.seconds
+```
+
+规则：
+
+* ``show(message, duration, tone, position, dimOutside)``的参数都有默认值：``duration``默认``2500.milliseconds``，``tone``默认``ToastTone.INFO``，``position``默认``ToastPosition.BOTTOM_CENTER``，``dimOutside``默认``false``；构造``Toast``时可以改默认值，每次调用``show``也可以覆盖其中任意一项；
+* ``tone``是``ToastTone(background, foreground)``，内置``INFO``、``SUCCESS``、``WARNING``、``ERROR``四种；需要品牌色时可以直接构造``ToastTone(Color.web("#4c8bf5"), Color.WHITE)``。它只影响卡片颜色，不影响文字、位置或时长；
+* ``position``是``TOP_START``、``TOP_CENTER``、``TOP_END``、``BOTTOM_START``、``BOTTOM_CENTER``、``BOTTOM_END``或``CENTER``之一，决定卡片在浮层里的位置；``CENTER``让卡片位于表面正中央，适合需要用户注意的确认提示；
+* 只传字符串时画的是普通文字卡片；调用带尾随 lambda 的``show { }``则会把卡片内容交给一个``FlexBox``绘制面，可以在其中用``text(...)``、``button(...)``、``draw(...)``等 DSL 放置任意组件。绘制块在 JavaFX 应用线程上、卡片创建时执行，并且只在``show``被调用后才执行；
+* 组件内容卡片的宽度固定为``420px``的内容区，高度随内容增长；卡片内的按钮可以点击，即使没有开启遮罩；
+* ``dimOutside = true``会在卡片下方铺一层半透明遮罩，把 Toast 外的页面压暗，同时让浮层暂时接收输入、挡住页面其余部分的点击；卡片本身仍可正常操作。普通文字 Toast 在``dimOutside = false``时仍保持鼠标穿透；
+* 连续调用``show``是“最新的覆盖旧的”：新消息替换当前卡片并重新计时，不会排队，也不会同时叠出多张卡片；
+* ``duration``为``Duration.INFINITE``（或非正数）时卡片不会自动消失，直到下一次``show``或调用``dismiss()``；``dismiss()``会停止计时并让当前卡片淡出；
+* ``isShowing``表示当前是否有消息，``message``、``currentTone``、``currentPosition``和``currentDimOutside``读取当前消息的状态；内容卡片没有字符串消息，此时``message``为``null``。这些状态在调用``show``时立即更新，不依赖节点是否已经创建；
+* ``show``和``dismiss``可以从任意线程调用：工具包尚未启动时只记录请求，节点、绘制块和动画都在 JavaFX 应用线程上创建；
+* ``reset()``会把浮层恢复成透明背景，但会保留当前正在显示的消息，因此页面重绘不会误删提示；
+* ``Toast``没有进入页面布局，不占位置，也不影响相邻组件的大小；需要常驻在页面里的提示，应使用普通的[Card](#card)或[TextArea](#textarea)，而不是``Toast``。

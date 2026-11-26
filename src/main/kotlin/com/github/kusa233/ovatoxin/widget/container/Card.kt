@@ -49,8 +49,8 @@ import javafx.scene.text.TextAlignment
  * [Button][com.github.kusa233.ovatoxin.widget.action.Button]: a card drawn again after a redraw
  * starts from its own fill, padding and gap instead of the library defaults.
  *
- * @param h the height of the card; a card is normally given an explicit height.
- * @param w the width of the card, `100.percent` (the full content width) by default.
+ * @param height the height of the card; a card is normally given an explicit height.
+ * @param width the width of the card, `100.percent` (the full content width) by default.
  * @param fill the background colour; white by default.
  * @param borderColor the colour of the one-pixel outline, or `null` for no outline.
  * @param pad the inset kept on all four sides, `18.0` pixels by default.
@@ -59,8 +59,8 @@ import javafx.scene.text.TextAlignment
  */
 @OvatoxinDsl
 class Card(
-    h: Length,
-    w: Length = 100.percent,
+    height: Length,
+    width: Length = 100.percent,
     fill: Color = DEFAULT_FILL,
     borderColor: Color? = DEFAULT_BORDER,
     pad: Double = DEFAULT_PADDING,
@@ -68,8 +68,8 @@ class Card(
     corner: Length = DEFAULT_CORNER,
 ) : FlexBox() {
 
-    private val cardHeight: Length = h
-    private val cardWidth: Length = w
+    private val cardHeight: Length = height
+    private val cardWidth: Length = width
     private val cardFill: Color = fill
     private val cardBorder: Color? = borderColor
     private val cardPadding: Double = pad
@@ -96,8 +96,8 @@ class Card(
         wrap: Boolean = false,
     ): TextArea = surface().drawText(
         content = content,
-        w = w,
-        h = h,
+        width = w,
+        height = h,
         size = size,
         tone = color,
         bold = bold,
@@ -124,10 +124,10 @@ class Card(
         onClick: Button.() -> Unit = {},
     ): Button = surface().drawButton(
         label = label,
-        w = w,
-        h = h,
+        width = w,
+        height = h,
         fill = fill,
-        fg = fg,
+        foreground = fg,
         borderColor = borderColor,
         radius = radius,
         onClick = onClick,
@@ -208,47 +208,47 @@ class Card(
  * ```
  */
 fun SurfaceScope<*>.card(
-    h: Length,
-    w: Length = 100.percent,
+    height: Length,
+    width: Length = 100.percent,
     fill: Color = Card.DEFAULT_FILL,
     borderColor: Color? = Card.DEFAULT_BORDER,
     pad: Double = Card.DEFAULT_PADDING,
     gap: Double = Card.DEFAULT_GAP,
     corner: Length = Card.DEFAULT_CORNER,
     body: SurfaceScope<FlexBox>.() -> Unit,
-): Card = draw(Card(h, w, fill, borderColor, pad, gap, corner)) { card ->
+): Card = draw(Card(height, width, fill, borderColor, pad, gap, corner)) { card ->
     card.layout { body() }
 }
 
 /** The public spelling of the body DSL: `text(...)` inside a [card] block. */
 fun SurfaceScope<*>.text(
     content: String,
-    w: Length? = 100.percent,
-    h: Length = 20.px,
+    width: Length? = 100.percent,
+    height: Length = 20.px,
     size: Double = 14.0,
     color: Color = Card.DEFAULT_TEXT_COLOR,
     bold: Boolean = false,
     align: TextAlignment = TextAlignment.LEFT,
     wrap: Boolean = false,
-): TextArea = drawText(content, w, h, size, color, bold, align, wrap)
+): TextArea = drawText(content, width, height, size, color, bold, align, wrap)
 
 /** The public spelling of the body DSL: `button(...)` inside a [card] block. */
 fun SurfaceScope<*>.button(
     label: String,
-    w: Length = 120.px,
-    h: Length = 40.px,
+    width: Length = 120.px,
+    height: Length = 40.px,
     fill: Color = Card.DEFAULT_BUTTON_FILL,
-    fg: Color = Card.DEFAULT_BUTTON_TEXT,
+    foreground: Color = Card.DEFAULT_BUTTON_TEXT,
     borderColor: Color? = null,
     radius: Length = 10.px,
     onClick: Button.() -> Unit = {},
-): Button = drawButton(label, w, h, fill, fg, borderColor, radius, onClick)
+): Button = drawButton(label, width, height, fill, foreground, borderColor, radius, onClick)
 
 /** Draws a transparent text area and applies the card-text defaults. */
 private fun SurfaceScope<*>.drawText(
     content: String,
-    w: Length?,
-    h: Length,
+    width: Length?,
+    height: Length,
     size: Double,
     tone: Color,
     bold: Boolean,
@@ -256,8 +256,8 @@ private fun SurfaceScope<*>.drawText(
     wrap: Boolean,
 ): TextArea = draw(TextArea(content)) { area ->
     layout {
-        width = w
-        height = h
+        this.width = width
+        this.height = height
     }
     style {
         background {
@@ -274,23 +274,23 @@ private fun SurfaceScope<*>.drawText(
 /** Draws a flat button and applies the card-button defaults. */
 private fun SurfaceScope<*>.drawButton(
     label: String,
-    w: Length,
-    h: Length,
+    width: Length,
+    height: Length,
     fill: Color,
-    fg: Color,
+    foreground: Color,
     borderColor: Color?,
     radius: Length,
     onClick: Button.() -> Unit,
 ): Button = draw(Button(label)) { button ->
     layout {
-        width = w
-        height = h
+        this.width = width
+        this.height = height
     }
     style {
         background {
             color = fill
         }
-        foreground = fg
+        this.foreground = foreground
         corner = radius
         fontSize = 14.px
         if (borderColor != null) {

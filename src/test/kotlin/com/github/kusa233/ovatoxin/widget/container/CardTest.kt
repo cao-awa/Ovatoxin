@@ -22,7 +22,7 @@ class CardTest {
 
     @Test
     fun `a card starts with its documented look`() {
-        val card = Card(h = 180.px, w = 50.percent)
+        val card = Card(height = 180.px, width = 50.percent)
 
         Frame().layout { draw(card) {} }
 
@@ -42,8 +42,8 @@ class CardTest {
     @Test
     fun `constructor values replace the defaults and survive a reset`() {
         val card = Card(
-            h = 120.px,
-            w = 80.percent,
+            height = 120.px,
+            width = 80.percent,
             fill = Color.web("#101b33"),
             borderColor = null,
             pad = 10.0,
@@ -81,7 +81,7 @@ class CardTest {
         var built: Card? = null
 
         frame.layout {
-            built = card(h = 140.px, w = 70.percent, gap = 6.0) {
+            built = card(height = 140.px, width = 70.percent, gap = 6.0) {
                 draw(TextArea("inside"))
             }
         }
@@ -138,9 +138,9 @@ class CardTest {
         val frame = Frame()
 
         frame.layout {
-            card(h = 150.px) {
-                text("说明", h = 24.px)
-                button("确定", w = 72.px)
+            card(height = 150.px) {
+                text("说明", height = 24.px)
+                button("确定", width = 72.px)
             }
         }
 
@@ -155,7 +155,7 @@ class CardTest {
         val frame = Frame()
 
         frame.layout {
-            card(h = 260.px) {
+            card(height = 260.px) {
                 draw(FlexBox()) { row ->
                     layout {
                         width = 100.percent
@@ -163,8 +163,8 @@ class CardTest {
                     }
                     row.gap = 8.px
                     row.layout {
-                        text("left", w = 100.px)
-                        text("right", w = 100.px)
+                        text("left", width = 100.px)
+                        text("right", width = 100.px)
                     }
                 }
             }

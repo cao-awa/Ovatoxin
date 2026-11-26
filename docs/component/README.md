@@ -7,6 +7,7 @@
 * Text and display: [Label](#label), [TextArea](#textarea), [Link](#link)
 * Actions and input: [Button](#button), [TextField](#textfield), [CheckBox](#checkbox), [ComboBox](#combobox)
 * Collections and progress: [ListView](#listview), [ProgressBar](#progressbar)
+* Feedback and overlays: [Toast](#toast)
 * Layout: [Div](#div), [FlexBox](#flexbox), [Card](#card), [TabBar and TabPane](#tabbar-and-tabpane)
 
 ## Common component behaviour
@@ -18,7 +19,7 @@ Every component in this chapter is a ``Component``, so the following rules apply
 * ``visible = false`` hides an already-built component; it defaults to ``true``.
 * ``withState(state)`` binds the component to a [State](../usage/README.md): the component is redrawn when the state changes, and only that component is redrawn.
 * Immediately before a draw block runs again, ``reset()`` restores the values the component was **created** with — caption, URL, checked state, geometry, style and handlers that were set during the previous pass. It does not reset the component's identity, its node or its children, and it deliberately leaves live collections such as ``ListView.items`` and ``ComboBox.items`` alone.
-* A component with no style of its own starts with a white fill (``Style.DEFAULT_COLOR``) and leaves text at the toolkit's default dark colour until ``style { foreground = ... }`` sets one; [Div](#div) is the transparent exception, and [Link](#link) is blue by default.
+* A component with no style of its own starts with a white fill (``Style.DEFAULT_COLOR``) and leaves text at the toolkit's default dark colour until ``style { foreground = ... }`` sets one; [Div](#div) is transparent by design, the [Toast](#toast) overlay is transparent too, and [Link](#link) is blue by default.
 
 ## Label
 
@@ -648,3 +649,85 @@ Rules:
 * ``windowDragEnabled = true`` makes the empty background of the bar act as a window drag handle: press and drag there to move the window. Tabs and scroll bars keep their normal clicks and drags. Use it when a frameless window (``Frame(titleBarEnabled = false)``) should be moved by its tab bar; it is off by default and is also available as ``pane.windowDragEnabled``;
 * A style set on the pane is applied to its bar too: the pane copies its background, corner radius, text colour and transition onto ``tab`` on every layout pass, so the strip shares the pane's appearance. A tab button has no fill of its own unless it sets one, so an unselected tab lets the pane's background show through instead of covering it with the control's default white. ``selectColor { background = Color.WHITE; foreground = Color.BLACK }`` paints the background and text colour of the selected tab only; an unset ``background`` or ``foreground`` keeps the button's own or inherited appearance. The older ``pane.selectColor = Color.WHITE`` property still works but is deprecated and sets only the background. ``pane.selectionStyle`` and ``pane.tab.selectionStyle`` are the same object, and ``pane.selectColor { }`` is equivalent to ``pane.tab.selectColor { }``;
 * A ``transition`` written in the pane style reaches its tab buttons as well, so the ``selectColor`` switch animates when tabs change. A transition set on an individual tab button takes precedence over the pane's.
+
+## Toast
+
+``Toast`` is a layer that fills the surface it is drawn into. Calling ``show`` fades in a rounded card, leaves it there for the requested duration, and fades it out again. By default the layer is transparent and mouse-transparent, which suits messages such as "saved" or "request failed" that should not interrupt the user or take up room in the page layout. The card can hold a single sentence or any component drawn with the ``show { }`` block; when the page should be interrupted, ``dimOutside = true`` dims everything outside the toast.
+
+A ``Toast`` is an **overlay**, not a widget that participates in page layout. Draw it as the last child of the surface it should cover, usually the whole window:
+
+```kotlin
+val toast = Toast()
+
+frame.layout {
+    draw(TabPane()) { /* page content */ }
+
+    // Drawn last, so it floats above everything else.
+    draw(toast) {
+        layout {
+            width = 100.percent
+            height = 100.percent
+        }
+    }
+}
+
+toast.show("Settings saved")
+```
+
+Inside a ``SurfaceScope`` the ``toast()`` factory does the full-size geometry for you:
+
+```kotlin
+val toast = toast(duration = 3.seconds)
+
+toast.show("An ordinary message")
+toast.show("Saved: settings updated.", tone = ToastTone.SUCCESS)
+toast.show(
+    message = "Request failed: check your connection.",
+    tone = ToastTone.ERROR,
+    position = ToastPosition.TOP_CENTER,
+)
+toast.show("Centred message", position = ToastPosition.CENTER)
+
+// The card body may also be a drawing block; components use the ordinary draw DSL.
+toast.show(
+    duration = 5.seconds,
+    position = ToastPosition.CENTER,
+    tone = ToastTone.SUCCESS,
+    dimOutside = true,
+) {
+    text("A toast with components", height = 24.px, size = 17.0, color = Color.WHITE, bold = true)
+    text("The page is dimmed; the button inside the card still works.", height = 36.px, size = 12.5, color = Color.WHITE, wrap = true)
+    button(label = "Got it", width = 112.px, height = 34.px, fill = Color.WHITE) {
+        toast.dismiss()
+    }
+}
+```
+
+Imports:
+
+```kotlin
+import com.github.kusa233.ovatoxin.layout.px
+import com.github.kusa233.ovatoxin.widget.container.button
+import com.github.kusa233.ovatoxin.widget.container.text
+import com.github.kusa233.ovatoxin.widget.feedback.Toast
+import com.github.kusa233.ovatoxin.widget.feedback.ToastPosition
+import com.github.kusa233.ovatoxin.widget.feedback.ToastTone
+import com.github.kusa233.ovatoxin.widget.feedback.toast
+import javafx.scene.paint.Color
+import kotlin.time.Duration.Companion.seconds
+```
+
+Rules:
+
+* Every parameter of ``show(message, duration, tone, position, dimOutside)`` has a default: ``duration`` is ``2500.milliseconds``, ``tone`` is ``ToastTone.INFO``, ``position`` is ``ToastPosition.BOTTOM_CENTER`` and ``dimOutside`` is ``false``. The constructor sets the defaults and each ``show`` call may override any of them;
+* ``tone`` is a ``ToastTone(background, foreground)``; ``INFO``, ``SUCCESS``, ``WARNING`` and ``ERROR`` are provided. A brand colour can be created directly with ``ToastTone(Color.web("#4c8bf5"), Color.WHITE)``. A tone changes the card colours only — not the text, position or duration;
+* ``position`` is one of ``TOP_START``, ``TOP_CENTER``, ``TOP_END``, ``BOTTOM_START``, ``BOTTOM_CENTER``, ``BOTTOM_END`` and ``CENTER``; it places the card inside the overlay, while the overlay itself always fills the surface. ``CENTER`` puts the card in the exact middle of the surface, which suits a confirmation that needs attention;
+* A string draws the ordinary text card. The trailing-lambda ``show { }`` overload instead receives a ``FlexBox`` drawing surface, so the card may contain any components built with ``text(...)``, ``button(...)``, ``draw(...)`` and the rest of the DSL. The block runs on the JavaFX application thread when the card is created, not when ``show`` is called;
+* A custom-content card has a fixed ``420px`` content width and grows vertically with its content; buttons inside it work even without a scrim;
+* ``dimOutside = true`` puts a translucent scrim under the card, dims the page outside the toast, and makes the overlay receive input so the rest of the page cannot be clicked. The card itself stays interactive. With ``dimOutside = false`` an ordinary text toast remains mouse-transparent;
+* Repeated ``show`` calls follow "the latest wins": the new message replaces the current card and restarts its timer. There is no queue and no stack of simultaneous cards;
+* With ``duration = Duration.INFINITE`` (or any non-positive duration) the card stays until the next ``show`` or a call to ``dismiss()``; ``dismiss()`` stops the timer and fades the current card out;
+* ``isShowing`` reports whether a message is active, while ``message``, ``currentTone``, ``currentPosition`` and ``currentDimOutside`` read the current state. A custom-content toast has no string message, so ``message`` is ``null``. These values update as soon as ``show`` is called, whether or not the node exists yet;
+* ``show`` and ``dismiss`` may be called from any thread. Before the toolkit is running they only record the request; the node, drawing block and animations are created on the JavaFX application thread;
+* ``reset()`` restores the transparent layer but deliberately keeps an active message, so a page redraw cannot make a toast disappear by accident;
+* A ``Toast`` takes no space in the page layout and does not affect the size of its neighbours. For a persistent notice that belongs in the page, use an ordinary [Card](#card) or [TextArea](#textarea) instead.
