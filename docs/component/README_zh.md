@@ -364,6 +364,7 @@ frame.layout {
             background {
                 color = Color.web("#dbeafe")
             }
+            foreground = Color.web("#4c8bf5")
         }
         bar.progress = progress.value
     }.withState(progress)
@@ -376,8 +377,8 @@ frame.layout {
 * ``progress()``读取比例；``progress(0.4)``和``progress(40.percent)``设置进度；``progress``属性用``Percent``表达，所以``bar.progress = 40.percent``是属性写法，``bar.progress >= 100.percent``是循环判断完成的方式。像素不是比例，写成进度根本编译不过；
 * 越界的值会被夹到范围内而不是拒绝，这适合循环偶尔多报的情况：``1.2``显示满条，``-1.0``显示空条。``NaN``按空处理；
 * 没有百分比标签，也没有内置动画。像示例那样用[State](../usage/README_zh.md)驱动进度条，或用定时器更新状态；进度条本身只显示收到的值；
-* 非零``corner``会圆角化轨道，并把填充带裁剪到同一轮廓。默认填充是组件白色，所以要让指示条可读，通常要设置背景和圆角；
-* 填充带由组件样式表画成单一纯色（``#0096c9``），目前没有重新着色的内置属性；样式里的``background``画的是空白轨道，不是填充带；
+* 非零``corner``会圆角化轨道，并把填充带裁剪到同一轮廓。样式里的``background``画空白轨道，``foreground``画已经过的填充部分，两者一起设置才能让指示条清晰可读；
+* 填充带由组件样式表画成单一纯色，颜色来自``style { foreground = ... }``；没有设置``foreground``时使用组件默认的蓝色（``#0096c9``）。样式里的``background``画的是空白轨道，不是填充带；
 * ``reset()``恢复创建时的进度。
 
 ## Div

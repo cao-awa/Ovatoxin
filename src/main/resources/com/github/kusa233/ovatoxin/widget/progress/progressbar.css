@@ -21,6 +21,8 @@
 .ovatoxin-progress {
     -fx-padding: 0;
     -fx-border-width: 0;
+    /* The band colour a bar with no foreground uses; a style's foreground overrides it inline. */
+    -fx-progress-fill: #0096c9;
 }
 
 /* The empty part of the bar: transparent, so the bar's own fill shows through unchanged. */
@@ -33,13 +35,13 @@
 
 /* The filled part: one solid colour, one layer, edge to edge. */
 .ovatoxin-progress > .bar {
-    -fx-background-color: #0096c9;
+    -fx-background-color: -fx-progress-fill;
     -fx-background-insets: 0;
     -fx-background-radius: 0;
 }
 
 /* Indeterminate progress slides a gradient along the bar in Modena; keep it one colour too. */
 .ovatoxin-progress:indeterminate > .bar {
-    -fx-background-color: #0096c9;
+    -fx-background-color: -fx-progress-fill;
     -fx-background-insets: 0;
 }

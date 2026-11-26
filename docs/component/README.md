@@ -365,6 +365,7 @@ frame.layout {
             background {
                 color = Color.web("#dbeafe")
             }
+            foreground = Color.web("#4c8bf5")
         }
         bar.progress = progress.value
     }.withState(progress)
@@ -377,8 +378,8 @@ Rules:
 * ``progress()`` reads the fraction; ``progress(0.4)`` and ``progress(40.percent)`` set it; the ``progress`` property speaks in ``Percent``, so ``bar.progress = 40.percent`` is the property form and ``bar.progress >= 100.percent`` is how a loop tests completion. A pixel is not a fraction and never compiles as progress;
 * values outside the range are clamped rather than rejected, which is useful when a loop over-reports: ``1.2`` shows a full bar and ``-1.0`` an empty one. ``NaN`` is treated as empty;
 * there is no percentage label and no built-in animation. Drive the bar from a [State](../usage/README.md) as in the example, or from a timer that updates the state; the bar itself only displays the value it is given;
-* a non-zero ``corner`` rounds the track and clips the filled band to the same outline. The default fill is the component white, so set a background and corner to make the indicator readable;
-* the filled band is drawn by the component stylesheet in a single flat colour (``#0096c9``); there is no built-in property for recolouring it. The ``background`` of the style paints the empty part of the track, not the filled part;
+* a non-zero ``corner`` rounds the track and clips the filled band to the same outline. The style's ``background`` paints the empty track and its ``foreground`` paints the filled band, so set both to make the indicator readable;
+* the filled band is drawn by the component stylesheet in a single flat colour, using ``style { foreground = ... }``; when no foreground is set it uses the widget's default blue (``#0096c9``). The ``background`` of the style paints the empty part of the track, not the filled part;
 * ``reset()`` restores the progress the bar was created with.
 
 ## Div

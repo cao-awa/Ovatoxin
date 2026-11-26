@@ -4,8 +4,10 @@ import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.style.StyleVisual
+import com.github.kusa233.ovatoxin.style.cssColor
 import javafx.scene.Node
 import javafx.scene.layout.Region
+import javafx.scene.paint.Color
 import javafx.scene.shape.Rectangle
 import javafx.scene.control.ProgressBar as FxProgressBar
 
@@ -52,8 +54,10 @@ import javafx.scene.control.ProgressBar as FxProgressBar
  * ```
  *
  * A `corner` in a [style][com.github.kusa233.ovatoxin.component.DrawScope.style] block rounds the
- * track, which is how the bar is meant to be dressed — the default fill is the same white a
- * component starts with, so a style is what makes it readable.
+ * track and clips the filled band to the same outline. The style's `background` paints the empty
+ * part of the track, while its `foreground` paints the part that has been filled; a bar without a
+ * foreground uses the widget's default blue band, so a background is what makes the empty part
+ * readable.
  */
 class ProgressBar(progress: Double = 0.0) : Component<ProgressBar>() {
 
@@ -165,11 +169,21 @@ class ProgressBar(progress: Double = 0.0) : Component<ProgressBar>() {
         applyOutline(this.styleSpec.cornerPixels(width, height, this.resolvedFontSize), width, height)
     }
 
-    /** Keeps the rounded outline in step with an animated corner radius. */
+    /** Keeps the rounded outline and the band colour in step with an animated style. */
     internal override fun onStyleFrame(visual: StyleVisual) {
         super.onStyleFrame(visual)
         val bar = this.builtNode as? Region ?: return
         applyOutline(visual.corner, bar.width, bar.height)
+        applyBandColor(visual.foreground)
+    }
+
+    /** Paints the filled part of the bar with [color], or leaves the stylesheet default. */
+    private fun applyBandColor(color: Color?) {
+        val bar = this.builtNode as? FxProgressBar ?: return
+        if (color == null) return
+        // The skin's `.bar` region paints from this looked-up colour, so the style's foreground
+        // reaches the filled part while the empty track keeps the style's background.
+        bar.style = bar.style + "-fx-progress-fill: " + cssColor(color) + ";"
     }
 
     /** Clips the bar to a rounded outline of [radius] pixels. */
