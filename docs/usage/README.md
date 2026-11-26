@@ -52,6 +52,24 @@ frame.layout {
 }
 ```
 
+## Size limits (minWidth / minHeight / maxWidth / maxHeight)
+
+Use ``minWidth``, ``minHeight``, ``maxWidth`` and ``maxHeight`` to bound the window while the user resizes it. The values are in pixels and can be passed to the constructor or set on the frame later:
+
+```kotlin
+val frame = Frame(
+    minWidth = 400.0,
+    minHeight = 300.0,
+    maxWidth = 1200.0,
+    maxHeight = 900.0,
+)
+
+// Also allowed after construction:
+frame.maxWidth = 1000.0
+```
+
+The minimums default to ``0`` and the maximums to ``Double.MAX_VALUE`` (unlimited). The limits apply to both decorated windows and borderless windows with custom resize handles.
+
 # Layout and rendering
 
 We will introduce Button first as an example; the API is explained in the following sections.

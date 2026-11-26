@@ -85,4 +85,45 @@ class FrameTest {
     fun `the constructor can start a frame without a title bar`() {
         assertFalse(Frame(titleBarEnabled = false).titleBarEnabled)
     }
+
+    @Test
+    fun `a frame has no explicit size limits by default`() {
+        val frame = Frame()
+
+        assertEquals(0.0, frame.minWidth)
+        assertEquals(0.0, frame.minHeight)
+        assertEquals(Double.MAX_VALUE, frame.maxWidth)
+        assertEquals(Double.MAX_VALUE, frame.maxHeight)
+    }
+
+    @Test
+    fun `the constructor configures the resize limits`() {
+        val frame = Frame(
+            minWidth = 320.0,
+            minHeight = 240.0,
+            maxWidth = 1280.0,
+            maxHeight = 800.0,
+        )
+
+        assertEquals(320.0, frame.minWidth)
+        assertEquals(240.0, frame.minHeight)
+        assertEquals(1280.0, frame.maxWidth)
+        assertEquals(800.0, frame.maxHeight)
+    }
+
+    @Test
+    fun `reset restores the constructor resize limits`() {
+        val frame = Frame(minWidth = 320.0, minHeight = 240.0, maxWidth = 1280.0, maxHeight = 800.0)
+        frame.minWidth = 400.0
+        frame.minHeight = 300.0
+        frame.maxWidth = 1000.0
+        frame.maxHeight = 700.0
+
+        frame.reset()
+
+        assertEquals(320.0, frame.minWidth)
+        assertEquals(240.0, frame.minHeight)
+        assertEquals(1280.0, frame.maxWidth)
+        assertEquals(800.0, frame.maxHeight)
+    }
 }

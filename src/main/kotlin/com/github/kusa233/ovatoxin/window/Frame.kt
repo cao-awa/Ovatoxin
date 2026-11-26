@@ -22,7 +22,8 @@ import javafx.stage.StageStyle
  * ```
  *
  * The size of the frame is the reference size for percentage based layouts of its children.
- * Percentages are resolved against the current window size and re-resolved on resize.
+ * Percentages are resolved against the current window size and re-resolved on resize. The user's
+ * resize range can be bounded with [minWidth], [minHeight], [maxWidth] and [maxHeight].
  *
  * A frame is a drawing surface like a
  * [Div][com.github.kusa233.ovatoxin.widget.container.Div] or a
@@ -39,11 +40,23 @@ class Frame(
     height: Double = DEFAULT_HEIGHT,
     /** Whether the window shows a title bar; pass `false` for a borderless window. */
     titleBarEnabled: Boolean = true,
+    /** The minimum window width in pixels while the user resizes it. */
+    minWidth: Double = 0.0,
+    /** The minimum window height in pixels while the user resizes it. */
+    minHeight: Double = 0.0,
+    /** The maximum window width in pixels while the user resizes it. */
+    maxWidth: Double = Double.MAX_VALUE,
+    /** The maximum window height in pixels while the user resizes it. */
+    maxHeight: Double = Double.MAX_VALUE,
 ) : ComponentDrawable<Frame>() {
 
     private val defaultTitle: String = title
     private val defaultWidth: Double = width
     private val defaultHeight: Double = height
+    private val defaultMinWidth: Double = minWidth
+    private val defaultMinHeight: Double = minHeight
+    private val defaultMaxWidth: Double = maxWidth
+    private val defaultMaxHeight: Double = maxHeight
 
     /** The title bar text of the window. */
     var title: String = title
@@ -64,6 +77,44 @@ class Frame(
         set(value) {
             field = value
             this.stage?.height = value
+        }
+
+    /**
+     * The minimum width the window may be resized to, in pixels.
+     *
+     * Defaults to `0`. Borderless windows still keep a small internal resize floor of 16 px, so
+     * this value cannot make a window collapse to nothing.
+     */
+    var minWidth: Double = minWidth
+        set(value) {
+            field = value
+            this.stage?.minWidth = value
+        }
+
+    /**
+     * The minimum height the window may be resized to, in pixels.
+     *
+     * Defaults to `0`. Borderless windows still keep a small internal resize floor of 16 px, so
+     * this value cannot make a window collapse to nothing.
+     */
+    var minHeight: Double = minHeight
+        set(value) {
+            field = value
+            this.stage?.minHeight = value
+        }
+
+    /** The maximum width the window may be resized to, in pixels. `Double.MAX_VALUE` means unlimited. */
+    var maxWidth: Double = maxWidth
+        set(value) {
+            field = value
+            this.stage?.maxWidth = value
+        }
+
+    /** The maximum height the window may be resized to, in pixels. `Double.MAX_VALUE` means unlimited. */
+    var maxHeight: Double = maxHeight
+        set(value) {
+            field = value
+            this.stage?.maxHeight = value
         }
 
     /** The underlying stage, or `null` before the first [show]. */
@@ -97,16 +148,20 @@ class Frame(
      * Restores the title and the size this frame was created with, plus the window surface colour,
      * and clears the [onClose] subscriptions.
      *
-     * The size is part of the defaults, so a live window is resized back to it; the listeners
-     * installed by [show] then keep the logical size in sync with the real one as usual. The title
-     * bar setting is window configuration, not part of the drawn defaults, so [titleBarEnabled] is
-     * left as it is.
+     * The size and the resize limits are part of the defaults, so a live window is resized back to
+     * them; the listeners installed by [show] then keep the logical size in sync with the real one
+     * as usual. The title bar setting is window configuration, not part of the drawn defaults, so
+     * [titleBarEnabled] is left as it is.
      */
     override fun reset() {
         super.reset()
         this.title = this.defaultTitle
         this.width = this.defaultWidth
         this.height = this.defaultHeight
+        this.minWidth = this.defaultMinWidth
+        this.minHeight = this.defaultMinHeight
+        this.maxWidth = this.defaultMaxWidth
+        this.maxHeight = this.defaultMaxHeight
         this.styleSpec.background { color = WINDOW_BACKGROUND }
         this.styleSpec.corner = 0.px
         this.closeHandlers.clear()
@@ -150,6 +205,12 @@ class Frame(
         val pane = this.root ?: (this.node as Pane)
         val stage = Stage()
         val scene = Scene(pane, this.width, this.height)
+        // Native decorated windows honour these directly; FramelessResizer also reads them so an
+        // undecorated window cannot be dragged past the same limits.
+        stage.minWidth = this.minWidth
+        stage.minHeight = this.minHeight
+        stage.maxWidth = this.maxWidth
+        stage.maxHeight = this.maxHeight
         if (!this.titleBarEnabled) {
             // A window's decorations are fixed once it is shown, so this must be decided here.
             stage.initStyle(StageStyle.UNDECORATED)

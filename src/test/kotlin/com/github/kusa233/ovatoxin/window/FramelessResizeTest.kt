@@ -92,6 +92,68 @@ class FramelessResizeTest {
     }
 
     @Test
+    fun `a right resize stops growing at the maximum width`() {
+        val bounds = resizedBounds(
+            FrameEdge.RIGHT, 10.0, 20.0, width, height,
+            dx = 200.0, dy = 0.0, maxWidth = 500.0,
+        )
+
+        assertEquals(WindowBounds(10.0, 20.0, 500.0, height), bounds)
+    }
+
+    @Test
+    fun `a bottom resize stops growing at the maximum height`() {
+        val bounds = resizedBounds(
+            FrameEdge.BOTTOM, 10.0, 20.0, width, height,
+            dx = 0.0, dy = 200.0, maxHeight = 400.0,
+        )
+
+        assertEquals(WindowBounds(10.0, 20.0, width, 400.0), bounds)
+    }
+
+    @Test
+    fun `a left resize keeps the right edge pinned when clamped to the maximum width`() {
+        val bounds = resizedBounds(
+            FrameEdge.LEFT, 100.0, 20.0, width, height,
+            dx = -200.0, dy = 0.0, maxWidth = 500.0,
+        )
+
+        assertEquals(500.0, bounds.width)
+        assertEquals(100.0 + width - 500.0, bounds.x)
+    }
+
+    @Test
+    fun `a top resize keeps the bottom edge pinned when clamped to the maximum height`() {
+        val bounds = resizedBounds(
+            FrameEdge.TOP, 10.0, 100.0, width, height,
+            dx = 0.0, dy = -200.0, maxHeight = 400.0,
+        )
+
+        assertEquals(400.0, bounds.height)
+        assertEquals(100.0 + height - 400.0, bounds.y)
+    }
+
+    @Test
+    fun `a corner resize clamps both axes to their maximum`() {
+        val bounds = resizedBounds(
+            FrameEdge.BOTTOM_RIGHT, 10.0, 20.0, width, height,
+            dx = 300.0, dy = 300.0, maxWidth = 500.0, maxHeight = 400.0,
+        )
+
+        assertEquals(WindowBounds(10.0, 20.0, 500.0, 400.0), bounds)
+    }
+
+    @Test
+    fun `a maximum below the minimum is raised to the minimum`() {
+        val bounds = resizedBounds(
+            FrameEdge.RIGHT, 10.0, 20.0, width, height,
+            dx = 200.0, dy = 0.0, minWidth = 500.0, maxWidth = 300.0,
+        )
+
+        assertEquals(500.0, bounds.width)
+    }
+
+    @Test
     fun `a drag on no edge leaves the bounds untouched`() {
         val bounds = resizedBounds(FrameEdge.NONE, 10.0, 20.0, width, height, dx = 55.0, dy = 66.0)
 

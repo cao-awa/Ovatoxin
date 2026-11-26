@@ -74,7 +74,7 @@ internal fun edgeAt(
  *
  * [dx] and [dy] are the total pointer movement since the drag began, in screen pixels. Dragging a
  * left or top edge moves the window origin as well, so the opposite edge stays put; the window never
- * shrinks below [minWidth] / [minHeight].
+ * shrinks below [minWidth] / [minHeight] and never grows above [maxWidth] / [maxHeight].
  */
 internal fun resizedBounds(
     edge: FrameEdge,
@@ -86,11 +86,18 @@ internal fun resizedBounds(
     dy: Double,
     minWidth: Double = FRAME_MIN_SIZE,
     minHeight: Double = FRAME_MIN_SIZE,
+    maxWidth: Double = Double.MAX_VALUE,
+    maxHeight: Double = Double.MAX_VALUE,
 ): WindowBounds {
     var newX = x
     var newY = y
     var newWidth = width
     var newHeight = height
+
+    val lowerWidth = minWidth.coerceAtLeast(0.0)
+    val upperWidth = maxWidth.coerceAtLeast(lowerWidth)
+    val lowerHeight = minHeight.coerceAtLeast(0.0)
+    val upperHeight = maxHeight.coerceAtLeast(lowerHeight)
 
     val resizeLeft = edge == FrameEdge.LEFT || edge == FrameEdge.TOP_LEFT || edge == FrameEdge.BOTTOM_LEFT
     val resizeRight = edge == FrameEdge.RIGHT || edge == FrameEdge.TOP_RIGHT || edge == FrameEdge.BOTTOM_RIGHT
@@ -98,18 +105,18 @@ internal fun resizedBounds(
     val resizeBottom = edge == FrameEdge.BOTTOM || edge == FrameEdge.BOTTOM_LEFT || edge == FrameEdge.BOTTOM_RIGHT
 
     if (resizeLeft) {
-        newWidth = (width - dx).coerceAtLeast(minWidth)
+        newWidth = (width - dx).coerceIn(lowerWidth, upperWidth)
         // Move the origin with the edge, pinning the right edge, even once the width is clamped.
         newX = x + width - newWidth
     } else if (resizeRight) {
-        newWidth = (width + dx).coerceAtLeast(minWidth)
+        newWidth = (width + dx).coerceIn(lowerWidth, upperWidth)
     }
 
     if (resizeTop) {
-        newHeight = (height - dy).coerceAtLeast(minHeight)
+        newHeight = (height - dy).coerceIn(lowerHeight, upperHeight)
         newY = y + height - newHeight
     } else if (resizeBottom) {
-        newHeight = (height + dy).coerceAtLeast(minHeight)
+        newHeight = (height + dy).coerceIn(lowerHeight, upperHeight)
     }
 
     return WindowBounds(newX, newY, newWidth, newHeight)
@@ -165,6 +172,8 @@ internal object FramelessResizer {
                 dy = event.screenY - drag.pressY,
                 minWidth = maxOf(stage.minWidth, FRAME_MIN_SIZE),
                 minHeight = maxOf(stage.minHeight, FRAME_MIN_SIZE),
+                maxWidth = stage.maxWidth,
+                maxHeight = stage.maxHeight,
             )
             stage.x = bounds.x
             stage.y = bounds.y

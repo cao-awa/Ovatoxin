@@ -25,6 +25,8 @@ object FullSample {
     @JvmStatic
     fun main(args: Array<String>) {
         val frame = Frame("Ovatoxin full sample", titleBarEnabled = false)
+        frame.minWidth = 880.0
+        frame.minHeight = 600.0
         drawBasePane(frame)
         frame.show()
     }

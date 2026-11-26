@@ -51,6 +51,24 @@ frame.layout {
 }
 ```
 
+## 尺寸限制（minWidth / minHeight / maxWidth / maxHeight）
+
+用``minWidth``、``minHeight``、``maxWidth``和``maxHeight``限制用户缩放窗口时的尺寸范围。数值单位为像素，既可以在构造时传入，也可以在创建后设置：
+
+```kotlin
+val frame = Frame(
+    minWidth = 400.0,
+    minHeight = 300.0,
+    maxWidth = 1200.0,
+    maxHeight = 900.0,
+)
+
+// 构造之后也可以修改：
+frame.maxWidth = 1000.0
+```
+
+最小值默认是``0``，最大值默认是``Double.MAX_VALUE``（不限制）。这些限制对带标题栏的窗口和无边框窗口的自定义缩放手柄都生效。
+
 # 布局和渲染
 
 在此先引入按钮作为示例，API请在后续内容了解。
