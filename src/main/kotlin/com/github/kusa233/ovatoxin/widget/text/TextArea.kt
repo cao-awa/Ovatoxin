@@ -141,10 +141,10 @@ class TextArea(text: String = "") : Component<TextArea>() {
         (this.builtNode as? Label)?.font = font
     }
 
-    /** Builds the font described by the current font properties. */
+    /** Builds the font described by the current font properties and the style's weight. */
     private fun newFont(): Font = Font.font(
         this.familyValue,
-        if (this.boldValue) FontWeight.BOLD else FontWeight.NORMAL,
+        this.styleSpec.fontWeight ?: if (this.boldValue) FontWeight.BOLD else FontWeight.NORMAL,
         this.fontSize,
     )
 

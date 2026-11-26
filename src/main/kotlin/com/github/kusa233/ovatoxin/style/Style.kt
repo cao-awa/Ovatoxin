@@ -5,6 +5,7 @@ import com.github.kusa233.ovatoxin.layout.Em
 import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.layout.px
 import javafx.scene.paint.Color
+import javafx.scene.text.FontWeight
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.time.Duration
@@ -147,6 +148,26 @@ class Style {
         }
 
     /**
+     * The weight of the text drawn by the component, or `null` to keep the weight the component
+     * brings along. Defaults to `null`.
+     *
+     * ```kotlin
+     * import javafx.scene.text.FontWeight
+     *
+     * style {
+     *     fontWeight = FontWeight.BOLD
+     * }
+     * ```
+     *
+     * A component with no text of its own — a [Div][com.github.kusa233.ovatoxin.widget.container.Div]
+     * or a [Frame][com.github.kusa233.ovatoxin.window.Frame] — simply ignores it, like
+     * [foreground]. Text that the component paints itself, such as a
+     * [TextArea][com.github.kusa233.ovatoxin.widget.text.TextArea], uses the same value when it
+     * builds its font.
+     */
+    var fontWeight: FontWeight? = DEFAULT_FONT_WEIGHT
+
+    /**
      * How long a change of this style is animated, or `null` for no animation.
      *
      * The unit is Kotlin's [Duration], so a duration is written the way Kotlin reads it:
@@ -221,13 +242,15 @@ class Style {
 
     /**
      * Restores every property to the documented default: a plain white fill, square corners, no
-     * text colour, no animation, and a font size inherited from the parent component.
+     * text colour, no font weight, no animation, and a font size inherited from the parent
+     * component.
      */
     internal fun reset() {
         this.background.reset()
         this.corner = DEFAULT_CORNER
         this.foreground = DEFAULT_FOREGROUND
         this.fontSize = DEFAULT_FONT_SIZE
+        this.fontWeight = DEFAULT_FONT_WEIGHT
         this.transition = null
     }
 
@@ -237,6 +260,7 @@ class Style {
         this.corner = other.corner
         this.foreground = other.foreground
         this.fontSize = other.fontSize
+        this.fontWeight = other.fontWeight
         this.transition = other.transition
     }
 
@@ -324,7 +348,8 @@ class Style {
 
     override fun toString(): String =
         "Style(background=${this.background}, corner=${this.corner}, foreground=${this.foreground}, " +
-            "fontSize=${this.fontSize}, transition=${this.transition ?: "none"})"
+            "fontSize=${this.fontSize}, fontWeight=${this.fontWeight ?: "none"}, " +
+            "transition=${this.transition ?: "none"})"
 
     companion object {
         /** The fill every component uses until a style overrides it. */
@@ -348,6 +373,13 @@ class Style {
          * from "somebody said 14".
          */
         val DEFAULT_FONT_SIZE: Length? = null
+
+        /**
+         * The font weight every component starts with: `null`, meaning *keep the component's own
+         * weight*. This keeps plain controls looking native until a style explicitly asks for a
+         * weight.
+         */
+        val DEFAULT_FONT_WEIGHT: FontWeight? = null
     }
 }
 

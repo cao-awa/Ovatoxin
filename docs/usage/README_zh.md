@@ -68,7 +68,7 @@ frame.layout {
             background {
                 // 设置背景色调
                 color = Color.web("#4c8bf5")
-                // 设置背景图，设置后背景配置将不可用
+                // 设置背景图，设置后背景色调配置将不可用
                 image = "file:/picture/bg.png"
             }
             // 设置圆角
@@ -213,6 +213,35 @@ draw(Button()) { button ->
 * 自带文字的组件（``TextArea``）用自己的文字大小，不再往上看；它的字号同样存在``style``里，所以``style { fontSize = 24.px }``也能改它画出来的字；
 * 改动``fontSize``会重新摆放子树，已经写好的``em``立刻按新字号解析；
 * 一次重绘（``reset()``）会丢掉这一轮没再设的``fontSize``，回到继承。
+
+## 字重（fontWeight）
+
+``style``块里可以写``fontWeight``，直接使用 JavaFX 的``FontWeight``：
+
+```kotlin
+import javafx.scene.text.FontWeight
+```
+```kotlin
+draw(Button()) { button ->
+    style {
+        fontWeight = FontWeight.BOLD
+    }
+    button.text = "保存"
+}
+```
+
+``fontWeight``可选的值就是``FontWeight``的枚举：``THIN``、``EXTRA_LIGHT``、``LIGHT``、``NORMAL``、``MEDIUM``、``SEMI_BOLD``、``BOLD``、``EXTRA_BOLD``、``BLACK``。
+
+规则：
+
+* 不写``fontWeight``（默认``null``）时保持控件原本的字重，不改变原生外观；
+* 按钮、输入框、标签、链接等控件会把字重写进``-fx-font-weight``，按``FontWeight``对应的数值（如``BOLD``是``700``）生效；
+* 自带文字的``TextArea``在构造自己的``Font``时会使用这个字重；它原有的``bold``属性仍然可用，写了``fontWeight``时以``fontWeight``为准；
+* 某个字重能否真正画出区别，取决于所选的字体家族是否提供该字重；系统默认字体可能把``SEMI_BOLD``之类回退成常规，换一个提供多字重的``fontFamily``才会看到差异；
+* 和``foreground``一样，自身没有文字的``Div``、``Frame``会忽略它；字重不会像``fontSize``那样被子树继承；
+* ``fontWeight``存在``style``里，重绘时``reset()``会把它清掉，想每次都生效就在每次运行的``style``块里再写一次。
+
+字重（和字号一样）不参与``transition``的插值：过渡只平滑背景色、前景色和圆角，改``fontWeight``时字重立即切换。
 
 ## 动画过渡（transition）
 

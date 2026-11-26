@@ -438,11 +438,13 @@ abstract class Component<T : Component<T>> {
 
         val transition = this.styleSpec.transition
         val from = this.displayedVisual
-        if (from == null || transition == null || !transition.isPositive() ||
+        if (from == null || from.matches(target) || transition == null || !transition.isPositive() ||
             !Platform.isFxApplicationThread()
         ) {
-            // Nothing to blend from (first paint), no positive transition asked for, or not on the
-            // FX thread where a Timeline must live: apply the target as it is.
+            // Nothing to blend from (first paint), this change does not move anything the
+            // transition can interpolate (a font weight, for instance), no positive transition was
+            // asked for, or we are not on the FX thread where a Timeline must live: apply the
+            // target as it is.
             stopStyleAnimation()
             this.displayedVisual = target
             applyCss(targetCss)
@@ -531,16 +533,22 @@ abstract class Component<T : Component<T>> {
     }
 
     /**
-     * The `-fx-font-size` declaration that makes a control render the resolved [font], or an empty
-     * string when the node is not a control or the size is simply the inherited default.
+     * The `-fx-font-size` and `-fx-font-weight` declarations that make a control render the
+     * resolved [font] and the requested [Style.fontWeight], or an empty string when the node is
+     * not a control.
      *
-     * Leaving the library default in place keeps a plain tree looking native; a control only picks
-     * up an explicit size — its own, or one inherited from an ancestor that stated a size.
+     * Leaving the library defaults in place keeps a plain tree looking native; a control only
+     * picks up an explicit size — its own, or one inherited from an ancestor that stated a size —
+     * and only picks up a weight when a style states one.
      */
     private fun fontCss(font: Double): String {
         if (this.builtNode !is javafx.scene.control.Control || this.appliesOwnFont) return ""
-        if (this.styleSpec.fontSize == null && this.inheritedFontSize == Length.DEFAULT_FONT_SIZE) return ""
-        return " -fx-font-size: ${formatFont(font)}px;"
+        val weight = this.styleSpec.fontWeight
+        val weightCss = weight?.let { " -fx-font-weight: ${it.weight};" } ?: ""
+        if (this.styleSpec.fontSize == null && this.inheritedFontSize == Length.DEFAULT_FONT_SIZE) {
+            return weightCss
+        }
+        return "$weightCss -fx-font-size: ${formatFont(font)}px;"
     }
 
     /** Whether this component paints its own text and must keep [fontCss] off its node. */

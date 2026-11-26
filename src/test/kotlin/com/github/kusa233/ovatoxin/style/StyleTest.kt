@@ -5,6 +5,7 @@ import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import javafx.scene.paint.Color
+import javafx.scene.text.FontWeight
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -21,6 +22,7 @@ class StyleTest {
         assertNull(style.background.image)
         assertEquals(0.px, style.corner)
         assertEquals(0.0, style.cornerPixels(100.0, 40.0))
+        assertNull(style.fontWeight)
     }
 
     @Test
@@ -285,6 +287,7 @@ class StyleTest {
             corner = 4.px
             foreground = Color.web("#4c8bf5")
             fontSize = 20.px
+            fontWeight = FontWeight.BOLD
         }
         val target = Style()
         target.copyFrom(source)
@@ -294,6 +297,7 @@ class StyleTest {
         assertEquals(source.corner, target.corner)
         assertEquals(Color.web("#4c8bf5"), target.foreground)
         assertEquals(20.px, target.fontSize)
+        assertEquals(FontWeight.BOLD, target.fontWeight)
         // The lengths are values, not shared boxes.
         assertEquals(Length.pixels(4.0), target.corner)
     }
@@ -416,5 +420,31 @@ class StyleTest {
 
         val relative = Style().configure { fontSize = 120.percent }
         assertEquals(120.percent, relative.fontSize)
+    }
+
+    @Test
+    fun `there is no font weight until a style states one`() {
+        assertNull(Style().fontWeight)
+        assertNull(Style.DEFAULT_FONT_WEIGHT)
+    }
+
+    @Test
+    fun `the fontWeight block in the documentation compiles`() {
+        val style = Style().configure {
+            background { color = Color.web("#ffffff") }
+            corner = 4.px
+            fontWeight = FontWeight.BOLD
+        }
+
+        assertEquals(FontWeight.BOLD, style.fontWeight)
+        assertEquals(700, style.fontWeight?.weight)
+        assertTrue(style.toString().contains("fontWeight=BOLD"), style.toString())
+    }
+
+    @Test
+    fun `a reset drops the font weight back to the default`() {
+        val style = Style().configure { fontWeight = FontWeight.BOLD }
+        style.reset()
+        assertNull(style.fontWeight)
     }
 }
