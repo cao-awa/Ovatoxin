@@ -45,6 +45,7 @@ dependencies {
 
 * [介绍](docs/README_zh.md)
 * [用法](docs/usage/README_zh.md)
+* [组件](docs/component/README_zh.md)
 
 ## 示例
 以下示例展示一个无标题栏的窗口，

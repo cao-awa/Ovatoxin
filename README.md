@@ -45,6 +45,7 @@ For versions, see [JitPack](https://jitpack.io/#cao-awa/Ovatoxin).
 
 * [Introduction](docs/README.md)
 * [Usage](docs/usage/README.md)
+* [Components](docs/component/README.md)
 
 ## Example
 The following example shows a window without a title bar.
