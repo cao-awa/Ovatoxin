@@ -35,7 +35,7 @@ It contains four buttons; the selected button's background turns white (with a 2
 Note: this example removes the title bar and draws no exit button, so it cannot be closed; close it through the IDE or Task Manager.
 
 ```kotlin
-// Create the window
+// Create the frame
 val frame = Frame("Ovatoxin - Tab bar demo", titleBarEnabled = false)
 // Layout preset
 val layout = layout {
@@ -87,7 +87,7 @@ frame.layout {
         }
     }.withState(selected) // Bind the State so the component redraws
 }
-// Show the window
+// Show the frame
 frame.show()
 ```
 
