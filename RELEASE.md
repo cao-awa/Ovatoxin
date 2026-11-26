@@ -1,4 +1,4 @@
-# Ovatoxin v1.0.0-rc1
+# Ovatoxin v1.0.0-rc2
 
 **Release date:** 2026-11-26  (UTC+9)
 
