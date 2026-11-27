@@ -138,6 +138,15 @@ abstract class Component<T : Component<T>> {
     internal val inheritedFontSize: Double
         get() = this.parent?.resolvedFontSize ?: Length.DEFAULT_FONT_SIZE
 
+    /**
+     * Called just before a created node is dropped, so a component can release what it owns.
+     *
+     * The default does nothing. A widget that holds a resource which is not reachable from the
+     * node — a player, a timer, a subscription — overrides this to release it here, because after
+     * the call the base class forgets the node entirely.
+     */
+    protected open fun onNodeDetached(node: Node) = Unit
+
     /** This component typed as its concrete subclass. */
     @Suppress("UNCHECKED_CAST")
     protected val self: T get() = this as T
@@ -197,6 +206,7 @@ abstract class Component<T : Component<T>> {
         stopStyleAnimation()
         this.displayedVisual = null
         this.appliedStyle = null
+        this.nodeRef?.let { onNodeDetached(it) }
         this.nodeRef = null
     }
 

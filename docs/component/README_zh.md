@@ -6,6 +6,7 @@
 * 文字与展示：[Label](#label)、[TextArea](#textarea)、[Link](#link)
 * 操作与输入：[Button](#button)、[TextField](#textfield)、[CheckBox](#checkbox)、[ComboBox](#combobox)
 * 列表与进度：[ListView](#listview)、[ProgressBar](#progressbar)
+* 媒体：[VideoPane](#videopane)
 * 反馈与浮层：[Toast](#toast)
 * 布局：[Div](#div)、[FlexBox](#flexbox)、[Card](#card)、[CollapsePane](#collapsepane)、[TabBar 与 TabPane](#tabbar-与-tabpane)
 
@@ -18,7 +19,7 @@
 * ``visible = false``会隐藏已经建好的组件，默认是``true``；
 * ``withState(state)``把组件绑定到一个[State](../usage/README_zh.md)：状态变化时重绘该组件，并且只重绘该组件；
 * 每次绘制块重新执行之前，``reset()``会把组件恢复到**创建时**的值——标题、URL、勾选状态、几何、样式以及上一轮设置过的处理器都会被还原；它不会改变组件的身份、节点或子组件，也会刻意保留``ListView.items``、``ComboBox.items``这类实时集合；
-* 没有自己样式的组件起始为白色填充（``Style.DEFAULT_COLOR``），在``style { foreground = ... }``设置之前文字使用工具包默认的深色；[Div](#div)按设计透明，[Toast](#toast)的浮层也是透明的，[Link](#link)默认是蓝色。
+* 没有自己样式的组件起始为白色填充（``Style.DEFAULT_COLOR``），在``style { foreground = ... }``设置之前文字使用工具包默认的深色；[Div](#div)按设计透明，[Toast](#toast)的浮层也是透明的，[VideoPane](#videopane)按设计是黑色以便黑边挡住页面，[Link](#link)默认是蓝色。
 
 ## Label
 
@@ -414,6 +415,71 @@ frame.layout {
 ```
 
 ``track``传``null``（默认）时不改写背景，让进度条继承所在表面的底色；``radius``默认``50.percent``，也可传入别的圆角。
+
+## VideoPane
+
+``VideoPane``用于播放本地文件、classpath 资源或 URL 中的视频，并作为绘制画面的黑色表面。它是一个纯绘制表面，不是完整的播放器：播放按钮、时间轴和音量滑杆都是普通的[Button](#button)与[ProgressBar](#progressbar)组件，放在它旁边，通过``VideoPane``的方法和属性驱动。
+
+除了常用的 JavaFX 模块，这个组件还需要``javafx-media``模块。Gradle 中这样声明：
+
+```kotlin
+implementation("org.openjfx:javafx-media:25.0.5:win")
+```
+
+（分类器随平台变化，和项目根 README 里其他 JavaFX 依赖完全一样。）
+
+导入：
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.media.VideoPane
+import com.github.kusa233.ovatoxin.widget.media.videoPane
+```
+
+```kotlin
+frame.layout {
+    draw(VideoPane("media/intro.mp4")) { video ->
+        layout {
+            x = 10.percent
+            y = 20.percent
+            width = 80.percent
+            height = 45.percent
+        }
+        style { corner = 12.px }
+        video.autoPlay = true
+        video.loop = true
+        video.volume = 0.8
+        video.onError { error -> println("cannot play: ${error?.message}") }
+    }
+}
+```
+
+更短的写法可以在一次调用里同时设置尺寸和播放参数：
+
+```kotlin
+frame.layout {
+    videoPane(
+        source = "https://example.com/demo.mp4",
+        w = 80.percent,
+        h = 45.percent,
+    ) {
+        autoPlay = true
+        preserveRatio = true
+        onEnd { println("finished") }
+    }
+}
+```
+
+规则：
+
+* ``source``接受``http``/``https`` URL、``file``或``jar`` URI、普通文件系统路径，以及``classpath:``资源，例如``classpath:/media/intro.mp4``。``File``、``URI``和``URL``构造函数会做对应的转换；
+* 面板默认是黑色，所以画面宽高比与盒子不同时，黑边会挡住后面的页面。``style { background { color = ... } }``可以改填充色；非零``corner``会把填充和画面一起裁剪到同一个圆角轮廓；
+* 播放器在节点创建时惰性创建，并且只在``source``非空时创建。空``source``只显示黑色表面。无法加载的来源通过``onError``报告，面板会留在原处，不会破坏绘制树；
+* ``play()``、``pause()``、``stop()``、``togglePlayPause()``和``seekTo(duration)``控制播放。节点还不存在时发出的调用会被记住：``play()``会在媒体就绪后开始播放，加载过程中调用的``seekTo``会在加载完成时应用；
+* ``autoPlay``、``loop``、``muted``、``volume``和``preserveRatio``都是可读写属性。``volume``是``0.0``到``1.0``的比例，越界会被夹住，和[ProgressBar](#progressbar)的取值一样。``preserveRatio = true``（默认）保持画面宽高比；设为``false``会把视频拉伸到整个盒子；
+* ``status``、``isPlaying``、``position``和``duration``读取当前状态。播放器还不存在时返回中性值（``null``、``false``、``Duration.ZERO``），所以在绘制块里读取是安全的；
+* ``onReady { ... }``、``onEnd { ... }``、``onError { ... }``和``onStatusChanged { ... }``报告媒体事件。它们和其他播放回调一样，在 JavaFX 应用线程上运行；
+* 每次重绘都会先调用``reset()``，把``source``和播放参数恢复到创建时的值，因此绘制块只要重新写一遍即可。如果得到的``source``没有变化，视频会保持原来的播放位置；换了来源则从头重新加载。上一轮注册的处理器会被清掉，所以处理器要写在绘制块里；
+* 组件从容器里移除时会释放播放器。``dispose()``会立即释放并停止播放；再次显示面板时会根据``source``重新创建。
 
 ## Div
 

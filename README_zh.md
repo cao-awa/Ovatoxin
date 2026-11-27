@@ -23,18 +23,23 @@ dependencies {
     api "org.openjfx:javafx-base:${javafxVersion}:win"
     api "org.openjfx:javafx-graphics:${javafxVersion}:win"
     api "org.openjfx:javafx-controls:${javafxVersion}:win"
+    api "org.openjfx:javafx-media:${javafxVersion}:win"
     api "org.openjfx:javafx-base:${javafxVersion}:mac"
     api "org.openjfx:javafx-graphics:${javafxVersion}:mac"
     api "org.openjfx:javafx-controls:${javafxVersion}:mac"
+    api "org.openjfx:javafx-media:${javafxVersion}:mac"
     api "org.openjfx:javafx-base:${javafxVersion}:mac-aarch64"
     api "org.openjfx:javafx-graphics:${javafxVersion}:mac-aarch64"
     api "org.openjfx:javafx-controls:${javafxVersion}:mac-aarch64"
+    api "org.openjfx:javafx-media:${javafxVersion}:mac-aarch64"
     api "org.openjfx:javafx-base:${javafxVersion}:linux"
     api "org.openjfx:javafx-graphics:${javafxVersion}:linux"
     api "org.openjfx:javafx-controls:${javafxVersion}:linux"
+    api "org.openjfx:javafx-media:${javafxVersion}:linux"
     api "org.openjfx:javafx-base:${javafxVersion}:linux-aarch64"
     api "org.openjfx:javafx-graphics:${javafxVersion}:linux-aarch64"
     api "org.openjfx:javafx-controls:${javafxVersion}:linux-aarch64"
+    api "org.openjfx:javafx-media:${javafxVersion}:linux-aarch64"
 }
 ```
 

@@ -23,18 +23,38 @@ import com.github.kusa233.ovatoxin.widget.list.ListView
 import com.github.kusa233.ovatoxin.widget.progress.ProgressBar
 import com.github.kusa233.ovatoxin.widget.text.TextArea
 import com.github.kusa233.ovatoxin.widget.input.TextField
+import com.github.kusa233.ovatoxin.widget.media.VideoPane
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.scene.paint.Color
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 fun main() {
     val frame = Frame("Ovatoxin - DSL demo", titleBarEnabled = false)
-    testTabPane(frame)
+    testVideo(frame)
     frame.onClose {
         println("Closing '${this.title}'")
     }
     frame.show()
+}
+
+fun testVideo(frame: Frame) {
+    frame.layout {
+        draw(VideoPane(
+            source = "D:\\Codes\\Video\\1.mp4",
+            autoPlay = true,
+            loop = true,
+            muted = true,
+            volume = 0.4,
+            preserveRatio = false,
+        )) {
+            layout {
+                x = 10.percent
+                y = 10.percent
+                width = 80.percent
+                height = 80.percent
+            }
+        }
+    }
 }
 
 fun testTabPane(frame: Frame) {

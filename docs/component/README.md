@@ -7,6 +7,7 @@
 * Text and display: [Label](#label), [TextArea](#textarea), [Link](#link)
 * Actions and input: [Button](#button), [TextField](#textfield), [CheckBox](#checkbox), [ComboBox](#combobox)
 * Collections and progress: [ListView](#listview), [ProgressBar](#progressbar)
+* Media: [VideoPane](#videopane)
 * Feedback and overlays: [Toast](#toast)
 * Layout: [Div](#div), [FlexBox](#flexbox), [Card](#card), [CollapsePane](#collapsepane), [TabBar and TabPane](#tabbar-and-tabpane)
 
@@ -19,7 +20,7 @@ Every component in this chapter is a ``Component``, so the following rules apply
 * ``visible = false`` hides an already-built component; it defaults to ``true``.
 * ``withState(state)`` binds the component to a [State](../usage/README.md): the component is redrawn when the state changes, and only that component is redrawn.
 * Immediately before a draw block runs again, ``reset()`` restores the values the component was **created** with — caption, URL, checked state, geometry, style and handlers that were set during the previous pass. It does not reset the component's identity, its node or its children, and it deliberately leaves live collections such as ``ListView.items`` and ``ComboBox.items`` alone.
-* A component with no style of its own starts with a white fill (``Style.DEFAULT_COLOR``) and leaves text at the toolkit's default dark colour until ``style { foreground = ... }`` sets one; [Div](#div) is transparent by design, the [Toast](#toast) overlay is transparent too, and [Link](#link) is blue by default.
+* A component with no style of its own starts with a white fill (``Style.DEFAULT_COLOR``) and leaves text at the toolkit's default dark colour until ``style { foreground = ... }`` sets one; [Div](#div) is transparent by design, the [Toast](#toast) overlay is transparent too, [VideoPane](#videopane) is black so letterbox bars hide the page, and [Link](#link) is blue by default.
 
 ## Label
 
@@ -415,6 +416,71 @@ frame.layout {
 ```
 
 A ``track`` of ``null`` (the default) leaves the background untouched, so the bar inherits the surface it is drawn on; ``radius`` defaults to ``50.percent``.
+
+## VideoPane
+
+``VideoPane`` plays a video from a local file, a classpath resource or a URL, and acts as the black surface the picture is drawn on. It is a plain drawing surface, not a full player: transport controls, a timeline and volume sliders are ordinary [Button](#button) and [ProgressBar](#progressbar) components that you place next to it and drive through ``VideoPane``'s methods and properties.
+
+The component needs the ``javafx-media`` module in addition to the usual JavaFX modules. With Gradle:
+
+```kotlin
+implementation("org.openjfx:javafx-media:25.0.5:win")
+```
+
+(The classifier follows the platform, exactly like the other JavaFX dependencies in the project README.)
+
+Imports:
+
+```kotlin
+import com.github.kusa233.ovatoxin.widget.media.VideoPane
+import com.github.kusa233.ovatoxin.widget.media.videoPane
+```
+
+```kotlin
+frame.layout {
+    draw(VideoPane("media/intro.mp4")) { video ->
+        layout {
+            x = 10.percent
+            y = 20.percent
+            width = 80.percent
+            height = 45.percent
+        }
+        style { corner = 12.px }
+        video.autoPlay = true
+        video.loop = true
+        video.volume = 0.8
+        video.onError { error -> println("cannot play: ${error?.message}") }
+    }
+}
+```
+
+The shorter form sets the size and the playback values in the same call:
+
+```kotlin
+frame.layout {
+    videoPane(
+        source = "https://example.com/demo.mp4",
+        w = 80.percent,
+        h = 45.percent,
+    ) {
+        autoPlay = true
+        preserveRatio = true
+        onEnd { println("finished") }
+    }
+}
+```
+
+Rules:
+
+* ``source`` accepts an ``http``/``https`` URL, a ``file`` or ``jar`` URI, a plain filesystem path, or a ``classpath:`` resource such as ``classpath:/media/intro.mp4``. The ``File``, ``URI`` and ``URL`` constructors do the obvious conversion;
+* the pane is black by default, so letterbox bars hide the page behind a video whose aspect ratio differs from its box. ``style { background { color = ... } }`` changes the fill, and a non-zero ``corner`` clips both the fill and the picture to the same rounded outline;
+* the player is created lazily with the node and only when ``source`` is non-empty. An empty source shows the plain black surface. A source that cannot be loaded is reported through ``onError`` and leaves the pane in place rather than breaking the draw tree;
+* ``play()``, ``pause()``, ``stop()``, ``togglePlayPause()`` and ``seekTo(duration)`` control playback. Calls made before the node exists are remembered: ``play()`` starts the video once the media is ready, and a ``seekTo`` made during loading is applied when loading finishes;
+* ``autoPlay``, ``loop``, ``muted``, ``volume`` and ``preserveRatio`` are readable and writable properties. ``volume`` is a fraction from ``0.0`` to ``1.0`` and is clamped, like [ProgressBar](#progressbar)'s value. ``preserveRatio = true`` (the default) keeps the picture's aspect ratio; setting it to ``false`` stretches the video to the box;
+* ``status``, ``isPlaying``, ``position`` and ``duration`` read the current state. They return neutral values (``null``, ``false``, ``Duration.ZERO``) before a player exists, which makes them safe to read from a draw block;
+* ``onReady { ... }``, ``onEnd { ... }``, ``onError { ... }`` and ``onStatusChanged { ... }`` report media events. They run on the JavaFX application thread, like every other playback callback;
+* a redraw calls ``reset()`` first, which restores the source and playback values the pane was created with, so a draw block can simply write them again. If the resulting source is unchanged the video keeps playing where it was; a different source reloads from the beginning. Handlers registered during the previous pass are forgotten, so register them inside the draw block;
+* the player is released when the component is removed from its container. ``dispose()`` releases it immediately and stops playback; showing the pane again rebuilds it from ``source``.
 
 ## Div
 
