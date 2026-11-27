@@ -30,8 +30,8 @@ import kotlin.time.DurationUnit
  *
  * ```kotlin
  * draw(Button()) { button ->
- *     button.text = "Button"
- *     button.onClick { println(this.text) }
+ *     button.text("Button")
+ *     button.onClick { println(this.text()) }
  * }
  * ```
  *
@@ -146,6 +146,14 @@ abstract class Component<T : Component<T>> {
      * the call the base class forgets the node entirely.
      */
     protected open fun onNodeDetached(node: Node) = Unit
+
+    /**
+     * Called when [com.github.kusa233.ovatoxin.i18n.I18N.currentLang] or a translation changes.
+     *
+     * Text widgets override this to re-read their [com.github.kusa233.ovatoxin.i18n.Translatable]
+     * content, so a node that is already on screen switches language without being drawn again.
+     */
+    internal open fun onLanguageChanged() = Unit
 
     /** This component typed as its concrete subclass. */
     @Suppress("UNCHECKED_CAST")
@@ -309,7 +317,7 @@ abstract class Component<T : Component<T>> {
      * ```kotlin
      * val state = State("zh-cn")
      *
-     * val text = draw(TextArea()) { it.text(languages[state.value]) }.withState(state)
+     * val text = draw(TextArea()) { it.text(I18N.content(state.value, "hello")) }.withState(state)
      * ```
      *
      * Binding does two things. The component is redrawn once right away, and from then on every

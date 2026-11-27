@@ -33,8 +33,8 @@ import javafx.scene.paint.Color
  * val tabs = TabBar()
  * tabs.side = TabSide.LEFT
  *
- * val first = tabs.add(Button("One")) { text = "One" }
- * val second = tabs.add(Button("Two")) { text = "Two" }
+ * val first = tabs.add(Button("One")) { text("One") }
+ * val second = tabs.add(Button("Two")) { text("Two") }
  * tabs.select(first)
  * ```
  *

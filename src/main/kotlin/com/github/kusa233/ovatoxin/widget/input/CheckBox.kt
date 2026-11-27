@@ -1,6 +1,8 @@
 package com.github.kusa233.ovatoxin.widget.input
 
 import com.github.kusa233.ovatoxin.component.Component
+import com.github.kusa233.ovatoxin.i18n.TextContent
+import com.github.kusa233.ovatoxin.i18n.Translatable
 import javafx.scene.Node
 import javafx.scene.control.CheckBox as FxCheckBox
 
@@ -20,8 +22,8 @@ import javafx.scene.control.CheckBox as FxCheckBox
  * }
  * ```
  *
- * The caption sits to the right of the box, as it does in every desktop toolkit; use [text] to
- * change it and [checked] to read or set the tick.
+ * The caption sits to the right of the box, as it does in every desktop toolkit; use `text(...)`
+ * to change it and [checked] to read or set the tick.
  *
  * [onChange] is the handler meant for a checkbox: it receives the new state as a plain `Boolean`, so
  * the usual case — mirroring the tick into a
@@ -40,24 +42,35 @@ class CheckBox(text: String = "") : Component<CheckBox>() {
     /** The tick this box was created with, restored by [reset]. */
     private val defaultChecked: Boolean = false
 
-    private var content: String = text
+    private val content: TextContent = TextContent(text, this)
     private var checkedValue: Boolean = this.defaultChecked
     private var enabledValue: Boolean = true
     private var changeHandler: ((Boolean) -> Unit)? = null
 
-    /** Reads the caption of the box. */
-    fun text(): String = this.content
+    /** Reads the caption of the box, resolving a translatable key. */
+    fun text(): String = this.content.value()
 
-    /** Replaces the caption of the box. */
+    /** Shows a literal caption. */
     fun text(value: String) {
-        this.content = value
-        (this.builtNode as? FxCheckBox)?.text = value
+        this.content.literal(value)
+        refreshText()
     }
 
-    /** The caption of the box. */
-    var text: String
-        get() = this.content
-        set(value) = text(value)
+    /** Shows the content of a translation key, re-resolved whenever the language changes. */
+    fun text(value: Translatable) {
+        this.content.translation(value)
+        refreshText()
+    }
+
+    /** The caption of the box. Read-only; call `text(...)` to replace it. */
+    val text: String
+        get() = this.content.value()
+
+    private fun refreshText() {
+        (this.builtNode as? FxCheckBox)?.text = this.content.value()
+    }
+
+    internal override fun onLanguageChanged() = refreshText()
 
     /** Whether the box is ticked. Defaults to `false`. */
     var checked: Boolean
@@ -121,18 +134,18 @@ class CheckBox(text: String = "") : Component<CheckBox>() {
      */
     override fun reset() {
         super.reset()
-        this.content = this.defaultText
+        this.content.reset(this.defaultText)
         this.checkedValue = this.defaultChecked
         this.enabledValue = true
         this.changeHandler = null
         val node = this.builtNode as? FxCheckBox
-        node?.text = this.defaultText
+        node?.text = this.content.value()
         node?.isSelected = this.defaultChecked
         node?.isDisable = false
     }
 
     override fun buildNode(): Node {
-        val box = FxCheckBox(this.content)
+        val box = FxCheckBox(this.content.value())
         box.isSelected = this.checkedValue
         box.isDisable = !this.enabledValue
         box.setOnAction { performClick() }

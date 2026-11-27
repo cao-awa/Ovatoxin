@@ -16,7 +16,7 @@ class LabelTest {
         val label = Label()
         assertEquals("", label.text)
 
-        label.text = "User name"
+        label.text("User name")
         assertEquals("User name", label.text())
 
         label.text("Password")
@@ -72,7 +72,7 @@ class LabelTest {
         val field = TextField()
         val label = Label("User name", labelFor = field)
 
-        label.text = "changed"
+        label.text("changed")
         label.labelFor(null)
         label.reset()
 

@@ -105,7 +105,7 @@ fun main() {
                 corner = 50.percent
                 foreground = Color.web("#ffffff")
             }
-            component.text = "Button"
+            component.text("Button")
         }
         probes += Probe("Button", button, "Button")
         untouchedText = button
@@ -117,7 +117,7 @@ fun main() {
                 width = 80.percent
                 height = 6.percent
             }
-            component.text = "Link"
+            component.text("Link")
         }
         probes += Probe("Link", link, "Link")
 

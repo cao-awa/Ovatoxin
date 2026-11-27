@@ -39,7 +39,7 @@ class TabBarTest {
         assertEquals(listOf(first), bar.tabs)
         assertSame(first, bar.selected)
 
-        bar.add(second) { text = "Second" }
+        bar.add(second) { text("Second") }
         assertEquals(listOf(first, second), bar.tabs)
         assertEquals("Second", second.text)
         assertSame(second, bar.selected)

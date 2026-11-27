@@ -101,7 +101,7 @@ frame.layout {
                         foreground = if (selected.value == index) Color.web("#4c8bf5") else Color.WHITE
                     }
                     // 按钮文本
-                    button.text = "$index"
+                    button.text("$index")
                     // 点击按钮时触发更新重绘
                     button.onClick {
                         selected.update(index)

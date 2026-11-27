@@ -151,7 +151,7 @@ frame.layout {
                 draw(Button()) { button ->
                     layout(fifth) { /* 只调这一个组件 */ }
                     style(card) { /* 只调这一个组件 */ }
-                    button.text = "$index"
+                    button.text("$index")
                 }
             }
         }
@@ -255,7 +255,7 @@ style { fontSize = 1.em }         // 报错：em 没有字号可以参照
 draw(Button()) { button ->
     layout { height = 40.px }
     style { fontSize = 50.percent }   // 四十像素高的按钮，字号二十像素
-    button.text = "Ok"
+    button.text("Ok")
 }
 ```
 
@@ -282,7 +282,7 @@ draw(Button()) { button ->
     style {
         fontWeight = FontWeight.BOLD
     }
-    button.text = "保存"
+    button.text("保存")
 }
 ```
 

@@ -12,7 +12,7 @@ import com.github.kusa233.ovatoxin.component.Component
  * val state = State("zh-cn")
  *
  * draw(TextArea()) { text ->
- *     text.text(languages[state.value])
+ *     text.text(I18N.content(state.value, "hello"))
  * }.withState(state)
  * ```
  *

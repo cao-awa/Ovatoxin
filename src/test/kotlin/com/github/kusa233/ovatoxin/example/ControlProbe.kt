@@ -110,7 +110,7 @@ fun main() {
                 height = 40.px
             }
             style { fontSize = 50.percent }
-            component.text = "50%"
+            component.text("50%")
         }
     }
 
@@ -162,7 +162,7 @@ private fun formLabel(label: Label, field: TextField): Boolean {
     val linked = node.labelFor === fieldNode
     val showsHint = fieldNode.promptText == "your name"
 
-    label.text = "Account"
+    label.text("Account")
     val renamed = node.text == "Account"
 
     label.reset()

@@ -69,7 +69,7 @@ Rules:
 * ``labelFor`` can be written in the constructor or attached later: ``label.labelFor = name`` and ``label.labelFor(name)`` are equivalent, and ``label.labelFor`` reads back the item currently being labelled;
 * Order does not matter: an association made before a control is rendered is remembered and applied when the label creates its node, so a label may be drawn before its control;
 * Passing ``null`` to ``labelFor`` breaks the association and turns the label back into ordinary text;
-* ``text`` can be changed at any time: ``label.text = "Account"``, and an already-created node updates immediately;
+* ``text`` can be changed at any time with ``label.text("Account")``, and an already-created node updates immediately; the property ``label.text`` is read-only, so assignment no longer compiles;
 * ``reset()`` returns to the state the label was created in — both the text and the association go back to the pair given in the constructor rather than being cleared to empty text;
 * For a longer read-only piece of text that carries its own content (a paragraph or a translation), use ``TextArea``; a label is only the short name of the item beside it.
 
@@ -106,13 +106,30 @@ frame.layout {
 
 Rules:
 
-* ``TextArea("hello")`` starts with that text; ``text`` reads or replaces it, and ``text.text("new")`` is the same as ``text.text = "new"``;
+* ``TextArea("hello")`` starts with that literal text; ``text`` reads it, while ``text.text("new")`` replaces it. Property assignment (``text.text = "new"``) no longer compiles. ``text.text("translate.key".translatable)`` shows the translation and follows ``I18N.currentLang``;
 * ``fontSize`` is measured in points and defaults to ``14``. It is stored in the component's style, so ``text.fontSize = 20.0`` and ``style { fontSize = 20.px }`` mean the same thing; a percentage fontSize is taken from the area's own height, and an ``em`` fontSize is rejected because it would measure the font against itself;
 * unlike most other components a text area **does not inherit** the font size of the panel it is drawn into: an area without a size of its own uses ``14`` points. Give it a height and a percentage size if it should scale with its box;
 * ``bold`` selects a bold weight and ``fontFamily`` selects the family; a ``fontWeight`` written in the style overrides ``bold``;
 * ``align`` is a JavaFX ``TextAlignment`` (``LEFT``, ``CENTER``, ``RIGHT`` or ``JUSTIFY``) and defaults to ``LEFT``; ``wrap`` defaults to ``false``, so long lines run past the box unless it is enabled;
 * the text colour comes from ``style { foreground = ... }`` like every other text component;
 * ``reset()`` restores the constructor text, ``14`` points, the default family, ``LEFT`` alignment, ``wrap = false`` and drops the style/handlers set in the previous pass. ``TextArea("hello")`` therefore resets to ``"hello"``, not to empty text.
+
+### Translatable text and I18N
+
+Every widget with a caption accepts three spellings: a literal string, a ``Translatable`` and the ``String.translatable`` extension.
+
+```kotlin
+I18N.lang("zh-cn", "hello", "你好")
+I18N.lang("en-us", "hello", "Hello")
+
+label.text("No translatable")              // always the literal text
+label.text("hello".translatable)           // resolved through I18N
+label.text(Translatable("hello"))          // the same thing, spelled out
+
+I18N.currentLang = "en-us"                 // the label now shows "Hello"
+```
+
+``I18N`` is a process-wide registry: ``lang(langKey, translationKey, content)`` registers a translation, the first registration selects ``currentLang``, and an unknown key falls back to the key itself. A literal string is never translated, even when it happens to look like a key. A widget given a ``Translatable`` keeps the key and re-resolves it whenever the language changes; ``TextField`` is the exception, because its content is user input and is resolved only when written.
 
 When the text should sit directly on the surrounding surface, use the top-level ``bareTextArea`` helper:
 
@@ -155,7 +172,7 @@ frame.layout {
 
 Rules:
 
-* ``text`` is the visible caption and ``url`` is the address that a click opens; both can be changed at any time;
+* ``text`` is the visible caption and ``url`` is the address that a click opens; use ``text("...")`` or ``text("key".translatable)`` to change the caption, while ``url`` remains a writable property;
 * clicking a link with no ``onClick`` handler opens ``url`` in the operating system's default browser. An empty ``url`` makes the click do nothing;
 * registering ``onClick`` **replaces** the default browser action: a link with a handler runs only the handler and opens nothing. The handler receives the link as ``this``, so ``this.url`` remains readable inside it;
 * ``open()`` performs the browser action explicitly, which is useful when a custom handler wants to keep it;
@@ -191,7 +208,7 @@ frame.layout {
 
 Rules:
 
-* ``Button("Save")`` starts with that caption; ``text`` reads or replaces it, and the accessor form ``button.text("Save")`` is equivalent to the property;
+* ``Button("Save")`` starts with that caption; ``text`` reads it and ``button.text("Save")`` replaces it. The property is read-only, so ``button.text = "Save"`` does not compile; pass a ``Translatable`` to translate the caption;
 * ``enabled`` defaults to ``true``. A disabled button ignores clicks and does not run its handler;
 * ``onClick { ... }`` is the only click handler; registering it again replaces the previous one, and inside the block ``this`` is the button. The generic handler is shared with every other component;
 * the visual style is mostly flat: the style layer removes JavaFX's native border, gradient and focus ring, then paints the configured background, optional border and foreground. A button with no style is a white rectangle with dark text;
@@ -225,7 +242,7 @@ frame.layout {
 
 Rules:
 
-* ``TextField("initial")`` starts with that content; ``text`` reads or replaces it, and ``input.text("new")`` is equivalent to the property;
+* ``TextField("initial")`` starts with that content; ``text`` reads it and ``input.text("new")`` replaces it. The property is read-only, so assignment does not compile. A ``Translatable`` is resolved once when written, because the box holds user input that a later language change must not overwrite;
 * ``hint`` is the placeholder shown while the box is empty and defaults to an empty string; ``editable`` defaults to ``true`` and ``editable = false`` makes the box read-only;
 * ``onChange { ... }`` receives the new content whenever the user edits the box, **and also** when the program writes ``text`` — a programmatic write is reported like an edit. Registering it again replaces the previous handler;
 * ``onSubmit { ... }`` runs when the user presses ``Enter``; ``performSubmit()`` invokes the same handler manually, which is mainly useful in tests;
@@ -259,6 +276,7 @@ frame.layout {
 
 Rules:
 
+* the caption follows the same ``text(...)`` rule as the other widgets: it may be a literal, a ``Translatable`` or ``"key".translatable``, and the ``text`` property is read-only;
 * ``checked`` starts as ``false`` and can be read or written at any time; the constructor only supplies the caption, so a tick must be set through the property;
 * ``onChange { checked -> ... }`` receives the new boolean state and is the handler meant for a checkbox. ``onClick { ... }`` also works and runs on the same click in addition to ``onChange`` when both are registered;
 * a tick written by the program is **silent**: ``box.checked = true`` changes the screen but runs no handler. Only a user click reaches the handlers, which keeps a handler that writes ``checked`` from calling itself;
@@ -572,7 +590,7 @@ frame.layout {
                         width = 18.percent
                         height = 30.px
                     }
-                    cell.text = "$index"
+                    cell.text("$index")
                 }
             }
         }
@@ -767,7 +785,7 @@ val two = pane.add(Button("Two"))
 pane.bind(two, TextArea()) {
     // The block runs in a DrawScope; its parameter is the bound component.
     // A page fills the content area; x and y are ignored.
-    it.text = "second page"
+    it.text("second page")
 }
 ```
 

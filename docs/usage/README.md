@@ -152,7 +152,7 @@ frame.layout {
                 draw(Button()) { button ->
                     layout(fifth) { /* adjust only this component */ }
                     style(card) { /* adjust only this component */ }
-                    button.text = "$index"
+                    button.text("$index")
                 }
             }
         }
@@ -256,7 +256,7 @@ style { fontSize = 1.em }         // Error: em has no font size to refer to
 draw(Button()) { button ->
     layout { height = 40.px }
     style { fontSize = 50.percent }   // A 40px-tall button gets 20px text
-    button.text = "Ok"
+    button.text("Ok")
 }
 ```
 
@@ -283,7 +283,7 @@ draw(Button()) { button ->
     style {
         fontWeight = FontWeight.BOLD
     }
-    button.text = "Save"
+    button.text("Save")
 }
 ```
 

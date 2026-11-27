@@ -68,7 +68,7 @@ frame.layout {
 * ``labelFor``可以先写在构造里，也可以之后再挂：``label.labelFor = name``和``label.labelFor(name)``等价，``label.labelFor``读回来的就是当前标的那一项；
 * 顺序不重要：控件还没渲染时关联会先记下来，等标签真正建出节点时再补上，所以标签画在控件前面也可以；
 * ``labelFor``传``null``就断开关联，标签退化成一截普通文字；
-* ``text``可以随时改：``label.text = "账户"``，已经建出的节点会立刻跟着变；
+* ``text``可以随时改：``label.text("账户")``，已经建出的节点会立刻跟着变；属性``label.text``是只读的，直接赋值不再能编译；
 * ``reset()``回到创建时的样子——文字和关联都回到构造里给的那一对，而不是清成空文字；
 * 要一段自己承载内容的只读文字（段落、译文）请用``TextArea``，标签只是旁边那一项的短名字。
 
@@ -105,13 +105,30 @@ frame.layout {
 
 规则：
 
-* ``TextArea("hello")``以这段文字起始；``text``读取或替换内容，``text.text("new")``和``text.text = "new"``等价；
+* ``TextArea("hello")``以这段字面文字起始；``text``读取内容，``text.text("new")``替换内容。属性赋值（``text.text = "new"``）不再能编译。``text.text("translate.key".translatable)``显示译文，并跟随``I18N.currentLang``；
 * ``fontSize``的单位是点，默认``14``。它存在组件的样式里，所以``text.fontSize = 20.0``和``style { fontSize = 20.px }``表达同一件事；百分比字号按该文本区自身的高度计算，``em``字号会被拒绝，因为它等于用字号本身来度量字号；
 * 和其它大多数组件不同，文本区**不会继承**所在面板的字号：没有自己字号的文本区使用``14``点。如果希望它随盒子缩放，请给它高度并使用百分比字号；
 * ``bold``选择粗体，``fontFamily``选择字体；样式里写的``fontWeight``会覆盖``bold``；
 * ``align``是 JavaFX 的``TextAlignment``（``LEFT``、``CENTER``、``RIGHT``或``JUSTIFY``），默认``LEFT``；``wrap``默认``false``，不开启时长行会直接超出盒子；
 * 文字颜色和其它文字组件一样来自``style { foreground = ... }``；
 * ``reset()``恢复构造时的文字、``14``点、默认字体、``LEFT``对齐和``wrap = false``，并丢掉上一轮设置的样式/处理器。所以``TextArea("hello")``重置回``"hello"``，不是空文字。
+
+### 可翻译文字与 I18N
+
+每个带标题的组件都接受三种写法：普通字符串、``Translatable``，以及``String.translatable``扩展。
+
+```kotlin
+I18N.lang("zh-cn", "hello", "你好")
+I18N.lang("en-us", "hello", "Hello")
+
+label.text("No translatable")              // 始终是字面文字
+label.text("hello".translatable)           // 通过 I18N 解析
+label.text(Translatable("hello"))          // 同一种写法的完整形式
+
+I18N.currentLang = "en-us"                 // 标签现在显示 "Hello"
+```
+
+``I18N``是进程级注册表：``lang(langKey, translationKey, content)``注册一条译文，第一次注册会选定``currentLang``，查不到的键回退为键本身。普通字符串永远不翻译，即使它看起来像键。传入``Translatable``的组件保存的是键，语言变化时会重新解析；``TextField``是例外，它保存的是用户输入，只在写入时解析一次。
 
 需要透明底、直接叠在背景上的文字时，可以改用顶层函数``bareTextArea``：
 
@@ -154,7 +171,7 @@ frame.layout {
 
 规则：
 
-* ``text``是可见文字，``url``是点击要打开的地址，两者都可以随时修改；
+* ``text``是可见文字，``url``是点击要打开的地址；文字用``text("...")``或``text("key".translatable)``修改，``url``仍可直接赋值；
 * 没有``onClick``处理器的链接，点击会用操作系统默认浏览器打开``url``；``url``为空时点击什么也不做；
 * 注册``onClick``会**替换**默认的浏览器行为：带处理器的链接只执行处理器，不打开任何东西。处理器以链接为``this``，所以里面仍可读``this.url``；
 * ``open()``显式执行浏览器动作，适合自定义处理器还想保留打开功能的场合；
@@ -190,7 +207,7 @@ frame.layout {
 
 规则：
 
-* ``Button("Save")``以该标题起始；``text``读取或替换它，``button.text("Save")``与属性写法等价；
+* ``Button("Save")``以该标题起始；``text``读取标题，``button.text("Save")``替换标题。属性是只读的，所以``button.text = "Save"``不能编译；传入``Translatable``即可翻译标题；
 * ``enabled``默认``true``。禁用的按钮忽略点击，也不执行处理器；
 * ``onClick { ... }``是唯一的点击处理器，再次注册会替换前一个，块里的``this``是按钮。这个通用处理器对所有组件都可用；
 * 外观以扁平化为主：样式层去掉 JavaFX 自带的边框、渐变和焦点框，再涂上配置的背景、可选边框和前景色。没有样式的按钮是白底深色文字的矩形；
@@ -224,7 +241,7 @@ frame.layout {
 
 规则：
 
-* ``TextField("initial")``以该内容起始；``text``读取或替换它，``input.text("new")``与属性写法等价；
+* ``TextField("initial")``以该内容起始；``text``读取内容，``input.text("new")``替换内容。属性是只读的，赋值不能编译。传入``Translatable``时在写入那一刻解析一次，因为输入框保存的是用户输入，之后的语言切换不应覆盖它；
 * ``hint``是输入框为空时的占位提示，默认空字符串；``editable``默认``true``，设成``false``让输入框只读；
 * ``onChange { ... }``在用户编辑时收到新内容，**程序写入``text``时也会触发**——程序写入和编辑一样会被报告。再次注册会替换前一个处理器；
 * ``onSubmit { ... }``在用户按``Enter``时执行；``performSubmit()``可以手动触发同一个处理器，主要用于测试；
@@ -258,6 +275,7 @@ frame.layout {
 
 规则：
 
+* 标题遵循和其它组件相同的``text(...)``规则：可以传普通字符串、``Translatable``或``"key".translatable``，``text``属性只读；
 * ``checked``初始为``false``，可以随时读写；构造函数只提供标题，所以勾选状态要通过属性设置；
 * ``onChange { checked -> ... }``收到新的布尔状态，是复选框最合适的处理器。``onClick { ... }``同样可用，并且在两者都注册时于同一次点击中一起执行；
 * 程序写入的勾选是**静默**的：``box.checked = true``只改变画面，不执行任何处理器。只有用户点击才会到达处理器，这样处理器里再写``checked``也不会自己调用自己；
@@ -571,7 +589,7 @@ frame.layout {
                         width = 18.percent
                         height = 30.px
                     }
-                    cell.text = "$index"
+                    cell.text("$index")
                 }
             }
         }
@@ -768,7 +786,7 @@ val two = pane.add(Button("第二页"))
 pane.bind(two, TextArea()) {
     // 代码块在 DrawScope 中运行，参数就是绑定的组件。
     // 页面自动填满内容区；x 和 y 不起作用。
-    it.text = "第二页内容"
+    it.text("第二页内容")
 }
 ```
 

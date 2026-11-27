@@ -263,7 +263,7 @@ class TabPaneTest {
         val pane = TabPane()
 
         val first = pane.add(Button("One"))
-        val firstContent = pane.bind(first, TextArea()) { it.text = "one" }
+        val firstContent = pane.bind(first, TextArea()) { it.text("one") }
         assertSame(first, pane.selectedTab)
         assertTrue(firstContent.visible)
 
@@ -355,7 +355,7 @@ class TabPaneTest {
         val pane = TabPane()
         val tab = pane.add(Button("One"))
         val state = State("one")
-        val content = pane.bind(tab, TextArea()) { it.text = state.value }
+        val content = pane.bind(tab, TextArea()) { it.text(state.value) }
 
         content.withState(state)
         assertEquals("one", content.text)
@@ -373,7 +373,7 @@ class TabPaneTest {
         val pane = TabPane()
         val first = pane.add(Button("One"))
         val state = State("one")
-        val content = pane.bind(first, TextArea()) { it.text = state.value }
+        val content = pane.bind(first, TextArea()) { it.text(state.value) }
         content.withState(state)
 
         pane.add(Button("Two"))

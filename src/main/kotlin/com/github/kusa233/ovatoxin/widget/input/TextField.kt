@@ -1,6 +1,7 @@
 package com.github.kusa233.ovatoxin.widget.input
 
 import com.github.kusa233.ovatoxin.component.Component
+import com.github.kusa233.ovatoxin.i18n.Translatable
 import javafx.scene.Node
 import javafx.scene.control.TextField as FxTextField
 
@@ -32,17 +33,26 @@ class TextField(text: String = "") : Component<TextField>() {
     /** Reads the current content of the text box. */
     fun text(): String = this.content
 
-    /** Replaces the content of the text box. */
+    /** Replaces the content of the text box with a literal string. */
     fun text(value: String) {
         this.content = value
         (this.builtNode as? FxTextField)?.text = value
         this.changeHandler?.invoke(value)
     }
 
-    /** The current content of the text box. */
-    var text: String
+    /**
+     * Replaces the content with the current translation of [value].
+     *
+     * A text box holds user input rather than a live caption, so the translation is resolved now.
+     * Later language changes do not overwrite what the user has typed.
+     */
+    fun text(value: Translatable) {
+        text(value.content())
+    }
+
+    /** The current content of the text box. Read-only; call `text(...)` to replace it. */
+    val text: String
         get() = this.content
-        set(value) = text(value)
 
     /** The placeholder shown while the box is empty. */
     var hint: String

@@ -1,6 +1,8 @@
 package com.github.kusa233.ovatoxin.widget.text
 
 import com.github.kusa233.ovatoxin.component.Component
+import com.github.kusa233.ovatoxin.i18n.TextContent
+import com.github.kusa233.ovatoxin.i18n.Translatable
 import javafx.scene.Node
 import javafx.scene.control.Label as FxLabel
 
@@ -50,22 +52,33 @@ class Label(text: String = "", labelFor: Component<*>? = null) : Component<Label
     /** The control this label was created for, restored by [reset]. */
     private val defaultTarget: Component<*>? = labelFor
 
-    private var content: String = text
+    private val content: TextContent = TextContent(text, this)
     private var targetValue: Component<*>? = labelFor
 
-    /** Reads the caption of the label. */
-    fun text(): String = this.content
+    /** Reads the caption of the label, resolving a translatable key. */
+    fun text(): String = this.content.value()
 
-    /** Replaces the caption of the label. */
+    /** Shows a literal caption. */
     fun text(value: String) {
-        this.content = value
-        (this.builtNode as? FxLabel)?.text = value
+        this.content.literal(value)
+        refreshText()
     }
 
-    /** The caption of the label. */
-    var text: String
-        get() = this.content
-        set(value) = text(value)
+    /** Shows the content of a translation key, re-resolved whenever the language changes. */
+    fun text(value: Translatable) {
+        this.content.translation(value)
+        refreshText()
+    }
+
+    /** The caption of the label. Read-only; call `text(...)` to replace it. */
+    val text: String
+        get() = this.content.value()
+
+    private fun refreshText() {
+        (this.builtNode as? FxLabel)?.text = this.content.value()
+    }
+
+    internal override fun onLanguageChanged() = refreshText()
 
     /** Reads the control this label annotates, or `null` while it annotates nothing. */
     fun labelFor(): Component<*>? = this.targetValue
@@ -125,15 +138,15 @@ class Label(text: String = "", labelFor: Component<*>? = null) : Component<Label
      */
     override fun reset() {
         super.reset()
-        this.content = this.defaultText
+        this.content.reset(this.defaultText)
         this.targetValue = this.defaultTarget
         val label = this.builtNode as? FxLabel ?: return
-        label.text = this.content
+        label.text = this.content.value()
         label.labelFor = targetNode()
     }
 
     override fun buildNode(): Node {
-        val label = FxLabel(this.content)
+        val label = FxLabel(this.content.value())
         // The target may not have been rendered yet; its node is built here, on this thread.
         label.labelFor = targetNode()
         return label

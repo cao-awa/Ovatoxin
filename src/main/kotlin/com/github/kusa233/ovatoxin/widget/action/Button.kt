@@ -1,6 +1,8 @@
 package com.github.kusa233.ovatoxin.widget.action
 
 import com.github.kusa233.ovatoxin.component.Component
+import com.github.kusa233.ovatoxin.i18n.TextContent
+import com.github.kusa233.ovatoxin.i18n.Translatable
 import javafx.scene.Node
 import javafx.scene.control.Button as FxButton
 
@@ -15,7 +17,7 @@ import javafx.scene.control.Button as FxButton
  *         width = 80.percent
  *         height = 10.percent
  *     }
- *     button.text = "Button"
+ *     button.text("Button")
  *     button.onClick {
  *         println(text1.text())
  *     }
@@ -23,27 +25,38 @@ import javafx.scene.control.Button as FxButton
  * ```
  *
  * [onClick] runs the handler with the button as receiver, so inside the block `this` is the
- * button and `this.text` refers to its caption. A disabled button reports no clicks at all.
+ * button and `this.text()` reads its caption. A disabled button reports no clicks at all.
  */
 class Button(text: String = "") : Component<Button>() {
 
     private val defaultText: String = text
-    private var content: String = text
+    private val content: TextContent = TextContent(text, this)
     private var enabledValue: Boolean = true
 
-    /** Reads the caption of the button. */
-    fun text(): String = this.content
+    /** Reads the caption of the button, resolving a translatable key. */
+    fun text(): String = this.content.value()
 
-    /** Replaces the caption of the button. */
+    /** Shows a literal caption. */
     fun text(value: String) {
-        this.content = value
-        (this.builtNode as? FxButton)?.text = value
+        this.content.literal(value)
+        refreshText()
     }
 
-    /** The caption of the button. */
-    var text: String
-        get() = this.content
-        set(value) = text(value)
+    /** Shows the content of a translation key, re-resolved whenever the language changes. */
+    fun text(value: Translatable) {
+        this.content.translation(value)
+        refreshText()
+    }
+
+    /** The caption of the button. Read-only; call `text(...)` to replace it. */
+    val text: String
+        get() = this.content.value()
+
+    private fun refreshText() {
+        (this.builtNode as? FxButton)?.text = this.content.value()
+    }
+
+    internal override fun onLanguageChanged() = refreshText()
 
     /** Whether the button can be pressed. Defaults to `true`. */
     var enabled: Boolean
@@ -68,14 +81,14 @@ class Button(text: String = "") : Component<Button>() {
      */
     override fun reset() {
         super.reset()
-        this.content = this.defaultText
-        (this.builtNode as? FxButton)?.text = this.defaultText
+        this.content.reset(this.defaultText)
+        (this.builtNode as? FxButton)?.text = this.content.value()
         this.enabledValue = true
         (this.builtNode as? FxButton)?.isDisable = false
     }
 
     override fun buildNode(): Node {
-        val button = FxButton(this.content)
+        val button = FxButton(this.content.value())
         button.isDisable = !this.enabledValue
         button.setOnAction { performClick() }
         // Marked so the flat look can also be tuned from a stylesheet if needed. The skinned

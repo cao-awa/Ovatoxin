@@ -66,7 +66,7 @@ class ResetTest {
     @Test
     fun `a button resets to the caption it was created with`() {
         val button = Button("Ok")
-        button.text = "Something else"
+        button.text("Something else")
         button.enabled = false
 
         button.reset()
@@ -120,7 +120,7 @@ class ResetTest {
     @Test
     fun `a link resets its caption, url and default colour`() {
         val link = Link("Ovatoxin", "https://example.com")
-        link.text = "Elsewhere"
+        link.text("Elsewhere")
         link.url = "https://example.org"
         link.styleSpec.foreground = Color.RED
 

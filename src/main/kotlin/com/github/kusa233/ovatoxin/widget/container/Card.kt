@@ -2,6 +2,8 @@ package com.github.kusa233.ovatoxin.widget.container
 
 import com.github.kusa233.ovatoxin.component.SurfaceScope
 import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
+import com.github.kusa233.ovatoxin.i18n.TextSource
+import com.github.kusa233.ovatoxin.i18n.Translatable
 import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
@@ -95,7 +97,33 @@ class Card(
         align: TextAlignment = TextAlignment.LEFT,
         wrap: Boolean = false,
     ): TextArea = surface().drawText(
-        content = content,
+        content = TextSource.Literal(content),
+        width = w,
+        height = h,
+        size = size,
+        tone = color,
+        bold = bold,
+        align = align,
+        wrap = wrap,
+    )
+
+    /**
+     * Draws a translatable [TextArea] into this card.
+     *
+     * The text follows [I18N][com.github.kusa233.ovatoxin.i18n.I18N.currentLang], so the card does
+     * not need to be rebuilt when the language changes.
+     */
+    fun text(
+        content: Translatable,
+        w: Length? = 100.percent,
+        h: Length = 20.px,
+        size: Double = 14.0,
+        color: Color = DEFAULT_TEXT_COLOR,
+        bold: Boolean = false,
+        align: TextAlignment = TextAlignment.LEFT,
+        wrap: Boolean = false,
+    ): TextArea = surface().drawText(
+        content = TextSource.Translation(content),
         width = w,
         height = h,
         size = size,
@@ -123,7 +151,28 @@ class Card(
         radius: Length = 10.px,
         onClick: Button.() -> Unit = {},
     ): Button = surface().drawButton(
-        label = label,
+        label = TextSource.Literal(label),
+        width = w,
+        height = h,
+        fill = fill,
+        foreground = fg,
+        borderColor = borderColor,
+        radius = radius,
+        onClick = onClick,
+    )
+
+    /** Draws a [Button] whose caption is a translation key. */
+    fun button(
+        label: Translatable,
+        w: Length = 120.px,
+        h: Length = 40.px,
+        fill: Color = DEFAULT_BUTTON_FILL,
+        fg: Color = DEFAULT_BUTTON_TEXT,
+        borderColor: Color? = null,
+        radius: Length = 10.px,
+        onClick: Button.() -> Unit = {},
+    ): Button = surface().drawButton(
+        label = TextSource.Translation(label),
         width = w,
         height = h,
         fill = fill,
@@ -230,7 +279,23 @@ fun SurfaceScope<*>.text(
     bold: Boolean = false,
     align: TextAlignment = TextAlignment.LEFT,
     wrap: Boolean = false,
-): TextArea = drawText(content, width, height, size, color, bold, align, wrap)
+): TextArea = drawText(
+    TextSource.Literal(content), width, height, size, color, bold, align, wrap,
+)
+
+/** The public spelling of the body DSL: `text("key".translatable)` inside a [card] block. */
+fun SurfaceScope<*>.text(
+    content: Translatable,
+    width: Length? = 100.percent,
+    height: Length = 20.px,
+    size: Double = 14.0,
+    color: Color = Card.DEFAULT_TEXT_COLOR,
+    bold: Boolean = false,
+    align: TextAlignment = TextAlignment.LEFT,
+    wrap: Boolean = false,
+): TextArea = drawText(
+    TextSource.Translation(content), width, height, size, color, bold, align, wrap,
+)
 
 /** The public spelling of the body DSL: `button(...)` inside a [card] block. */
 fun SurfaceScope<*>.button(
@@ -242,11 +307,27 @@ fun SurfaceScope<*>.button(
     borderColor: Color? = null,
     radius: Length = 10.px,
     onClick: Button.() -> Unit = {},
-): Button = drawButton(label, width, height, fill, foreground, borderColor, radius, onClick)
+): Button = drawButton(
+    TextSource.Literal(label), width, height, fill, foreground, borderColor, radius, onClick,
+)
+
+/** The public spelling of the body DSL: `button("key".translatable)`. */
+fun SurfaceScope<*>.button(
+    label: Translatable,
+    width: Length = 120.px,
+    height: Length = 40.px,
+    fill: Color = Card.DEFAULT_BUTTON_FILL,
+    foreground: Color = Card.DEFAULT_BUTTON_TEXT,
+    borderColor: Color? = null,
+    radius: Length = 10.px,
+    onClick: Button.() -> Unit = {},
+): Button = drawButton(
+    TextSource.Translation(label), width, height, fill, foreground, borderColor, radius, onClick,
+)
 
 /** Draws a transparent text area and applies the card-text defaults. */
 private fun SurfaceScope<*>.drawText(
-    content: String,
+    content: TextSource,
     width: Length?,
     height: Length,
     size: Double,
@@ -254,7 +335,11 @@ private fun SurfaceScope<*>.drawText(
     bold: Boolean,
     align: TextAlignment,
     wrap: Boolean,
-): TextArea = draw(TextArea(content)) { area ->
+): TextArea = draw(TextArea()) { area ->
+    when (content) {
+        is TextSource.Literal -> area.text(content.value)
+        is TextSource.Translation -> area.text(content.translatable)
+    }
     layout {
         this.width = width
         this.height = height
@@ -273,7 +358,7 @@ private fun SurfaceScope<*>.drawText(
 
 /** Draws a flat button and applies the card-button defaults. */
 private fun SurfaceScope<*>.drawButton(
-    label: String,
+    label: TextSource,
     width: Length,
     height: Length,
     fill: Color,
@@ -281,7 +366,11 @@ private fun SurfaceScope<*>.drawButton(
     borderColor: Color?,
     radius: Length,
     onClick: Button.() -> Unit,
-): Button = draw(Button(label)) { button ->
+): Button = draw(Button()) { button ->
+    when (label) {
+        is TextSource.Literal -> button.text(label.value)
+        is TextSource.Translation -> button.text(label.translatable)
+    }
     layout {
         this.width = width
         this.height = height

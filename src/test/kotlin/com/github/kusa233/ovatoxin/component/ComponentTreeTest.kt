@@ -51,7 +51,7 @@ class ComponentTreeTest {
         val frame = Frame()
         frame.layout {
             draw(TextArea()) { it.text("a") }
-            draw(Button()) { it.text = "b" }
+            draw(Button()) { it.text("b") }
         }
         assertEquals(2, frame.children.size)
         assertFalse(frame.children[0].isNodeCreated)
@@ -87,9 +87,9 @@ class ComponentTreeTest {
     fun `onClick runs with the button as receiver`() {
         var printed: String? = null
         val button = Button()
-        button.text = "Button"
+        button.text("Button")
         button.onClick {
-            printed = this.text
+            printed = this.text()
         }
         button.performClick()
         assertEquals("Button", printed)
@@ -105,7 +105,7 @@ class ComponentTreeTest {
                 text.text("Test")
             }
             draw(Button()) { button ->
-                button.text = "Button"
+                button.text("Button")
                 button.onClick {
                     output.append(text1.text())
                 }
@@ -141,9 +141,9 @@ class ComponentTreeTest {
     }
 
     @Test
-    fun `text supports both property and call style`() {
+    fun `text reads through the property and writes through the call`() {
         val text = TextArea()
-        text.text = "a"
+        text.text("a")
         assertEquals("a", text.text())
         text.text("b")
         assertEquals("b", text.text)

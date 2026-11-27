@@ -14,7 +14,7 @@ import com.github.kusa233.ovatoxin.dsl.OvatoxinDsl
  * ```kotlin
  * val frame = Frame()
  * frame.layout {
- *     draw(Button()) { it.text = "Ok" }   // compiles: this block declares children of the frame
+ *     draw(Button()) { it.text("Ok") }    // compiles: this block declares children of the frame
  * }
  * frame.draw(Button())                    // does not compile: the frame has no draw
  * draw(Button())                          // does not compile: no surface in scope

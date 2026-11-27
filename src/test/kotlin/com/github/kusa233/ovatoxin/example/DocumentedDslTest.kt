@@ -1,5 +1,6 @@
 package com.github.kusa233.ovatoxin.example
 
+import com.github.kusa233.ovatoxin.i18n.I18N
 import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.percent
@@ -21,6 +22,7 @@ import com.github.kusa233.ovatoxin.widget.text.TextArea
 import com.github.kusa233.ovatoxin.widget.input.TextField
 import com.github.kusa233.ovatoxin.window.Frame
 import javafx.scene.paint.Color
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -33,6 +35,11 @@ import kotlin.test.assertTrue
  * Runs the documented DSL snippets, so the documentation cannot drift away from the API.
  */
 class DocumentedDslTest {
+
+    @AfterTest
+    fun clearTranslations() {
+        I18N.clear()
+    }
 
     @Test
     fun `the basic snippet compiles and wires up`() {
@@ -54,7 +61,7 @@ class DocumentedDslTest {
                     width = 80.percent
                     height = 10.percent
                 }
-                button.text = "Button"
+                button.text("Button")
                 button.onClick {
                     println(text1.text())
                 }
@@ -121,7 +128,7 @@ class DocumentedDslTest {
                     corner = 50.percent       // A pill; or 10.px for a fixed radius
                     foreground = Color.web("#ffffff")   // The text colour
                 }
-                button.text = "Button"
+                button.text("Button")
             }
         }
 
@@ -308,6 +315,7 @@ class DocumentedDslTest {
 
     @Test
     fun `the state snippet compiles and rebinds on a new value`() {
+        seedDemoTranslations()
         val state = State("zh-cn")
 
         val frame = Frame()
@@ -319,7 +327,7 @@ class DocumentedDslTest {
                     width = 80.percent
                     height = 10.percent
                 }
-                val translation = I18N.languages[state.value]?.get("test.translation") ?: "No translation"
+                val translation = I18N.content(state.value, "test.translation")
                 text.text(translation)
             }.withState(state)
         }
@@ -337,11 +345,12 @@ class DocumentedDslTest {
 
     @Test
     fun `the state feeding snippet compiles and updates the bound label`() {
+        seedDemoTranslations()
         val state = State("zh-cn")
         val frame = Frame()
         frame.layout {
             val textShow = draw(TextArea()) { text ->
-                val translation = I18N.languages[state.value]?.get("test.translation") ?: "No translation"
+                val translation = I18N.content(state.value, "test.translation")
                 text.text(translation)
             }.withState(state)
 
@@ -372,11 +381,12 @@ class DocumentedDslTest {
 
     @Test
     fun `the equal value rule really keeps the tree untouched`() {
+        seedDemoTranslations()
         val state = State("zh-cn")
         val frame = Frame()
         frame.layout {
             draw(TextArea()) { text ->
-                text.text(I18N.languages[state.value]?.get("test.translation") ?: "No translation")
+                text.text(I18N.content(state.value, "test.translation"))
             }.withState(state)
         }
         val text = frame.children[0] as TextArea
@@ -537,7 +547,7 @@ class DocumentedDslTest {
                     width = 100.percent
                     height = 20.percent
                 }
-                button.text = "inset"
+                button.text("inset")
             }
         }
 
@@ -608,7 +618,7 @@ class DocumentedDslTest {
                             width = 6.em
                             height = 2.em
                         }
-                        button.text = "em"
+                        button.text("em")
                     }
                 }
             }
@@ -653,7 +663,7 @@ class DocumentedDslTest {
                                 width = 18.percent
                                 height = 30.px
                             }
-                            cell.text = "$index"
+                            cell.text("$index")
                         }
                     }
                 }
@@ -705,7 +715,7 @@ class DocumentedDslTest {
                             width = 20.percent
                             height = 20.px
                         }
-                        cell.text = "nudged"
+                        cell.text("nudged")
                     }
                 }
             }

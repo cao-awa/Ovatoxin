@@ -1,6 +1,8 @@
 package com.github.kusa233.ovatoxin.widget.text
 
 import com.github.kusa233.ovatoxin.component.Component
+import com.github.kusa233.ovatoxin.i18n.TextContent
+import com.github.kusa233.ovatoxin.i18n.Translatable
 import com.github.kusa233.ovatoxin.runtime.Browser
 import javafx.scene.Cursor
 import javafx.scene.Node
@@ -38,7 +40,7 @@ class Link(text: String = "", url: String = "") : Component<Link>() {
 
     private val defaultText: String = text
     private val defaultUrl: String = url
-    private var content: String = text
+    private val content: TextContent = TextContent(text, this)
 
     /** The URL opened by a click, or an empty string for a link that does nothing by default. */
     var url: String = url
@@ -48,19 +50,30 @@ class Link(text: String = "", url: String = "") : Component<Link>() {
         this.styleSpec.foreground = DEFAULT_FOREGROUND
     }
 
-    /** Reads the caption of the link. */
-    fun text(): String = this.content
+    /** Reads the caption of the link, resolving a translatable key. */
+    fun text(): String = this.content.value()
 
-    /** Replaces the caption of the link. */
+    /** Shows a literal caption. */
     fun text(value: String) {
-        this.content = value
-        (this.builtNode as? Label)?.text = value
+        this.content.literal(value)
+        refreshText()
     }
 
-    /** The caption of the link. */
-    var text: String
-        get() = this.content
-        set(value) = text(value)
+    /** Shows the content of a translation key, re-resolved whenever the language changes. */
+    fun text(value: Translatable) {
+        this.content.translation(value)
+        refreshText()
+    }
+
+    /** The caption of the link. Read-only; call `text(...)` to replace it. */
+    val text: String
+        get() = this.content.value()
+
+    private fun refreshText() {
+        (this.builtNode as? Label)?.text = this.content.value()
+    }
+
+    internal override fun onLanguageChanged() = refreshText()
 
     /** Opens [url] in the default browser. Does nothing when [url] is empty. */
     fun open() {
@@ -87,14 +100,14 @@ class Link(text: String = "", url: String = "") : Component<Link>() {
      */
     override fun reset() {
         super.reset()
-        this.content = this.defaultText
+        this.content.reset(this.defaultText)
         this.url = this.defaultUrl
         this.styleSpec.foreground = DEFAULT_FOREGROUND
-        (this.builtNode as? Label)?.text = this.defaultText
+        (this.builtNode as? Label)?.text = this.content.value()
     }
 
     override fun buildNode(): Node {
-        val label = Label(this.content)
+        val label = Label(this.content.value())
         // The classic link look: underlined, with a hand cursor on hover.
         label.isUnderline = true
         label.cursor = Cursor.HAND

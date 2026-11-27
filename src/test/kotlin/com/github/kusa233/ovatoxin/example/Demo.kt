@@ -2,7 +2,8 @@ package com.github.kusa233.ovatoxin.example
 
 import com.github.kusa233.ovatoxin.dsl.layout
 import com.github.kusa233.ovatoxin.dsl.style
-import com.github.kusa233.ovatoxin.example.I18N.languages
+import com.github.kusa233.ovatoxin.i18n.I18N
+import com.github.kusa233.ovatoxin.i18n.translatable
 import com.github.kusa233.ovatoxin.layout.Percent
 import com.github.kusa233.ovatoxin.layout.em
 import com.github.kusa233.ovatoxin.layout.percent
@@ -30,11 +31,42 @@ import kotlin.time.Duration.Companion.milliseconds
 
 fun main() {
     val frame = Frame("Ovatoxin - DSL demo", titleBarEnabled = false)
-    testVideo(frame)
+    testI18N(frame)
     frame.onClose {
         println("Closing '${this.title}'")
     }
     frame.show()
+}
+
+
+internal fun seedDemoTranslations() {
+    I18N.lang("zh-cn", "test.translation", "翻译测试")
+    I18N.lang("en-us", "test.translation", "Test translation")
+}
+
+fun testI18N(frame: Frame) {
+    seedDemoTranslations()
+    val state = State(I18N.currentLang)
+    frame.layout {
+        draw(TextArea()) { text ->
+            layout(
+                10.percent, 10.percent,
+                80.percent, 10.percent
+            )
+            I18N.currentLang = state.value
+            text.text("test.translation".translatable)
+        }.withState(state)
+        draw(TextField()) { input ->
+            layout(
+                10.percent, 30.percent,
+                80.percent, 10.percent
+            )
+            input.hint = "Type here..."
+            input.onChange {
+                state.update(it)
+            }
+        }
+    }
 }
 
 fun testVideo(frame: Frame) {
@@ -140,7 +172,7 @@ fun testTemplate(frame: Frame) {
                             }
                             foreground = if (selected.value == index) Color.web("#4c8bf5") else Color.WHITE
                         }
-                        button.text = "$index"
+                        button.text("$index")
                         button.onClick {
                             selected.update(index)
                         }
@@ -215,7 +247,7 @@ fun testCheckBox(frame: Frame) {
                 width = 30.percent
                 height = 5.percent
             }
-            checkBox.text = "Remember"
+            checkBox.text("Remember")
         }
     }
 }
@@ -237,7 +269,7 @@ fun testButton(frame: Frame) {
                 foreground = Color.web("#ffffff")
                 fontSize = 50.percent
             }
-            button.text = "Button"
+            button.text("Button")
             button.onClick {
                 println("Button clicked!")
             }
@@ -414,7 +446,7 @@ fun testFlexBox(frame: Frame) {
                                     width = 18.percent
                                     height = 18.percent
                                 }
-                                cell.text = "$index"
+                                cell.text("$index")
                             }
                         }
                     }
@@ -433,7 +465,7 @@ fun testLink(frame: Frame) {
                 width = 80.percent
                 height = 10.percent
             }
-            link.text = "opens the browser — click me"
+            link.text("opens the browser — click me")
         }
     }
 }
@@ -509,35 +541,4 @@ fun testStateWithColor(frame: Frame) {
             }
         }.withState(state)
     }
-}
-
-fun testStateWithI18N(frame: Frame) {
-    val state = State("")
-    frame.layout {
-        draw(TextArea()) { text ->
-            layout(
-                10.percent, 10.percent,
-                80.percent, 10.percent
-            )
-            val translation = languages[state.value]?.get("test.translation") ?: "No translation"
-            text.text(translation)
-        }.withState(state)
-        draw(TextField()) { input ->
-            layout(
-                0.percent, 0.percent,
-                80.percent, 10.percent
-            )
-            input.hint = "Type here..."
-            input.onChange {
-                state.update(it)
-            }
-        }
-    }
-}
-
-object I18N {
-    val languages: Map<String, MutableMap<String, String>> = mapOf(
-        "zh-cn" to mutableMapOf("test.translation" to "翻译测试"),
-        "en-us" to mutableMapOf("test.translation" to "Test translation"),
-    )
 }

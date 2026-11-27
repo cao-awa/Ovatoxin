@@ -29,12 +29,12 @@ class CheckBoxTest {
     }
 
     @Test
-    fun `the caption is written through both the call and the property`() {
+    fun `the caption is written through the call and read through the property`() {
         val box = CheckBox()
         box.text("A")
         assertEquals("A", box.text)
 
-        box.text = "B"
+        box.text("B")
         assertEquals("B", box.text())
     }
 
@@ -125,7 +125,7 @@ class CheckBoxTest {
     fun `a reset restores the caption, the tick and the handlers`() {
         var changes = 0
         val box = CheckBox("Keep open")
-        box.text = "Changed"
+        box.text("Changed")
         box.checked = true
         box.enabled = false
         box.onChange { changes++ }

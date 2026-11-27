@@ -27,26 +27,30 @@ repositories {
 
 val javafxVersion = "25.0.5"
 
-// JavaFX ships platform specific artifacts; pick the classifier for this machine.
-val javafxPlatform: String = run {
-    val os = System.getProperty("os.name").lowercase()
-    val arch = System.getProperty("os.arch").lowercase()
-    val aarch64 = arch.contains("aarch64") || arch.contains("arm64")
-    when {
-        os.contains("win") -> "win"
-        os.contains("mac") -> if (aarch64) "mac-aarch64" else "mac"
-        os.contains("linux") -> if (aarch64) "linux-aarch64" else "linux"
-        else -> error("Unsupported platform for JavaFX: $os/$arch")
-    }
-}
-
 dependencies {
-    implementation("org.openjfx:javafx-base:$javafxVersion:$javafxPlatform")
-    implementation("org.openjfx:javafx-graphics:$javafxVersion:$javafxPlatform")
-    implementation("org.openjfx:javafx-controls:$javafxVersion:$javafxPlatform")
-    implementation("org.openjfx:javafx-media:$javafxVersion:$javafxPlatform")
-
     testImplementation(kotlin("test"))
+    implementation("com.github.cao-awa:Cason:${project.property("cason_version")}")
+
+    api("org.openjfx:javafx-base:${javafxVersion}:win")
+    api("org.openjfx:javafx-graphics:${javafxVersion}:win")
+    api("org.openjfx:javafx-controls:${javafxVersion}:win")
+    api("org.openjfx:javafx-media:${javafxVersion}:win")
+    api("org.openjfx:javafx-base:${javafxVersion}:mac")
+    api("org.openjfx:javafx-graphics:${javafxVersion}:mac")
+    api("org.openjfx:javafx-controls:${javafxVersion}:mac")
+    api("org.openjfx:javafx-media:${javafxVersion}:mac")
+    api("org.openjfx:javafx-base:${javafxVersion}:mac-aarch64")
+    api("org.openjfx:javafx-graphics:${javafxVersion}:mac-aarch64")
+    api("org.openjfx:javafx-controls:${javafxVersion}:mac-aarch64")
+    api("org.openjfx:javafx-media:${javafxVersion}:mac-aarch64")
+    api("org.openjfx:javafx-base:${javafxVersion}:linux")
+    api("org.openjfx:javafx-graphics:${javafxVersion}:linux")
+    api("org.openjfx:javafx-controls:${javafxVersion}:linux")
+    api("org.openjfx:javafx-media:${javafxVersion}:linux")
+    api("org.openjfx:javafx-base:${javafxVersion}:linux-aarch64")
+    api("org.openjfx:javafx-graphics:${javafxVersion}:linux-aarch64")
+    api("org.openjfx:javafx-controls:${javafxVersion}:linux-aarch64")
+    api("org.openjfx:javafx-media:${javafxVersion}:linux-aarch64")
 }
 
 kotlin {

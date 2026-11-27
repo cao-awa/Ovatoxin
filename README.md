@@ -101,7 +101,7 @@ frame.layout {
                         foreground = if (selected.value == index) Color.web("#4c8bf5") else Color.WHITE
                     }
                     // Button text
-                    button.text = "$index"
+                    button.text("$index")
                     // Redraw when the button is clicked
                     button.onClick {
                         selected.update(index)

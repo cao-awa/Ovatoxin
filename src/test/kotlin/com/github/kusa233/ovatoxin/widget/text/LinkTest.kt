@@ -86,7 +86,7 @@ class LinkTest {
     @Test
     fun `text supports both property and call style`() {
         val link = Link()
-        link.text = "a"
+        link.text("a")
         assertEquals("a", link.text())
         link.text("b")
         assertEquals("b", link.text)

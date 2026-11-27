@@ -3,6 +3,8 @@ package com.github.kusa233.ovatoxin.widget.text
 import com.github.kusa233.ovatoxin.component.Component
 import com.github.kusa233.ovatoxin.component.DrawScope
 import com.github.kusa233.ovatoxin.component.SurfaceScope
+import com.github.kusa233.ovatoxin.i18n.TextContent
+import com.github.kusa233.ovatoxin.i18n.Translatable
 import com.github.kusa233.ovatoxin.layout.Length
 import com.github.kusa233.ovatoxin.layout.px
 import javafx.scene.Node
@@ -25,14 +27,16 @@ import javafx.scene.text.TextAlignment
  * }
  * ```
  *
- * The content is exposed both as the [text] property and through the `text(..)` accessors,
- * so assignment and call style can be mixed. For editable input use [TextField][com.github.kusa233.ovatoxin.widget.input.TextField].
+ * The content can be read through the [text] property and replaced through the `text(..)`
+ * accessors. Property assignment is deliberately not supported: use `text("...")` or
+ * `text("key".translatable)`. For editable input use
+ * [TextField][com.github.kusa233.ovatoxin.widget.input.TextField].
  */
 class TextArea(text: String = "") : Component<TextArea>() {
 
     private val defaultText: String = text
     private val defaultFamily: String = Font.getDefault().family
-    private var content: String = text
+    private val content: TextContent = TextContent(text, this)
     private var boldValue: Boolean = false
     private var familyValue: String = this.defaultFamily
     private var alignValue: TextAlignment = TextAlignment.LEFT
@@ -41,19 +45,30 @@ class TextArea(text: String = "") : Component<TextArea>() {
     /** The last font handed to the label, so an unchanged pass does not build a new one. */
     private var appliedFont: Font? = null
 
-    /** Reads the displayed text. */
-    fun text(): String = this.content
+    /** Reads the displayed text, resolving a translatable key in the current language. */
+    fun text(): String = this.content.value()
 
-    /** Replaces the displayed text. */
+    /** Shows a literal text. */
     fun text(value: String) {
-        this.content = value
-        (this.builtNode as? Label)?.text = value
+        this.content.literal(value)
+        refreshText()
     }
 
-    /** The displayed text. */
-    var text: String
-        get() = this.content
-        set(value) = text(value)
+    /** Shows the content of a translation key, re-resolved whenever the language changes. */
+    fun text(value: Translatable) {
+        this.content.translation(value)
+        refreshText()
+    }
+
+    /** The displayed text. Read-only; call `text(...)` to replace it. */
+    val text: String
+        get() = this.content.value()
+
+    private fun refreshText() {
+        (this.builtNode as? Label)?.text = this.content.value()
+    }
+
+    internal override fun onLanguageChanged() = refreshText()
 
     /**
      * The size the text is rendered with, in points. Defaults to [DEFAULT_FONT_SIZE], i.e. `14`.
@@ -160,20 +175,20 @@ class TextArea(text: String = "") : Component<TextArea>() {
      */
     override fun reset() {
         super.reset()
-        this.content = this.defaultText
+        this.content.reset(this.defaultText)
         this.boldValue = false
         this.familyValue = this.defaultFamily
         this.alignValue = TextAlignment.LEFT
         this.wrapValue = false
         val label = this.builtNode as? Label ?: return
-        label.text = this.content
+        label.text = this.content.value()
         refreshFont()
         label.textAlignment = this.alignValue
         label.isWrapText = this.wrapValue
     }
 
     override fun buildNode(): Node {
-        val label = Label(this.content)
+        val label = Label(this.content.value())
         // The node is not stored yet, so the font is handed over here rather than by refreshFont.
         val font = newFont()
         this.appliedFont = font
@@ -236,6 +251,30 @@ fun SurfaceScope<*>.bareTextArea(
     content: String = "",
     config: DrawScope<TextArea>.(TextArea) -> Unit = {},
 ): TextArea = draw(TextArea(content)) { area ->
+    style {
+        background {
+            color = Color.TRANSPARENT
+        }
+    }
+    config(area)
+}
+
+/**
+ * Draws a transparent [TextArea] whose caption is a translatable key.
+ *
+ * ```kotlin
+ * frame.layout {
+ *     bareTextArea("hello".translatable) { label ->
+ *         label.bold = true
+ *     }
+ * }
+ * ```
+ */
+fun SurfaceScope<*>.bareTextArea(
+    content: Translatable,
+    config: DrawScope<TextArea>.(TextArea) -> Unit = {},
+): TextArea = draw(TextArea()) { area ->
+    area.text(content)
     style {
         background {
             color = Color.TRANSPARENT
